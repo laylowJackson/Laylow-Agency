@@ -10,6 +10,7 @@ def start_process(target):
 
 def main():
     processes = [
+        start_process("watchdog.py"),
         start_process("runtime_manager.py"),
         start_process("dashboard.py"),
         start_process("teams/orchestrator.py"),
