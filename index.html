@@ -6,10 +6,32 @@
   <title>Trading Command Center</title>
 
   <style>
+    :root {
+      --bg-1: #050612;
+      --bg-2: #0a0d1d;
+      --panel: #11162b;
+      --panel-alt: #0d1224;
+      --panel-border: #29325c;
+      --text: #ffffff;
+      --muted: #9da6c9;
+      --muted-2: #8994b5;
+      --primary: #7357ff;
+      --primary-2: #6f55c7;
+      --success: #31f09d;
+      --danger: #ff5c79;
+      --warning: #ffd966;
+      --danger-bg: #401526;
+      --danger-border: #742944;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      background: linear-gradient(180deg, #050612, #0a0d1d);
-      color: white;
+      background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
+      color: var(--text);
       font-family: Arial, sans-serif;
     }
 
@@ -24,7 +46,7 @@
     }
 
     .subtitle {
-      color: #9da6c9;
+      color: var(--muted);
       margin-bottom: 20px;
     }
 
@@ -36,8 +58,8 @@
     }
 
     .card {
-      background: #11162b;
-      border: 1px solid #29325c;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
       border-radius: 14px;
       padding: 15px;
     }
@@ -45,6 +67,8 @@
     .label {
       color: #8e99bb;
       font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
     .value {
@@ -60,13 +84,14 @@
     }
 
     .worker {
-      background: #0d1224;
+      background: var(--panel-alt);
       border: 1px solid #252d52;
       border-radius: 12px;
       padding: 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 14px;
     }
 
     .worker-name {
@@ -75,16 +100,16 @@
 
     .worker-sub {
       font-size: 12px;
-      color: #8994b5;
+      color: var(--muted-2);
       margin-top: 4px;
     }
 
-    .green {
-      color: #31f09d;
+    .positive {
+      color: var(--success);
     }
 
-    .red {
-      color: #ff5c79;
+    .negative {
+      color: var(--danger);
     }
 
     button, select, input {
@@ -99,43 +124,49 @@
 
     select, input {
       background: #0c1124;
-      color: white;
+      color: var(--text);
       border: 1px solid #29345e;
     }
 
     button {
-      background: #7357ff;
-      color: white;
+      background: var(--primary);
+      color: var(--text);
       font-weight: bold;
       cursor: pointer;
     }
 
+    .secondary {
+      background: #1c2444;
+      border: 1px solid #3c4c8f;
+    }
+
     .danger {
-      background: #401526;
-      border: 1px solid #742944;
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
     }
 
     .log {
       background: #080c19;
       border-radius: 10px;
       padding: 10px;
-      max-height: 180px;
+      max-height: 220px;
       overflow-y: auto;
       font-family: monospace;
       font-size: 12px;
+      line-height: 1.5;
     }
 
     .vault {
       text-align: center;
       background: linear-gradient(135deg, #17112d, #201846);
-      border: 1px solid #6f55c7;
+      border: 1px solid var(--primary-2);
       border-radius: 16px;
       padding: 18px;
       margin: 18px 0;
     }
 
     .vault-value {
-      color: #ffd966;
+      color: var(--warning);
       font-size: 30px;
       font-weight: bold;
     }
@@ -208,13 +239,17 @@
 
     <label>Risk Amount</label>
 
-    <input id="risk" type="number" value="50" />
+    <input id="risk" type="number" value="50" min="1" />
 
     <label>Daily Loss Limit</label>
 
-    <input id="lossLimit" type="number" value="250" />
+    <input id="lossLimit" type="number" value="250" min="1" />
 
     <button onclick="paperTrade()">Run Paper Trade</button>
+
+    <button class="secondary" onclick="resetAccount()">
+      Reset Account
+    </button>
 
     <button class="danger" onclick="toggleKill()">
       Kill Switch
@@ -231,8 +266,9 @@
 </div>
 
 <script>
+const STORAGE_KEY = "laylow-agency-trading-state-v1";
 
-let state = {
+const defaultState = {
   startingBalance: 10000,
   balance: 10000,
   pnl: 0,
@@ -241,25 +277,22 @@ let state = {
   killed: false
 };
 
-let workers = [
+const defaultWorkers = [
   {
     name: "QQQ Momentum",
     sub: "Trend / breakout strategy",
     pnl: 0
   },
-
   {
     name: "SPY VWAP",
     sub: "Mean-reversion strategy",
     pnl: 0
   },
-
   {
     name: "QQQ Trend",
     sub: "Trend-following strategy",
     pnl: 0
   },
-
   {
     name: "Signal Scanner",
     sub: "Scans market setups",
@@ -267,24 +300,68 @@ let workers = [
   }
 ];
 
+let state = loadState();
+let workers = loadWorkers();
+
 function money(value) {
-
-  let sign = value < 0 ? "-$" : "$";
-
+  const sign = value < 0 ? "-$" : "$";
   return sign + Math.abs(value).toFixed(2);
+}
 
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, workers }));
+  } catch (error) {
+    console.warn("Failed to save dashboard state:", error);
+  }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { ...defaultState };
+
+    const parsed = JSON.parse(raw);
+    return {
+      ...defaultState,
+      ...parsed.state,
+      startingBalance: parsed.state?.startingBalance ?? defaultState.startingBalance,
+      balance: parsed.state?.balance ?? defaultState.balance,
+      pnl: parsed.state?.pnl ?? defaultState.pnl,
+      trades: parsed.state?.trades ?? defaultState.trades,
+      wins: parsed.state?.wins ?? defaultState.wins,
+      killed: Boolean(parsed.state?.killed)
+    };
+  } catch (error) {
+    console.warn("Failed to load dashboard state:", error);
+    return { ...defaultState };
+  }
+}
+
+function loadWorkers() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultWorkers.map(worker => ({ ...worker }));
+
+    const parsed = JSON.parse(raw);
+    const savedWorkers = Array.isArray(parsed.workers) ? parsed.workers : defaultWorkers;
+
+    return defaultWorkers.map((template, index) => ({
+      ...template,
+      ...(savedWorkers[index] || {})
+    }));
+  } catch (error) {
+    console.warn("Failed to load worker state:", error);
+    return defaultWorkers.map(worker => ({ ...worker }));
+  }
 }
 
 function renderWorkers() {
-
-  let container = document.getElementById("workers");
-
+  const container = document.getElementById("workers");
   container.innerHTML = "";
 
   workers.forEach(worker => {
-
-    let div = document.createElement("div");
-
+    const div = document.createElement("div");
     div.className = "worker";
 
     div.innerHTML = `
@@ -293,117 +370,95 @@ function renderWorkers() {
         <div class="worker-sub">${worker.sub}</div>
       </div>
 
-      <div class="${worker.pnl >= 0 ? "green" : "red"}">
+      <div class="${worker.pnl >= 0 ? "positive" : "negative"}">
         ${money(worker.pnl)}
       </div>
     `;
 
     container.appendChild(div);
-
   });
-
 }
 
 function updateDashboard() {
+  document.getElementById("equity").innerText = money(state.balance);
+  document.getElementById("pnl").innerText = money(state.pnl);
+  document.getElementById("vault").innerText = money(state.pnl);
+  document.getElementById("trades").innerText = state.trades;
 
-  document.getElementById("equity").innerText =
-    money(state.balance);
-
-  document.getElementById("pnl").innerText =
-    money(state.pnl);
-
-  document.getElementById("vault").innerText =
-    money(state.pnl);
-
-  document.getElementById("trades").innerText =
-    state.trades;
-
-  let winRate = state.trades
+  const winRate = state.trades
     ? Math.round((state.wins / state.trades) * 100)
     : 0;
 
-  document.getElementById("winRate").innerText =
-    winRate + "%";
+  document.getElementById("winRate").innerText = winRate + "%";
 
-  document.getElementById("pnl").className =
-    "value " + (state.pnl >= 0 ? "green" : "red");
+  const pnlClass = state.pnl >= 0 ? "value positive" : "value negative";
+  document.getElementById("pnl").className = pnlClass;
+
+  document.getElementById("vault").className =
+    "vault-value " + (state.pnl >= 0 ? "positive" : "negative");
 
   renderWorkers();
-
 }
 
 function addLog(text) {
+  const log = document.getElementById("log");
+  const time = new Date().toLocaleTimeString();
+  log.innerHTML = time + " - " + text + "<br>" + log.innerHTML;
+}
 
-  let log = document.getElementById("log");
-
-  let time = new Date().toLocaleTimeString();
-
-  log.innerHTML =
-    time + " - " + text + "<br>" + log.innerHTML;
-
+function resetAccount() {
+  state = { ...defaultState };
+  workers = defaultWorkers.map(worker => ({ ...worker }));
+  saveState();
+  addLog("Account reset. Starting balance restored.");
+  updateDashboard();
 }
 
 function paperTrade() {
-
   if (state.killed) {
-
     addLog("Trade blocked. Kill switch is ON.");
-
     return;
-
   }
 
-  let symbol =
-    document.getElementById("symbol").value;
+  const symbol = document.getElementById("symbol").value;
+  const direction = document.getElementById("direction").value;
+  const risk = Number(document.getElementById("risk").value);
+  const lossLimit = Number(document.getElementById("lossLimit").value);
 
-  let direction =
-    document.getElementById("direction").value;
+  if (!Number.isFinite(risk) || risk <= 0) {
+    addLog("Risk amount must be a positive number.");
+    return;
+  }
 
-  let risk =
-    Number(document.getElementById("risk").value);
-
-  let lossLimit =
-    Number(document.getElementById("lossLimit").value);
+  if (!Number.isFinite(lossLimit) || lossLimit <= 0) {
+    addLog("Daily loss limit must be a positive number.");
+    return;
+  }
 
   if (state.pnl <= -lossLimit) {
-
     state.killed = true;
-
+    saveState();
     addLog("Daily loss limit reached.");
-
+    updateDashboard();
     return;
-
   }
 
-  let workerIndex =
-    Math.floor(Math.random() * workers.length);
-
-  let win =
-    Math.random() < 0.47;
+  const workerIndex = Math.floor(Math.random() * workers.length);
+  const win = Math.random() < 0.47;
 
   let result;
 
   if (win) {
-
-    result =
-      risk * (0.5 + Math.random() * 1.5);
-
+    result = risk * (0.5 + Math.random() * 1.5);
   } else {
-
-    result =
-      -risk * (0.5 + Math.random() * 0.5);
-
+    result = -risk * (0.5 + Math.random() * 0.5);
   }
 
-  result =
-    Math.round(result * 100) / 100;
+  result = Math.round(result * 100) / 100;
 
   state.balance += result;
-
   state.pnl += result;
-
   state.trades++;
-
   workers[workerIndex].pnl += result;
 
   if (win) {
@@ -420,25 +475,18 @@ function paperTrade() {
     money(result)
   );
 
+  saveState();
   updateDashboard();
-
 }
 
 function toggleKill() {
-
-  state.killed =
-    !state.killed;
-
-  addLog(
-    state.killed
-    ? "Kill switch ON."
-    : "Trading resumed."
-  );
-
+  state.killed = !state.killed;
+  saveState();
+  addLog(state.killed ? "Kill switch ON." : "Trading resumed.");
+  updateDashboard();
 }
 
 updateDashboard();
-
 </script>
 
 </body>
