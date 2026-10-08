@@ -18,6 +18,7 @@ class DashboardHttpTests(unittest.TestCase):
 
     def test_root_serves_status_ui_and_disables_cache(self):
         response = self.client.get("/")
+        self.addCleanup(response.close)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Bots in view.", response.data)
         self.assertIn(b"/api/status", response.data)
@@ -44,6 +45,22 @@ class DashboardHttpTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), payload)
         build.assert_called_once_with(db_path=str(self.database))
+
+    def test_relative_override_normalizes_once_for_api_and_health(self):
+        with patch("dashboard.database_path", return_value=str(self.database)) as normalize:
+            app = create_app("relative-status.db")
+        normalize.assert_called_once_with("relative-status.db")
+        self.assertEqual(app.config["DATABASE_PATH"], str(self.database))
+        client = app.test_client()
+        self.assertEqual(client.get("/api/status").status_code, 200)
+        self.assertEqual(client.get("/healthz").status_code, 200)
+
+    def test_missing_database_returns_service_unavailable(self):
+        self.database.unlink()
+        response = self.client.get("/api/status")
+        self.assertEqual(response.status_code, 503)
+        self.assertFalse(response.get_json()["database_available"])
+        self.assertFalse(self.database.exists())
 
     def test_api_failure_does_not_expose_exception(self):
         with patch("dashboard.build_dashboard_payload", side_effect=sqlite3.OperationalError("sensitive internal detail")):

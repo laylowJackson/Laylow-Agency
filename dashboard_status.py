@@ -127,12 +127,13 @@ def build_dashboard_payload(db_path=None, now=None):
     events = [{key:row.get(key,row.get("_rowid") if key=="id" else None)
                for key in ("id","team_name","event_type","details","created_at")}
               for row in data["system_events"]]
+    managed = [team for team in teams if team["name"] in TEAM_NAMES]
     summary = {
-        "total_teams":len(teams), "enabled_teams":sum(team["enabled"] for team in teams),
-        "fresh_workers":sum(team["health"]=="fresh" for team in teams),
-        "stale_workers":sum(team["health"]=="stale" for team in teams),
-        "missing_workers":sum(team["health"]=="missing" for team in teams),
-        "invalid_workers":sum(team["health"]=="invalid" for team in teams),
+        "total_teams":len(managed), "observed_teams":len(teams), "enabled_teams":sum(team["enabled"] for team in managed),
+        "fresh_workers":sum(team["health"]=="fresh" for team in managed),
+        "stale_workers":sum(team["health"]=="stale" for team in managed),
+        "missing_workers":sum(team["health"]=="missing" for team in managed),
+        "invalid_workers":sum(team["health"]=="invalid" for team in managed),
         "running_processes":sum(str(item["status"]).upper()=="RUNNING" and item["health"]=="fresh"
                                 for item in processes),
     }

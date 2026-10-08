@@ -45,7 +45,7 @@ class SupervisorTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
-        self.root = Path(self.directory.name)
+        self.root = Path(self.directory.name).resolve()
         (self.root/"teams").mkdir()
         for name in ("service.py","other.py","watchdog.py","teams/aapl_team.py","teams/orchestrator.py"):
             (self.root/name).write_text("pass\n",encoding="utf-8")

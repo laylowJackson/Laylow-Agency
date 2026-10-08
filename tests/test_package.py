@@ -18,7 +18,7 @@ class PackageTests(unittest.TestCase):
                                      or ".venv" in name for name in names))
                 template = archive.read("Laylow-Agency/.env.example").decode()
                 for name in ("OPENAI_API_KEY", "ALPACA_API_KEY", "ALPACA_SECRET_KEY"):
-                    self.assertIn(name + "=\n", template)
+                    self.assertIn(name + "=", template.splitlines())
 
 
 if __name__ == "__main__":

@@ -6,15 +6,15 @@ import sqlite3
 from flask import Flask, jsonify, send_file
 from config import DB_PATH, DASHBOARD_HOST, DASHBOARD_PORT, ROOT_DIR
 from dashboard_status import build_dashboard_payload
-from db_utils import ensure_system_tables
+from db_utils import database_path, ensure_system_tables
 
 
 def create_app(db_path=None):
     application = Flask(__name__, static_folder=None)
-    database_path = str(db_path if db_path is not None else DB_PATH)
-    application.config["DATABASE_PATH"] = database_path
+    database = database_path(db_path)
+    application.config["DATABASE_PATH"] = database
     try:
-        ensure_system_tables(db_path=database_path)
+        ensure_system_tables(db_path=database)
     except sqlite3.Error:
         application.logger.exception("Could not initialize the status database")
 

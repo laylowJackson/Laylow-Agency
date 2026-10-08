@@ -193,6 +193,17 @@ class StatusTests(unittest.TestCase):
         self.assertEqual(json.loads(target.read_text(encoding="utf-8")),saved)
         self.assertFalse(list(target.parent.glob("*.tmp")))
 
+    def test_legacy_extra_team_does_not_inflate_four_bot_overview(self):
+        for name in TEAM_NAMES + ["OLD_TEAM"]:
+            ensure_team_control(name,self.path)
+            record_worker_status(name,"STANDBY",heartbeat=self.now.isoformat(),db_path=self.path)
+        payload = self.payload()
+        self.assertEqual(len(payload["teams"]),5)
+        self.assertEqual(payload["summary"]["total_teams"],4)
+        self.assertEqual(payload["summary"]["observed_teams"],5)
+        self.assertEqual(payload["summary"]["fresh_workers"],4)
+        self.assertEqual(payload["summary"]["enabled_teams"],4)
+
     def test_relative_paths_and_nonfinite_scores(self):
         self.assertEqual(database_path("relative.db"),str((ROOT_DIR/"relative.db").resolve()))
         with self.assertRaises(ValueError):

@@ -24,6 +24,7 @@ def main():
         url = f"http://127.0.0.1:{server.server_port}"
         fixture = {
             "generated_at": "2026-10-08T18:00:00+00:00", "mode": "observe",
+            "database_available": True,
             "summary": {"fresh_workers": 4, "enabled_teams": 4, "running_processes": 6,
                         "total_teams": 4, "fresh": 4, "enabled": 4, "running": 6},
             "teams": [
@@ -34,7 +35,7 @@ def main():
                            " <img src=x onerror=window.__injected=true>")
                 for index, symbol in enumerate(("AAPL", "TSLA", "SPY", "QQQ"))
             ],
-            "processes": [dict(name="teams/aapl_team.py", pid=100, status="RUNNING",
+            "processes": [dict(name="teams/aapl_team.py", pid=100, status="RUNNING", health="fresh",
                                exit_code=None, restarts=0, notes="fixture process")],
             "events": [dict(team_name="AAPL", event_type="STARTED",
                             details="fixture event", created_at="2026-10-08T18:00:00+00:00")],
