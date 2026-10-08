@@ -11,7 +11,7 @@ class DashboardHttpTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
-        self.database = Path(self.directory.name) / "status.db"
+        self.database = (Path(self.directory.name) / "status.db").resolve()
         self.app = create_app(db_path=self.database)
         self.app.config["TESTING"] = True
         self.client = self.app.test_client()
