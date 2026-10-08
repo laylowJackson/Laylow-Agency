@@ -31,6 +31,8 @@ def main():
     waiting = missing_settings(settings)
     if waiting:
         print("Workers will wait for: " + ", ".join(waiting))
+    print("Teams: 4 stock + 4 futures watch teams; 8 Team Managers report to Big Manager.")
+    print("Futures CSV directory: " + ("configured" if __import__("os").getenv("LAYLOW_FUTURES_CSV_DIR", "").strip() else "blank"))
     print("Setup checks passed. No provider requests or orders were made.")
     return 0
 

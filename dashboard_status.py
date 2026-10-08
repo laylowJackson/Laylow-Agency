@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from config import HEARTBEAT_STALE_SECONDS, LAYLOW_MODE, ROOT_DIR, TEAM_NAMES
 from db_utils import database_path
+from entry_controls import assess_controls
+from team_specs import TEAM_SPECS
 
 
 def _now(value=None):
@@ -68,6 +70,18 @@ def _score(value):
     except (TypeError, ValueError, OverflowError):
         return None
 
+def _json_records(rows):
+    records = {}
+    for row in rows:
+        try:
+            parsed = json.loads(row["payload_json"])
+            if isinstance(parsed, dict):
+                parsed["updated_at"] = row.get("updated_at")
+                records[row["team_name"]] = parsed
+        except (ValueError, TypeError, KeyError):
+            continue
+    return records
+
 
 def build_dashboard_payload(db_path=None, now=None):
     """Read one transaction; missing files are not created and old rows remain intact."""
@@ -75,7 +89,8 @@ def build_dashboard_payload(db_path=None, now=None):
     now = _now(now)
     path = database_path(db_path)
     data = {name: [] for name in
-            ("team_status","team_scores","worker_status","process_status","system_events")}
+            ("team_status","team_scores","worker_status","process_status","system_events",
+             "team_analysis","team_controls","manager_reports","paper_orders")}
     errors, available = [], False
     if path != ":memory:" and Path(path).is_file():
         try:
@@ -99,6 +114,16 @@ def build_dashboard_payload(db_path=None, now=None):
     scores = _latest_by(data["team_scores"], "team_name")
     workers = _latest_by(data["worker_status"], "team_name")
     names = list(dict.fromkeys(TEAM_NAMES + sorted(set(controls) | set(scores) | set(workers))))
+    analyses = _json_records(data["team_analysis"])
+    managers = _json_records(data["manager_reports"])
+    entry_controls = _latest_by(data["team_controls"], "team_name")
+    ledger = {}
+    for row in data["paper_orders"]:
+        name = row.get("team_name")
+        summary = ledger.setdefault(name, {"order_count": 0, "pending_or_uncertain": 0})
+        summary["order_count"] += 1
+        summary["pending_or_uncertain"] += str(row.get("status")).upper() in {"PENDING", "UNCERTAIN"}
+        summary["latest_status"] = row.get("status")
     teams = []
     for name in names:
         control, score, worker = controls.get(name, {}), scores.get(name, {}), workers.get(name, {})
@@ -108,7 +133,10 @@ def build_dashboard_payload(db_path=None, now=None):
                    and str(control.get("status","")).upper() not in {"DISABLED","PAUSED","STOPPED"}
                    and not _flag(score.get("is_disabled")))
         teams.append({
-            "name":name, "enabled":enabled, "worker_state":worker.get("state") or "NOT_STARTED",
+            "name":name, "enabled":enabled,
+            "controls":assess_controls(name, entry_controls.get(name), enabled, now),
+            "analysis":analyses.get(name), "specialists":TEAM_SPECS.get(name, {}),
+            "execution_health":ledger.get(name, {"order_count":0,"pending_or_uncertain":0}), "worker_state":worker.get("state") or "NOT_STARTED",
             "health":health, "heartbeat":heartbeat, "heartbeat_age_seconds":age,
             "pid":worker.get("pid"), "notes":worker.get("notes") or control.get("notes") or "",
             "score":_score(score.get("score")),
@@ -138,7 +166,8 @@ def build_dashboard_payload(db_path=None, now=None):
                                 for item in processes),
     }
     return {"generated_at":now.isoformat(), "mode":LAYLOW_MODE, "database_available":available,
-            "teams":teams, "processes":processes, "events":events, "summary":summary, "errors":errors}
+            "teams":teams, "managers":[managers[name] for name in TEAM_NAMES if name in managers],
+            "big_manager":managers.get("BIG_MANAGER"), "processes":processes, "events":events, "summary":summary, "errors":errors}
 
 
 def get_dashboard_payload(db_path=None, now=None):
@@ -202,3 +231,10 @@ def print_dashboard_summary():
 
 if __name__ == "__main__":
     print_dashboard_summary()
+
+def load_manager_inputs(db_path=None):
+    payload = build_dashboard_payload(db_path)
+    analyses = {team["name"]: team["analysis"] or {} for team in payload["teams"]}
+    controls = {team["name"]: team["controls"] for team in payload["teams"]}
+    ledger = {team["name"]: team["execution_health"] for team in payload["teams"]}
+    return payload, analyses, controls, ledger

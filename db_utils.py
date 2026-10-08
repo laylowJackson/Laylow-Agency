@@ -1,5 +1,6 @@
 """Shared SQLite schema and transactional status writes."""
 import math
+import json
 import sqlite3
 from contextlib import closing
 from datetime import datetime, timezone
@@ -89,6 +90,13 @@ def ensure_system_tables(db_path=None):
                     last_heartbeat TEXT, updated_at TEXT
                 )
             """)
+
+            for table in ("team_analysis", "manager_reports"):
+                conn.execute(f"""CREATE TABLE IF NOT EXISTS {table} (
+                    team_name TEXT PRIMARY KEY, payload_json TEXT NOT NULL, updated_at TEXT NOT NULL)""")
+            conn.execute("""CREATE TABLE IF NOT EXISTS team_controls (
+                team_name TEXT PRIMARY KEY, headline_locked INTEGER NOT NULL DEFAULT 0,
+                earnings_at TEXT, updated_at TEXT NOT NULL)""")
 
 
 def _write_connection(db_path=None):
@@ -198,3 +206,11 @@ def record_system_event(team_name, event_type, details="", db_path=None):
     with closing(_write_connection(db_path)) as conn, conn:
         conn.execute("INSERT INTO system_events (team_name,event_type,details,created_at) "
                      "VALUES (?,?,?,?)", (team_name,event_type,str(details),utc_now()))
+
+def save_analysis(team_name, payload, db_path=None):
+    payload = dict(payload, updated_at=utc_now())
+    encoded = json.dumps(payload, allow_nan=False)
+    with _write_connection(db_path) as connection:
+        connection.execute("""INSERT INTO team_analysis (team_name,payload_json,updated_at) VALUES (?,?,?)
+            ON CONFLICT(team_name) DO UPDATE SET payload_json=excluded.payload_json,updated_at=excluded.updated_at""",
+                           (team_name, encoded, payload["updated_at"]))

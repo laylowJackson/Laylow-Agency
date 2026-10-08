@@ -25,21 +25,34 @@ def main():
         fixture = {
             "generated_at": "2026-10-08T18:00:00+00:00", "mode": "observe",
             "database_available": True,
-            "summary": {"fresh_workers": 4, "enabled_teams": 4, "running_processes": 6,
-                        "total_teams": 4, "fresh": 4, "enabled": 4, "running": 6},
+            "summary": {"fresh_workers": 8, "enabled_teams": 8, "running_processes": 11,
+                        "total_teams": 8, "fresh": 8, "enabled": 8, "running": 11},
             "teams": [
                 dict(name=symbol, enabled=True, worker_state="STANDBY", health="fresh",
                      heartbeat="2026-10-08T18:00:00+00:00", heartbeat_age_seconds=2,
                      pid=100 + index, score=None,
                      notes="ci-worker-note " + symbol +
                            " <img src=x onerror=window.__injected=true>")
-                for index, symbol in enumerate(("AAPL", "TSLA", "SPY", "QQQ"))
+                for index, symbol in enumerate(("AAPL", "TSLA", "SPY", "QQQ", "NQ1!", "ES1!", "MGC1!", "MNQ1!"))
             ],
             "processes": [dict(name="teams/aapl_team.py", pid=100, status="RUNNING", health="fresh",
                                exit_code=None, restarts=0, notes="fixture process")],
             "events": [dict(team_name="AAPL", event_type="STARTED",
                             details="fixture event", created_at="2026-10-08T18:00:00+00:00")],
         }
+        fixture["csrf_token"] = "fixture-csrf"
+        fixture["managers"] = [dict(team_name=row["name"],severity="INFO",summary="Fixture team assessment") for row in fixture["teams"]]
+        fixture["big_manager"] = dict(severity="INFO",summary="Eight fixture team reports",ai_status="disabled")
+        fixture["teams"][0]["analysis"] = dict(direction="LONG",agreement=3,required=2,
+            reason="Fixture consensus",indicators=dict(atr=2,relative_volume=1.5),
+            votes=[dict(name="Trend",direction="LONG",reason="<img src=x onerror=window.__injected=true>")])
+        fixture["teams"][0]["controls"] = dict(headline_locked=False,earnings_at="",earnings_status="UNKNOWN",lock_reason="Earnings unknown")
+        posted = []
+        def mutation(route):
+            body = route.request.post_data_json
+            posted.append((route.request.url,body,route.request.headers.get("x-laylow-csrf")))
+            fixture["teams"][0]["controls"]["headline_locked"] = body["locked"]
+            route.fulfill(status=200,content_type="application/json",body='{"saved":true}')
         try:
             with sync_playwright() as playwright:
                 browser = playwright.chromium.launch()
@@ -51,16 +64,32 @@ def main():
                         page.route("**/api/status", lambda route: route.fulfill(
                             status=200, content_type="application/json",
                             body=json.dumps(fixture)))
+                        page.route("**/api/teams/AAPL/headline-lock",mutation)
                         page.goto(url, wait_until="domcontentloaded")
                         page.wait_for_function(
                             "document.body.innerText.includes('ci-worker-note')", timeout=10000)
-                        assert page.locator(".bot").count() == 4, "Missing worker cards"
+                        assert page.locator(".bot").count() == 8, "Missing worker cards"
                         assert page.locator("#mode").inner_text().lower().find("observe") >= 0
                         assert page.locator(".bot-note img").count() == 0, "Notes parsed as HTML"
                         assert not page.evaluate("Boolean(window.__injected)"), "Injected HTML ran"
                         assert page.evaluate(
                             "document.documentElement.scrollWidth <= window.innerWidth + 1"
                         ), f"Horizontal overflow at {width}px"
+                        assert page.locator(".specialists li").count() == 26, "Missing specialist vote slots"
+                        assert "WATCH ONLY" in page.locator("body").inner_text()
+                        assert page.locator(".specialists img").count() == 0, "Specialist text parsed as HTML"
+                        assert "Eight fixture team reports" in page.locator("#big-summary").inner_text()
+                        earnings=page.locator("#earnings-AAPL")
+                        earnings.fill("unsaved input")
+                        page.locator("#refresh").click()
+                        page.wait_for_function("!document.getElementById('refresh').disabled")
+                        assert earnings.input_value()=="unsaved input", "Poll discarded an edit"
+                        button=page.locator(".bot:has(#earnings-AAPL) [data-control=headline]")
+                        expected=not fixture["teams"][0]["controls"]["headline_locked"]
+                        with page.expect_response("**/api/teams/AAPL/headline-lock"):
+                            button.click()
+                        page.wait_for_function("!document.querySelector('.bot:has(#earnings-AAPL) [data-control=headline]').disabled")
+                        assert posted[-1][1]=={"locked":expected} and posted[-1][2]=="fixture-csrf"
                         page.unroute("**/api/status")
                         page.route("**/api/status", lambda route: route.abort())
                         page.locator("#refresh").click()

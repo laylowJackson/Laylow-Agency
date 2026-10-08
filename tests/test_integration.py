@@ -45,7 +45,7 @@ class RuntimeIntegrationTests(unittest.TestCase):
                         ) as response:
                             payload = json.load(response)
                         teams = payload["teams"]
-                        if len(teams) == 4 and all(
+                        if len(teams) == 8 and all(
                             team["worker_state"] == "STANDBY" and team["health"] == "fresh"
                             for team in teams
                         ):
@@ -54,9 +54,9 @@ class RuntimeIntegrationTests(unittest.TestCase):
                         pass
                     time.sleep(.2)
                 else:
-                    self.fail("Four standby workers did not report fresh heartbeats\n" + diagnostics())
+                    self.fail("Eight standby workers did not report fresh heartbeats\n" + diagnostics())
                 pids = [row["pid"] for row in payload["processes"] if row.get("pid")]
-                self.assertEqual(len({team["pid"] for team in teams}), 4)
+                self.assertEqual(len({team["pid"] for team in teams}), 8)
                 self.assertTrue(all("credentials" in team["notes"] for team in teams))
             finally:
                 process.send_signal(signal.SIGTERM)

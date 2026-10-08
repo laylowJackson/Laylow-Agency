@@ -43,7 +43,7 @@ class DashboardHttpTests(unittest.TestCase):
         with patch("dashboard.build_dashboard_payload", return_value=payload) as build:
             response = self.client.get("/api/status")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(), payload)
+        self.assertEqual(response.get_json(), dict(payload, csrf_token=self.app.config["CONTROL_CSRF"]))
         build.assert_called_once_with(db_path=str(self.database))
 
     def test_relative_override_normalizes_once_for_api_and_health(self):

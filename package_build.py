@@ -10,7 +10,9 @@ FILES = [
     "config.py", "db_utils.py", "dashboard.py", "dashboard_status.py", "index.html",
     "team_worker.py", "teams/__init__.py", "teams/aapl_team.py", "teams/tsla_team.py",
     "teams/spy_team.py", "teams/qqq_team.py", "teams/orchestrator.py",
-    "package_build.py",
+    "package_build.py", "team_specs.py", "specialist_engine.py", "entry_controls.py",
+    "futures_worker.py", "manager_hierarchy.py", "manager_ai.py", "manager_worker.py",
+    "teams/nq_team.py", "teams/es_team.py", "teams/mgc_team.py", "teams/mnq_team.py",
 ]
 
 

@@ -1,22 +1,33 @@
-"""Read-only web view of supervisor and worker observations."""
+"""Observed worker dashboard with token-protected local event controls."""
 from contextlib import closing
 from pathlib import Path
 import sqlite3
+import secrets
+from urllib.parse import urlsplit
 
-from flask import Flask, jsonify, send_file
+from flask import Flask, jsonify, send_file, request
 from config import DB_PATH, DASHBOARD_HOST, DASHBOARD_PORT, ROOT_DIR
 from dashboard_status import build_dashboard_payload
 from db_utils import database_path, ensure_system_tables
+from entry_controls import update_control
+from config import STOCK_TEAM_NAMES
 
 
 def create_app(db_path=None):
     application = Flask(__name__, static_folder=None)
     database = database_path(db_path)
     application.config["DATABASE_PATH"] = database
+    application.config["CONTROL_CSRF"] = secrets.token_urlsafe(32)
+    application.config["MAX_CONTENT_LENGTH"] = 4096
     try:
         ensure_system_tables(db_path=database)
     except sqlite3.Error:
         application.logger.exception("Could not initialize the status database")
+
+    @application.before_request
+    def local_host_only():
+        if urlsplit(request.host_url).hostname not in {"127.0.0.1", "localhost", "::1"}:
+            return jsonify({"error": "local_host_required"}), 403
 
     @application.after_request
     def response_headers(response):
@@ -34,11 +45,44 @@ def create_app(db_path=None):
     def status():
         try:
             payload = build_dashboard_payload(db_path=application.config["DATABASE_PATH"])
+            payload["csrf_token"] = application.config["CONTROL_CSRF"]
             return jsonify(payload), (200 if payload["database_available"] else 503)
         except Exception:
             application.logger.exception("Could not read dashboard status")
             return jsonify({"error": "status_unavailable",
                             "message": "The status database cannot be read. Check the runner log."}), 503
+
+    @application.post("/api/teams/<team_name>/headline-lock")
+    def headline_lock(team_name):
+        return change_control(team_name, "headline")
+
+    @application.post("/api/teams/<team_name>/earnings")
+    def earnings(team_name):
+        return change_control(team_name, "earnings")
+
+    def change_control(team_name, kind):
+        if team_name not in STOCK_TEAM_NAMES:
+            return jsonify({"error": "unknown_stock_team"}), 404
+        token = request.headers.get("X-Laylow-CSRF", "")
+        origin = request.headers.get("Origin")
+        if not secrets.compare_digest(token.encode("utf-8"), application.config["CONTROL_CSRF"].encode("utf-8")) or (
+            origin is not None and origin != request.host_url.rstrip("/")
+        ):
+            return jsonify({"error": "invalid_control_token_or_origin"}), 403
+        body = request.get_json(silent=True)
+        field = "locked" if kind == "headline" else "earnings_at"
+        if not isinstance(body, dict) or set(body) != {field} or (kind == "headline" and type(body.get(field)) is not bool):
+            return jsonify({"error": "invalid_control_body"}), 400
+        try:
+            if kind == "headline":
+                update_control(team_name, headline_locked=body[field], db_path=database)
+            else:
+                update_control(team_name, earnings_at=body[field], db_path=database)
+        except (ValueError, TypeError, OverflowError):
+            return jsonify({"error": "invalid_control_value"}), 400
+        except sqlite3.Error:
+            return jsonify({"error": "control_database_unavailable"}), 503
+        return jsonify({"saved": True, "team_name": team_name})
 
     @application.get("/healthz")
     def health():

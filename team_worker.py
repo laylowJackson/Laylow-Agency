@@ -6,13 +6,16 @@ import os
 import signal
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from config import ROOT_DIR, TEAM_NAMES, REFRESH_SECONDS, HEARTBEAT_SECONDS
+from config import ROOT_DIR, STOCK_TEAM_NAMES, REFRESH_SECONDS, HEARTBEAT_SECONDS
 from db_utils import (
     connect_db, ensure_system_tables, ensure_team_control, record_worker_status,
-    record_system_event,
+    record_system_event, save_analysis,
 )
+
+from specialist_engine import evaluate_team
+from entry_controls import read_entry_controls
 
 LOG = logging.getLogger("laylow.worker")
 VALID_MODES = {"observe", "analyze", "paper"}
@@ -86,7 +89,7 @@ def validate_quote(quote, now=None):
     return midpoint
 
 
-def size_trade(account, price, reduce_risk=False):
+def size_trade(account, price, reduce_risk=False, stop_distance=None, symbol="AAPL"):
     equity, previous, buying_power = (
         float(account.equity), float(account.last_equity), float(account.buying_power)
     )
@@ -97,11 +100,13 @@ def size_trade(account, price, reduce_risk=False):
     # equity/last_equity measures account day change, not unrealized position P&L.
     if (equity - previous) / previous <= -.05:
         return 0
-    budget = equity * .005 * (.5 if reduce_risk else 1)
-    stop_distance = price * .02
+    budget = equity * (.0025 if symbol == "TSLA" else .005) * (.5 if reduce_risk else 1)
+    stop_distance = price * .02 if stop_distance is None else float(stop_distance)
+    if not math.isfinite(stop_distance) or stop_distance <= 0 or stop_distance >= price:
+        return 0
     # Whole shares; never force a one-share order beyond buying power or cap.
     return max(0, min(int(budget / stop_distance),
-                      int(buying_power / price), int((500 if reduce_risk else 1000) / price)))
+                      int(buying_power / price), int((500 if symbol == "TSLA" else 1000) * (.5 if reduce_risk else 1) / price)))
 
 
 def team_enabled(symbol, db_path=None):
@@ -157,6 +162,19 @@ class Services:
         )
         return validate_quote(quotes[symbol])
 
+    def bars(self, symbol):
+        from alpaca.data.enums import DataFeed
+        from alpaca.data.requests import StockBarsRequest
+        from alpaca.data.timeframe import TimeFrame
+        now = utc_now()
+        response = self.data.get_stock_bars(StockBarsRequest(
+            symbol_or_symbols=[symbol], timeframe=TimeFrame.Minute,
+            start=now - timedelta(days=7), end=now, feed=DataFeed.IEX))
+        rows = {bar.timestamp: {field: getattr(bar, field) for field in
+                ("timestamp", "open", "high", "low", "close", "volume")}
+                for bar in response.data.get(symbol, [])}
+        return [rows[stamp] for stamp in sorted(rows)][-2000:]
+
     def decide(self, symbol, price, history):
         response = self.ai.chat.completions.create(
             model=self.model,
@@ -165,7 +183,8 @@ class Services:
                 {"role": "system", "content":
                  "Return a JSON object with direction LONG, SHORT or SKIP; action "
                  "APPROVE, REDUCE_RISK or SKIP; and reason (one sentence). "
-                 "Be conservative. A price alone is insufficient evidence for a trade. "
+                 "You may veto or reduce risk on the specialist consensus supplied below. "
+                 "Never invent missing quotes, events, or outcomes. A price alone is insufficient. "
                  "Use SKIP when evidence is insufficient. Previous model decisions "
                  "are not realized trade outcomes."},
                 {"role": "user", "content": json.dumps({
@@ -183,18 +202,43 @@ class Services:
             MarketOrderRequest, StopLossRequest, TakeProfitRequest,
         )
         long = decision["direction"] == "LONG"
+        distance = float(decision.get("stop_distance", price * .02))
+        if not math.isfinite(distance) or distance <= 0 or distance >= price:
+            raise ValueError("Invalid bracket stop distance")
+        stop = round(price - distance if long else price + distance, 2)
+        target = round(price + 2*distance if long else price - 2*distance, 2)
+        if stop <= 0 or target <= 0 or (long and not stop < price < target) or (not long and not target < price < stop):
+            raise ValueError("Bracket rounding leaves invalid exits")
         return MarketOrderRequest(
             symbol=symbol, qty=qty, side=OrderSide.BUY if long else OrderSide.SELL,
             time_in_force=TimeInForce.DAY, order_class=OrderClass.BRACKET,
             client_order_id=client_id,
-            stop_loss=StopLossRequest(stop_price=round(price * (.98 if long else 1.02), 2)),
-            take_profit=TakeProfitRequest(limit_price=round(price * (1.04 if long else .96), 2)),
+            stop_loss=StopLossRequest(stop_price=stop),
+            take_profit=TakeProfitRequest(limit_price=target),
         )
 
 
 def submit_paper_order(symbol, decision_id, decision, price, services,
                        db_path=None, enabled_check=None):
     """Persist intent before submission. An uncertain submit blocks new orders."""
+    if symbol not in STOCK_TEAM_NAMES:
+        return "Futures are watch-only"
+    controls = read_entry_controls(symbol, db_path)
+    if controls["entry_locked"]:
+        return "Entry blocked: " + controls["lock_reason"]
+    if decision.get("direction") not in {"LONG", "SHORT", "SKIP"} or decision.get("action") not in {"APPROVE", "REDUCE_RISK", "SKIP"}:
+        return "Invalid paper decision"
+    distance = decision.get("stop_distance")
+    if not isinstance(distance, (int, float)) or isinstance(distance, bool) or not math.isfinite(distance) or distance <= 0:
+        return "A validated ATR stop distance is required"
+    analysis_time = decision.get("analysis_time")
+    try:
+        from entry_controls import parse_utc
+        age = (utc_now() - parse_utc(analysis_time)).total_seconds()
+        if age < -30 or age > 300:
+            return "Specialist analysis is stale"
+    except (ValueError, TypeError, OverflowError):
+        return "Specialist analysis time is required"
     from alpaca.trading.enums import QueryOrderStatus
     from alpaca.trading.requests import GetOrdersRequest
     if decision["direction"] == "SKIP" or decision["action"] == "SKIP":
@@ -228,12 +272,19 @@ def submit_paper_order(symbol, decision_id, decision, price, services,
     # Re-fetch immediately before submission; do not use a cached AI input quote.
     price = services.quote(symbol)
     qty = size_trade(services.broker.get_account(), price,
-                     decision["action"] == "REDUCE_RISK")
+                     decision["action"] == "REDUCE_RISK", distance, symbol)
+    vwap, atr = decision.get("vwap"), decision.get("atr")
+    if not all(isinstance(value, (int, float)) and math.isfinite(value) and value > 0
+               for value in (vwap, atr)) or abs(price-vwap) > 2*atr:
+        return "Current quote exceeds the VWAP extension limit"
     if qty == 0:
         return "Account limits or order cap block this entry"
     check = enabled_check or (lambda: team_enabled(symbol, db_path))
     if not check():
         return "Team was disabled during analysis"
+    controls = read_entry_controls(symbol, db_path)
+    if controls["entry_locked"]:
+        return "Entry blocked: " + controls["lock_reason"]
     client_id = "ll-" + uuid.uuid4().hex
     request = services.paper_request(symbol, decision, price, qty, client_id)
     with connect_db(db_path) as conn:
@@ -244,6 +295,12 @@ def submit_paper_order(symbol, decision_id, decision, price, services,
             (symbol,),
         ).fetchone():
             return "Another order intent is pending"
+        # The writer transaction prevents a control edit racing the local intent write.
+        from entry_controls import assess_controls
+        saved_control = conn.execute("SELECT * FROM team_controls WHERE team_name=?", (symbol,)).fetchone()
+        if assess_controls(symbol, dict(saved_control) if saved_control else {},
+                           enabled=team_enabled(symbol, db_path))["entry_locked"]:
+            return "Entry blocked by a saved control"
         conn.execute(
             "INSERT INTO paper_orders VALUES (?,?,?,?,?,?,?,?)",
             (client_id, decision_id, symbol, utc_now().isoformat(), None,
@@ -270,7 +327,7 @@ def submit_paper_order(symbol, decision_id, decision, price, services,
 class TeamWorker:
     def __init__(self, symbol, db_path=None, settings_loader=load_settings,
                  services_factory=Services):
-        if symbol not in TEAM_NAMES:
+        if symbol not in STOCK_TEAM_NAMES:
             raise ValueError("Unknown stock team")
         self.symbol, self.db_path = symbol, db_path
         self.settings_loader, self.services_factory = settings_loader, services_factory
@@ -315,14 +372,25 @@ class TeamWorker:
         if self.services is None or self.service_settings != settings:
             self.services = self.services_factory(settings)
             self.service_settings = settings.copy()
-        self.report("ANALYZING", "Requesting a current quote and a decision")
+        self.report("ANALYZING", "Evaluating OHLCV specialist votes")
+        analysis = evaluate_team(self.symbol, self.services.bars(self.symbol), source="Alpaca IEX minute bars")
+        save_analysis(self.symbol, analysis, self.db_path)
+        if analysis["direction"] == "SKIP":
+            self.report("ANALYSIS_READY", "SKIP: " + analysis["reason"])
+            return
         price = self.services.quote(self.symbol)
         with connect_db(self.db_path) as conn:
             history = [dict(row) for row in conn.execute(
                 "SELECT direction,action,reason FROM worker_decisions "
                 "WHERE team_name=? ORDER BY created_at DESC LIMIT 8", (self.symbol,)
             )]
-        decision = self.services.decide(self.symbol, price, history)
+        decision = self.services.decide(self.symbol, price, [analysis] + history)
+        if decision["direction"] != analysis["direction"]:
+            decision = dict(direction="SKIP", action="SKIP",
+                            reason="AI did not confirm the specialist consensus")
+        decision.update(stop_distance=analysis["indicators"]["stop_distance"],
+                        atr=analysis["indicators"]["atr"], vwap=analysis["indicators"]["vwap"],
+                        analysis_time=analysis["bar_time"])
         decision_id = uuid.uuid4().hex
         with connect_db(self.db_path) as conn:
             conn.execute(

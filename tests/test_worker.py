@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from db_utils import connect_db, ensure_system_tables, ensure_team_control
+from entry_controls import update_control
 from team_worker import (
     TeamWorker, Services, ensure_ledger, missing_settings, parse_decision,
     size_trade, submit_paper_order, validate_quote,
@@ -97,6 +98,7 @@ class WorkerTests(unittest.TestCase):
         self.assertGreater(size_trade(account, 10), size_trade(account, 10, True))
 
     def make_services(self):
+        update_control("AAPL", earnings_at=(datetime.now(timezone.utc)+timedelta(days=7)).isoformat(), db_path=self.db)
         broker = Mock()
         broker.get_clock.return_value = SimpleNamespace(is_open=True)
         broker.get_all_positions.return_value = []
@@ -116,7 +118,7 @@ class WorkerTests(unittest.TestCase):
     def test_uncertain_submission_blocks_repeated_and_new_intents(self):
         services = self.make_services()
         services.broker.submit_order.side_effect = TimeoutError("fake timeout")
-        decision = dict(direction="LONG", action="APPROVE", reason="test")
+        decision = dict(direction="LONG", action="APPROVE", reason="test", stop_distance=2, atr=2, vwap=100, analysis_time=datetime.now(timezone.utc).isoformat())
         result = submit_paper_order("AAPL", "decision-1", decision, 100,
                                    services, self.db)
         self.assertIn("uncertain", result)
@@ -129,7 +131,7 @@ class WorkerTests(unittest.TestCase):
 
     def test_history_skip_and_disable_after_analysis_block_submission(self):
         services = self.make_services()
-        decision = dict(direction="LONG", action="SKIP", reason="test")
+        decision = dict(direction="LONG", action="SKIP", reason="test", stop_distance=2, atr=2, vwap=100, analysis_time=datetime.now(timezone.utc).isoformat())
         submit_paper_order("AAPL", "decision-1", decision, 100, services, self.db)
         services.broker.submit_order.assert_not_called()
         decision["action"] = "APPROVE"

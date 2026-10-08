@@ -26,6 +26,7 @@ h1{font-size:clamp(30px,5vw,44px);line-height:1.15;letter-spacing:-1.3px;margin:
 .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:28px;background:var(--surface)}
 .metric{padding:18px 22px;min-width:0}.metric+.metric{border-left:1px solid var(--border)}.metric-label{font-size:12px;color:var(--muted)}.metric-value{font-size:28px;font-weight:650;letter-spacing:-.7px;margin-top:4px;font-variant-numeric:tabular-nums}.metric-detail{font-size:12px;color:var(--muted)}
 .section-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px}.section-head p{color:var(--muted);font-size:12px;margin:0}
+.specialists{list-style:none;padding:0;margin:14px 0;font-size:13px}.specialists li{border-top:1px solid var(--border);padding:9px 0}.vote-reason{display:block;color:var(--muted);font-size:12px}.analysis-meta,.manager-note,.control-note{font-size:13px;overflow-wrap:anywhere}.controls{border-top:1px solid var(--border);padding-top:14px;display:grid;gap:10px}.controls label{font-size:12px;color:var(--muted)}.controls input{font:inherit;width:100%;min-height:44px;padding:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px}.control-actions{display:flex;flex-wrap:wrap;gap:8px}.controls p{margin:0}.manager-note{color:var(--muted)}
 .bots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.bot{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;min-width:0}
 .bot-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.symbol{font-weight:750;font-size:23px;letter-spacing:-.5px}.asset{color:var(--muted);font-size:12px}
 .pill{display:inline-flex;align-items:center;min-height:28px;font-size:12px;font-weight:600;border:1px solid var(--border);padding:4px 9px;border-radius:999px;white-space:nowrap}
@@ -53,11 +54,12 @@ footer{color:var(--muted);font-size:12px;margin-top:24px;display:flex;justify-co
 </section>
 <p id="error" class="alert" role="alert" hidden></p>
 <section class="metrics" aria-label="Runtime overview">
-<div class="metric"><div class="metric-label">Recent heartbeats</div><div class="metric-value" id="fresh">—</div><div class="metric-detail">Fresh observations / four teams</div></div>
+<div class="metric"><div class="metric-label">Recent heartbeats</div><div class="metric-value" id="fresh">—</div><div class="metric-detail">Fresh observations / eight teams</div></div>
 <div class="metric"><div class="metric-label">Configured teams</div><div class="metric-value" id="enabled">—</div><div class="metric-detail">Enabled configuration</div></div>
 <div class="metric"><div class="metric-label">Supervised processes</div><div class="metric-value" id="running">—</div><div class="metric-detail">Fresh process observations</div></div>
 </section>
-<section aria-labelledby="bots-title"><div class="section-head"><h2 id="bots-title" tabindex="-1">Stock bots</h2><p>Configuration and observed health are shown separately.</p></div><div id="bots" class="bots" aria-busy="true"></div></section>
+<section aria-labelledby="bots-title"><div class="section-head"><h2 id="bots-title" tabindex="-1">Eight specialist teams</h2><p>Configuration and observed health are shown separately.</p></div><div id="bots" class="bots" aria-busy="true"></div></section>
+<section class="panel" style="margin-top:24px" aria-labelledby="big-title"><div class="section-head"><h2 id="big-title">Big Manager</h2><span id="big-severity" class="pill muted">Awaiting report</span></div><p id="big-summary" class="muted">Eight team managers report here. Assessments await the backend.</p><p id="ai-summary" class="muted">Optional AI summary is disabled.</p><ul id="manager-hierarchy" class="process-list"></ul></section>
 <div class="lower">
 <section class="panel" aria-labelledby="process-title"><div class="section-head"><h2 id="process-title">Processes</h2><p id="process-count">Waiting for supervisor</p></div><ul class="process-list" id="processes"></ul></section>
 <section class="panel" aria-labelledby="event-title"><div class="section-head"><h2 id="event-title">Recent activity</h2><p id="event-count">Waiting for events</p></div><ul class="event-list" id="events" tabindex="0" aria-label="Recorded system events"></ul></section>
@@ -67,7 +69,16 @@ footer{color:var(--muted);font-size:12px;margin-top:24px;display:flex;justify-co
 </main>
 <script>
 "use strict";
-const TEAM_DEFINITIONS=[{name:"SPY",asset:"S&P 500 ETF"},{name:"QQQ",asset:"Nasdaq 100 ETF"},{name:"AAPL",asset:"Apple"},{name:"TSLA",asset:"Tesla"}];
+const TEAM_DEFINITIONS=[
+{name:"SPY",asset:"S&P 500 ETF",bots:["Trend","VWAP","Momentum"],required:2},
+{name:"QQQ",asset:"Nasdaq 100 ETF",bots:["Trend","VWAP","Momentum"],required:2},
+{name:"AAPL",asset:"Apple",bots:["Trend","VWAP","Momentum","Volume Confirmation"],required:2},
+{name:"TSLA",asset:"Tesla",bots:["Breakout","Momentum","Volume-Volatility","Trend"],required:3},
+{name:"NQ1!",asset:"Nasdaq futures · WATCH ONLY",bots:["Trend","Momentum","Breakout"],required:2},
+{name:"ES1!",asset:"S&P futures · WATCH ONLY",bots:["Trend","VWAP","Momentum"],required:2},
+{name:"MGC1!",asset:"Micro gold futures · WATCH ONLY",bots:["Trend","Breakout","Mean Reversion"],required:2},
+{name:"MNQ1!",asset:"Micro Nasdaq futures · WATCH ONLY",bots:["Trend","Momentum","Breakout"],required:2}
+];
 const HEALTH_LABELS={fresh:{label:"Recent heartbeat",tone:"good"},stale:{label:"Stale heartbeat",tone:"warn"},missing:{label:"No heartbeat",tone:"muted"},invalid:{label:"Invalid heartbeat",tone:"warn"}};
 const $=id=>document.getElementById(id);
 const localTime=new Intl.DateTimeFormat(undefined,{hour:"2-digit",minute:"2-digit",second:"2-digit"});
@@ -75,6 +86,7 @@ const shortTime=new Intl.DateTimeFormat(undefined,{hour:"2-digit",minute:"2-digi
 const fullTime=new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"medium"});
 let inFlight=false,pollTimer=null,lastReceivedAt=null,lastEventsSignature=null,receivedSnapshot=false;
 const cards=new Map();
+let csrfToken="", connected=false, controlBusy=false;
 function element(tag,className,content){
   const node=document.createElement(tag);
   if(className)node.className=className;
@@ -112,8 +124,28 @@ function initializeCards(){
     const data=element("dl"),heartbeat=metadata("Last heartbeat"),heartbeatAge=metadata("Heartbeat age"),pid=metadata("Process ID"),score=metadata("Legacy score · unverified");
     data.append(heartbeat.cell,heartbeatAge.cell,pid.cell,score.cell);
     const note=element("p","bot-note","Waiting for a status snapshot from the Python backend.");
-    card.append(top,state,data,note);$("bots").append(card);
-    cards.set(def.name,{health,enabled,stateValue,heartbeat:heartbeat.value,heartbeatAge:heartbeatAge.value,pid:pid.value,score:score.value,note});
+    const consensus=element("p","analysis-meta","Specialists await source bars"),
+          votes=element("ul","specialists"),
+          manager=element("p","manager-note","Team Manager: awaiting assessment");
+    let controls=null;
+    if(!def.name.endsWith("!")){
+      const wrapper=element("div","controls"), label=element("label","","Next earnings · ISO timestamp with timezone");
+      const input=element("input");input.type="text";input.placeholder="2026-11-01T21:00:00Z";input.id="earnings-"+def.name;
+      label.htmlFor=input.id;
+      const actions=element("div","control-actions"),save=element("button","","Save earnings"),
+            headline=element("button","","Enable headline lock"),
+            note=element("p","control-note","Earnings unknown · paper entries blocked");
+      save.type="button";headline.type="button";save.disabled=true;headline.disabled=true;
+      save.dataset.control="earnings";headline.dataset.control="headline";
+      actions.append(save,headline);wrapper.append(label,input,actions,note);
+      if(!["AAPL","TSLA"].includes(def.name)){label.hidden=true;input.hidden=true;save.hidden=true;}
+      controls={wrapper,input,save,headline,note,locked:false,dirty:false,initialized:false};
+      input.addEventListener("input",()=>{controls.dirty=true;});
+      save.addEventListener("click",()=>mutateControl(def.name,"earnings",{earnings_at:input.value.trim()},controls));
+      headline.addEventListener("click",()=>mutateControl(def.name,"headline-lock",{locked:!controls.locked},controls));
+    }
+    card.append(top,state,data,consensus,votes,manager,note);if(controls)card.append(controls.wrapper);$("bots").append(card);
+    cards.set(def.name,{health,enabled,stateValue,heartbeat:heartbeat.value,heartbeatAge:heartbeatAge.value,pid:pid.value,score:score.value,note,consensus,votes,manager,controls});
   }
   $("processes").append(element("li","empty","Waiting for process observations."));
   $("events").append(element("li","empty","Waiting for recorded events."));
@@ -133,6 +165,26 @@ function renderTeams(teams){
     row.pid.textContent=Number.isInteger(team.pid)&&team.pid>0?String(team.pid):"—";
     row.score.textContent=typeof team.score==="number"&&Number.isFinite(team.score)?team.score.toFixed(2):"Not recorded";
     row.note.textContent=text(team.notes,"No additional worker notes.");
+    const analysis=team.analysis||{}, metrics=analysis.indicators||{};
+    row.consensus.textContent=analysis.direction?
+      "Consensus "+text(analysis.direction)+" · "+text(analysis.agreement,"0")+"/"+def.bots.length+" · requires "+def.required+
+      " · ATR "+number(metrics.atr)+" · RVOL "+number(metrics.relative_volume)+" · "+text(analysis.reason,""):
+      "Requires "+def.required+"/"+def.bots.length+" directional votes · awaiting source bars";
+    row.votes.replaceChildren();
+    for(const name of def.bots){
+      const vote=(Array.isArray(analysis.votes)?analysis.votes:[]).find(item=>item.name===name)||{};
+      const item=element("li","",""+name+" · "+text(vote.direction,"Waiting"));
+      item.append(element("span","vote-reason",text(vote.reason,"No recorded analysis")));row.votes.append(item);
+    }
+    if(row.controls){
+      const control=team.controls||{}, fields=row.controls;
+      fields.locked=control.headline_locked===true;
+      fields.headline.textContent=fields.locked?"Release headline lock":"Enable headline lock";
+      fields.headline.setAttribute("aria-pressed",String(fields.locked));
+      if(!fields.dirty){fields.input.value=text(control.earnings_at,"");fields.initialized=true;}
+      fields.note.textContent=text(control.lock_reason,"No entry lock")+" · earnings "+text(control.earnings_status,"UNKNOWN");
+      fields.save.disabled=fields.headline.disabled=!csrfToken||controlBusy;
+    }
   }
   $("bots").setAttribute("aria-busy","false");
 }
@@ -172,15 +224,31 @@ function validatePayload(payload){
   return payload;
 }
 function renderSnapshot(payload){
+  csrfToken=typeof payload.csrf_token==="string"?payload.csrf_token:"";connected=true;
   renderTeams(payload.teams);renderProcesses(payload.processes);renderEvents(payload.events);
-  $("fresh").textContent=number(payload.summary.fresh_workers)+" / 4";$("enabled").textContent=number(payload.summary.enabled_teams)+" / 4";
-  $("running").textContent=number(payload.summary.running_processes);$("mode").textContent=text(payload.mode,"Python status")+" · read-only dashboard";
+  $("fresh").textContent=number(payload.summary.fresh_workers)+" / 8";$("enabled").textContent=number(payload.summary.enabled_teams)+" / 4";
+  const reports=Array.isArray(payload.managers)?payload.managers:[], big=payload.big_manager||{};
+  $("big-severity").textContent=text(big.severity,"Awaiting report");
+  $("big-severity").className="pill "+severityTone(big.severity);
+  $("big-summary").textContent=text(big.summary,"Big Manager awaits eight team reports")+" · "+reportAge(big.generated_at);
+  $("ai-summary").textContent=big.ai_status==="ready"?text(big.ai_summary,"AI summary unavailable"):
+    "Optional AI summary: "+text(big.ai_status,"disabled")+" · rule assessments remain authoritative";
+  $("manager-hierarchy").replaceChildren();
+  for(const def of TEAM_DEFINITIONS){
+    const report=reports.find(row=>row.team_name===def.name)||{};
+    const label=def.name+" Team Manager · "+text(report.severity,"Waiting")+" · "+text(report.summary,"Awaiting assessment")+" · "+reportAge(report.generated_at);
+    cards.get(def.name).manager.textContent=label;
+    $("manager-hierarchy").append(element("li","process "+severityTone(report.severity),label));
+  }
+  $("running").textContent=number(payload.summary.running_processes);$("mode").textContent=text(payload.mode,"Python status")+" · futures watch-only";
   $("updated").textContent="Snapshot "+formatTime(payload.generated_at)+" · received "+localTime.format(new Date(lastReceivedAt));
   $("workspace").dataset.stale="false";$("snapshot-tag").hidden=true;$("error").hidden=true;
   $("connection").className="good";$("connection").replaceChildren(element("i","dot"),document.createTextNode("Backend connected"));
   $("connection").firstChild.setAttribute("aria-hidden","true");receivedSnapshot=true;
 }
 function reportFailure(){
+  connected=false;
+  for(const row of cards.values()){if(row.controls){row.controls.save.disabled=true;row.controls.headline.disabled=true;}}
   $("workspace").dataset.stale="true";$("connection").className="warn";
   $("connection").replaceChildren(element("i","dot"),document.createTextNode(receivedSnapshot?"Connection lost":"Backend unavailable"));
   $("connection").firstChild.setAttribute("aria-hidden","true");$("snapshot-tag").hidden=!receivedSnapshot;$("error").hidden=false;
@@ -201,6 +269,31 @@ async function refreshStatus(){
     const payload=validatePayload(await response.json());lastReceivedAt=Date.now();renderSnapshot(payload);
   }catch(error){reportFailure();}
   finally{clearTimeout(timeout);inFlight=false;$("refresh").disabled=false;$("refresh").removeAttribute("aria-busy");schedule();}
+}
+function reportAge(value){
+  const stamp=Date.parse(value),seconds=(Date.now()-stamp)/1000;
+  if(!Number.isFinite(seconds)||seconds<0)return "Report timestamp unavailable";
+  return (seconds>90?"Stale manager report · ":"Report ")+age(seconds);
+}
+function severityTone(value){return value==="CRITICAL"?"bad":value==="CAUTION"?"warn":value==="INFO"?"good":"muted";}
+async function mutateControl(symbol,action,body,fields){
+  if(controlBusy||!connected||!csrfToken)return;
+  controlBusy=true;
+  for(const row of cards.values()){if(row.controls){row.controls.save.disabled=true;row.controls.headline.disabled=true;}}
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
+  try{
+    const response=await fetch("/api/teams/"+encodeURIComponent(symbol)+"/"+action,{
+      method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","X-Laylow-CSRF":csrfToken},
+      body:JSON.stringify(body),signal:controller.signal});
+    if(!response.ok)throw new Error("Save rejected. Use an ISO timestamp with timezone; refresh and retry.");
+    if(action==="earnings")fields.dirty=false;
+    fields.note.textContent="Saved. Refreshing backend controls.";
+  }catch(error){fields.note.textContent="Could not confirm save. Refresh to check controls; use an ISO timestamp with timezone.";}
+  finally{
+    clearTimeout(timeout);controlBusy=false;
+    await refreshStatus();
+    for(const row of cards.values()){if(row.controls){row.controls.save.disabled=row.controls.headline.disabled=!connected||!csrfToken;}}
+  }
 }
 $("refresh").addEventListener("click",refreshStatus);
 document.addEventListener("visibilitychange",()=>{
