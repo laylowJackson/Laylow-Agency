@@ -2,12 +2,16 @@ import sqlite3
 import time
 from datetime import datetime, timezone
 
+from pathlib import Path
+from config import DB_PATH, TEAM_NAMES
 from db_utils import connect_db
 from event_logger import log_event
 
 
 def get_backtest_db(team_name):
-    db_path = f"backtest_{team_name.lower()}.db"
+    if team_name not in TEAM_NAMES:
+        raise ValueError("Unknown team")
+    db_path = str(Path(DB_PATH).parent / f"backtest_{team_name.lower()}.db")
     conn = sqlite3.connect(db_path)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS backtest_trades (
@@ -49,7 +53,7 @@ def simulate_trade(team_name, symbol, direction, entry_price, quantity, exit_pri
     conn.commit()
     conn.close()
 
-    log_event("PAPER_TRADE", f"{team_name} {symbol} {direction} pnl={pnl:.2f}", team_name)
+    log_event(team_name, "SAMPLE_BACKTEST", f"{symbol} {direction} sample pnl={pnl:.2f}")
     return pnl
 
 
@@ -112,7 +116,7 @@ def strategy_ready(team_name, min_trades=20, min_win_rate=50.0, min_score=0.3):
         return False, stats, f"Win rate too low: {stats['win_rate']}% < {min_win_rate}%"
     if stats["score"] < min_score:
         return False, stats, f"Strategy score too low: {stats['score']} < {min_score}"
-    return True, stats, "Ready for live execution"
+    return False, stats, "Sample backtest only; it cannot authorize live execution"
 
 
 def create_team_backtest_script(team_name):
@@ -136,7 +140,7 @@ def generate_simulated_trade():
 
 
 def main():
-    print(f"[{{TEAM_NAME}} BACKTEST] Running simulated paper trades...")
+    print(f"[{{TEAM_NAME}} BACKTEST] Running random sample backtests...")
     while True:
         generate_simulated_trade()
         time.sleep(60)
@@ -156,7 +160,7 @@ def add_backtest_scripts():
 
 
 def main():
-    print("[BACKTEST BOT] initializing paper-trading system...")
+    print("[BACKTEST BOT] initializing sample backtest system...")
     add_backtest_scripts()
     while True:
         for team_name in ["SPY", "QQQ", "AAPL", "TSLA"]:

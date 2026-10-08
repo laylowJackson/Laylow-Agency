@@ -1,493 +1,213 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trading Command Center</title>
-
-  <style>
-    :root {
-      --bg-1: #050612;
-      --bg-2: #0a0d1d;
-      --panel: #11162b;
-      --panel-alt: #0d1224;
-      --panel-border: #29325c;
-      --text: #ffffff;
-      --muted: #9da6c9;
-      --muted-2: #8994b5;
-      --primary: #7357ff;
-      --primary-2: #6f55c7;
-      --success: #31f09d;
-      --danger: #ff5c79;
-      --warning: #ffd966;
-      --danger-bg: #401526;
-      --danger-border: #742944;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
-      color: var(--text);
-      font-family: Arial, sans-serif;
-    }
-
-    .container {
-      padding: 18px;
-      max-width: 1200px;
-      margin: auto;
-    }
-
-    h1 {
-      margin-bottom: 5px;
-    }
-
-    .subtitle {
-      color: var(--muted);
-      margin-bottom: 20px;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-bottom: 18px;
-    }
-
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      border-radius: 14px;
-      padding: 15px;
-    }
-
-    .label {
-      color: #8e99bb;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .value {
-      font-size: 24px;
-      font-weight: bold;
-      margin-top: 4px;
-    }
-
-    .workers {
-      display: grid;
-      gap: 10px;
-      margin-bottom: 18px;
-    }
-
-    .worker {
-      background: var(--panel-alt);
-      border: 1px solid #252d52;
-      border-radius: 12px;
-      padding: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .worker-name {
-      font-weight: bold;
-    }
-
-    .worker-sub {
-      font-size: 12px;
-      color: var(--muted-2);
-      margin-top: 4px;
-    }
-
-    .positive {
-      color: var(--success);
-    }
-
-    .negative {
-      color: var(--danger);
-    }
-
-    button, select, input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      margin-top: 8px;
-      font-size: 16px;
-    }
-
-    select, input {
-      background: #0c1124;
-      color: var(--text);
-      border: 1px solid #29345e;
-    }
-
-    button {
-      background: var(--primary);
-      color: var(--text);
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .secondary {
-      background: #1c2444;
-      border: 1px solid #3c4c8f;
-    }
-
-    .danger {
-      background: var(--danger-bg);
-      border: 1px solid var(--danger-border);
-    }
-
-    .log {
-      background: #080c19;
-      border-radius: 10px;
-      padding: 10px;
-      max-height: 220px;
-      overflow-y: auto;
-      font-family: monospace;
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .vault {
-      text-align: center;
-      background: linear-gradient(135deg, #17112d, #201846);
-      border: 1px solid var(--primary-2);
-      border-radius: 16px;
-      padding: 18px;
-      margin: 18px 0;
-    }
-
-    .vault-value {
-      color: var(--warning);
-      font-size: 30px;
-      font-weight: bold;
-    }
-
-    @media (min-width: 700px) {
-      .stats {
-        grid-template-columns: repeat(4, 1fr);
-      }
-    }
-  </style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1410">
+<meta name="description" content="Laylow Agency: Python worker status, process health, and recorded events.">
+<title>Laylow Agency · Bots</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1410;--surface:#131f18;--raised:#1c2b21;--border:#304237;--text:#edf5e9;--muted:#aabcae;--lime:#c6ed93;--amber:#ffd187;--red:#ffaba3}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:1180px;margin:auto;padding:28px 24px 40px}
+button{font:inherit;min-height:44px;border:1px solid var(--border);border-radius:10px;padding:10px 16px;background:var(--raised);color:var(--text);cursor:pointer;touch-action:manipulation}
+button:hover{border-color:var(--lime)}button:disabled{opacity:.55;cursor:wait}
+:focus-visible{outline:3px solid var(--lime);outline-offset:4px}a{color:var(--lime)}
+.skip-link{position:absolute;left:16px;top:-100px;padding:12px;background:var(--surface);z-index:5}.skip-link:focus{top:12px}[hidden]{display:none!important}
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;border-bottom:1px solid var(--border);padding-bottom:24px}
+.brand{font-weight:800;font-size:27px;letter-spacing:-1px}.brand span{color:var(--lime)}.brand small{color:var(--muted);font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:500;margin-left:16px}
+.header-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.mode{font-size:13px;color:var(--muted);border:1px solid var(--border);padding:8px 12px;border-radius:999px}
+.intro{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:24px;margin:34px 0 22px}
+.eyebrow{color:var(--lime);font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
+h1{font-size:clamp(30px,5vw,44px);line-height:1.15;letter-spacing:-1.3px;margin:8px 0 10px}h2{font-size:19px;margin:0;font-weight:650}
+.intro p{color:var(--muted);margin:0;max-width:600px;font-size:14px}.connection{text-align:right}.connection strong{display:block;font-size:14px}.connection span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+.dot{width:8px;height:8px;display:inline-block;border-radius:50%;background:currentColor;margin-right:7px}
+.good{color:var(--lime)}.warn{color:var(--amber)}.bad{color:var(--red)}.muted{color:var(--muted)}
+.alert{margin:0 0 20px;border:1px solid var(--amber);background:#2c2518;border-radius:12px;padding:14px 16px;font-size:14px;color:var(--amber)}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:28px;background:var(--surface)}
+.metric{padding:18px 22px;min-width:0}.metric+.metric{border-left:1px solid var(--border)}.metric-label{font-size:12px;color:var(--muted)}.metric-value{font-size:28px;font-weight:650;letter-spacing:-.7px;margin-top:4px;font-variant-numeric:tabular-nums}.metric-detail{font-size:12px;color:var(--muted)}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px}.section-head p{color:var(--muted);font-size:12px;margin:0}
+.bots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.bot{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;min-width:0}
+.bot-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.symbol{font-weight:750;font-size:23px;letter-spacing:-.5px}.asset{color:var(--muted);font-size:12px}
+.pill{display:inline-flex;align-items:center;min-height:28px;font-size:12px;font-weight:600;border:1px solid var(--border);padding:4px 9px;border-radius:999px;white-space:nowrap}
+.pill.good{background:#26371e;border-color:#3d552a}.pill.warn{background:#302716;border-color:#665030}.pill.bad{background:#34221e;border-color:#65413a}
+.bot-state{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:20px 0 16px;font-size:13px}.state-label{color:var(--muted);font-size:12px}
+dl{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px}dt{font-size:12px;color:var(--muted)}dd{font-size:13px;margin:3px 0 0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.bot-note{border-top:1px solid var(--border);padding-top:14px;margin:18px 0 0;font-size:13px;color:var(--muted);overflow-wrap:anywhere;white-space:pre-wrap}
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:16px;margin-top:28px}.panel{border:1px solid var(--border);border-radius:16px;padding:22px;background:var(--surface);min-width:0}
+.process-list,.event-list{list-style:none;margin:12px 0 0;padding:0}.process{padding:14px 0;border-top:1px solid var(--border)}
+.process-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.process-name{font-size:13px;font-weight:600;overflow-wrap:anywhere}.process-meta,.process-note{color:var(--muted);font-size:12px;margin:6px 0 0;overflow-wrap:anywhere;white-space:pre-wrap}
+.event-list{max-height:390px;overflow:auto;overscroll-behavior:contain}.event{display:grid;grid-template-columns:62px minmax(0,1fr);gap:14px;padding:14px 0;border-top:1px solid var(--border)}
+.event time{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}.event-title{font-size:12px;color:var(--lime)}.event-detail{font-size:13px;margin:4px 0 0;overflow-wrap:anywhere;white-space:pre-wrap}.empty{font-size:13px;color:var(--muted);padding:16px 0}
+[data-stale="true"] .bot,[data-stale="true"] .panel,[data-stale="true"] .metrics{border-color:#665030}
+footer{color:var(--muted);font-size:12px;margin-top:24px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}footer p{margin:0;max-width:760px}.snapshot-tag{font-size:12px;color:var(--amber);margin-top:6px}
+@media(max-width:700px){main{padding:20px 16px 30px}.intro{margin-top:26px}.connection{text-align:left}.bots,.lower{grid-template-columns:1fr}.metric{padding:14px 12px}.metric-value{font-size:23px}.metric-detail,.metric-label{font-size:11px}.bot,.panel{padding:18px}.brand small{margin-left:10px}.event{grid-template-columns:58px minmax(0,1fr);gap:10px}}
+</style>
 </head>
-
 <body>
-
-<div class="container">
-
-  <h1>Trading Command Center</h1>
-  <div class="subtitle">Private paper-trading dashboard</div>
-
-  <div class="stats">
-
-    <div class="card">
-      <div class="label">Account Equity</div>
-      <div class="value" id="equity">$10,000.00</div>
-    </div>
-
-    <div class="card">
-      <div class="label">Today P&L</div>
-      <div class="value" id="pnl">$0.00</div>
-    </div>
-
-    <div class="card">
-      <div class="label">Win Rate</div>
-      <div class="value" id="winRate">0%</div>
-    </div>
-
-    <div class="card">
-      <div class="label">Trades</div>
-      <div class="value" id="trades">0</div>
-    </div>
-
-  </div>
-
-  <div class="vault">
-    <div class="label">THE VAULT</div>
-    <div class="vault-value" id="vault">$0.00</div>
-  </div>
-
-  <h2>Workers</h2>
-
-  <div class="workers" id="workers"></div>
-
-  <div class="card">
-
-    <h2>Paper Trade</h2>
-
-    <label>Symbol</label>
-
-    <select id="symbol">
-      <option>SPY</option>
-      <option>QQQ</option>
-    </select>
-
-    <label>Direction</label>
-
-    <select id="direction">
-      <option>CALL</option>
-      <option>PUT</option>
-    </select>
-
-    <label>Risk Amount</label>
-
-    <input id="risk" type="number" value="50" min="1" />
-
-    <label>Daily Loss Limit</label>
-
-    <input id="lossLimit" type="number" value="250" min="1" />
-
-    <button onclick="paperTrade()">Run Paper Trade</button>
-
-    <button class="secondary" onclick="resetAccount()">
-      Reset Account
-    </button>
-
-    <button class="danger" onclick="toggleKill()">
-      Kill Switch
-    </button>
-
-  </div>
-
-  <h2>Activity</h2>
-
-  <div class="log" id="log">
-    Waiting for trade...
-  </div>
-
+<a class="skip-link" href="#bots-title">Skip to bots</a>
+<main id="workspace" data-stale="false">
+<header><div class="brand">laylow<span>.</span><small>Agency</small></div><div class="header-actions"><span class="mode" id="mode">Python status dashboard</span><button id="refresh" type="button">Refresh status</button></div></header>
+<section class="intro" aria-labelledby="page-title">
+<div><div class="eyebrow">Your Python workers</div><h1 id="page-title">Bots in view.</h1><p>Team heartbeats, supervised processes, and recorded events from the Python backend.</p></div>
+<div class="connection"><strong id="connection" class="muted" role="status"><i class="dot" aria-hidden="true"></i>Connecting to backend</strong><span id="updated">Waiting for the first status snapshot</span><div class="snapshot-tag" id="snapshot-tag" hidden>Last snapshot · connection lost</div></div>
+</section>
+<p id="error" class="alert" role="alert" hidden></p>
+<section class="metrics" aria-label="Runtime overview">
+<div class="metric"><div class="metric-label">Recent heartbeats</div><div class="metric-value" id="fresh">—</div><div class="metric-detail">Fresh observations / four teams</div></div>
+<div class="metric"><div class="metric-label">Configured teams</div><div class="metric-value" id="enabled">—</div><div class="metric-detail">Enabled configuration</div></div>
+<div class="metric"><div class="metric-label">Supervised processes</div><div class="metric-value" id="running">—</div><div class="metric-detail">Fresh process observations</div></div>
+</section>
+<section aria-labelledby="bots-title"><div class="section-head"><h2 id="bots-title" tabindex="-1">Stock bots</h2><p>Configuration and observed health are shown separately.</p></div><div id="bots" class="bots" aria-busy="true"></div></section>
+<div class="lower">
+<section class="panel" aria-labelledby="process-title"><div class="section-head"><h2 id="process-title">Processes</h2><p id="process-count">Waiting for supervisor</p></div><ul class="process-list" id="processes"></ul></section>
+<section class="panel" aria-labelledby="event-title"><div class="section-head"><h2 id="event-title">Recent activity</h2><p id="event-count">Waiting for events</p></div><ul class="event-list" id="events" tabindex="0" aria-label="Recorded system events"></ul></section>
 </div>
-
+<footer><p>This page observes the backend. A heartbeat records worker activity. Filled orders and financial performance require separate broker records. Legacy scores are unverified.</p><span>Refreshes every 5 seconds</span></footer>
+<noscript><p class="alert">Enable JavaScript to view worker status, or open /api/status for JSON.</p></noscript>
+</main>
 <script>
-const STORAGE_KEY = "laylow-agency-trading-state-v1";
-
-const defaultState = {
-  startingBalance: 10000,
-  balance: 10000,
-  pnl: 0,
-  trades: 0,
-  wins: 0,
-  killed: false
-};
-
-const defaultWorkers = [
-  {
-    name: "QQQ Momentum",
-    sub: "Trend / breakout strategy",
-    pnl: 0
-  },
-  {
-    name: "SPY VWAP",
-    sub: "Mean-reversion strategy",
-    pnl: 0
-  },
-  {
-    name: "QQQ Trend",
-    sub: "Trend-following strategy",
-    pnl: 0
-  },
-  {
-    name: "Signal Scanner",
-    sub: "Scans market setups",
-    pnl: 0
-  }
-];
-
-let state = loadState();
-let workers = loadWorkers();
-
-function money(value) {
-  const sign = value < 0 ? "-$" : "$";
-  return sign + Math.abs(value).toFixed(2);
+"use strict";
+const TEAM_DEFINITIONS=[{name:"SPY",asset:"S&P 500 ETF"},{name:"QQQ",asset:"Nasdaq 100 ETF"},{name:"AAPL",asset:"Apple"},{name:"TSLA",asset:"Tesla"}];
+const HEALTH_LABELS={fresh:{label:"Recent heartbeat",tone:"good"},stale:{label:"Stale heartbeat",tone:"warn"},missing:{label:"No heartbeat",tone:"muted"},invalid:{label:"Invalid heartbeat",tone:"warn"}};
+const $=id=>document.getElementById(id);
+const localTime=new Intl.DateTimeFormat(undefined,{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+const shortTime=new Intl.DateTimeFormat(undefined,{hour:"2-digit",minute:"2-digit"});
+const fullTime=new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"medium"});
+let inFlight=false,pollTimer=null,lastReceivedAt=null,lastEventsSignature=null,receivedSnapshot=false;
+const cards=new Map();
+function element(tag,className,content){
+  const node=document.createElement(tag);
+  if(className)node.className=className;
+  if(content!==undefined)node.textContent=String(content);
+  return node;
 }
-
-function saveState() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, workers }));
-  } catch (error) {
-    console.warn("Failed to save dashboard state:", error);
-  }
+function text(value,fallback="—"){return value===null||value===undefined||value===""?fallback:String(value);}
+function formatTime(value,formatter=localTime){
+  const parsed=Date.parse(value);return Number.isFinite(parsed)?formatter.format(new Date(parsed)):"Unknown time";
 }
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...defaultState };
-
-    const parsed = JSON.parse(raw);
-    return {
-      ...defaultState,
-      ...parsed.state,
-      startingBalance: parsed.state?.startingBalance ?? defaultState.startingBalance,
-      balance: parsed.state?.balance ?? defaultState.balance,
-      pnl: parsed.state?.pnl ?? defaultState.pnl,
-      trades: parsed.state?.trades ?? defaultState.trades,
-      wins: parsed.state?.wins ?? defaultState.wins,
-      killed: Boolean(parsed.state?.killed)
-    };
-  } catch (error) {
-    console.warn("Failed to load dashboard state:", error);
-    return { ...defaultState };
-  }
+function age(value){
+  if(typeof value!=="number"||!Number.isFinite(value)||value<0)return "Unknown age";
+  if(value<60)return Math.floor(value)+" seconds ago";
+  if(value<3600)return Math.floor(value/60)+" minutes ago";
+  return Math.floor(value/3600)+" hours ago";
 }
-
-function loadWorkers() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultWorkers.map(worker => ({ ...worker }));
-
-    const parsed = JSON.parse(raw);
-    const savedWorkers = Array.isArray(parsed.workers) ? parsed.workers : defaultWorkers;
-
-    return defaultWorkers.map((template, index) => ({
-      ...template,
-      ...(savedWorkers[index] || {})
-    }));
-  } catch (error) {
-    console.warn("Failed to load worker state:", error);
-    return defaultWorkers.map(worker => ({ ...worker }));
+function number(value){return typeof value==="number"&&Number.isFinite(value)?String(value):"—";}
+function processTone(value){
+  const status=text(value,"unknown").toUpperCase();
+  if(["RUNNING","ALIVE"].includes(status))return "good";
+  if(["FAILED","ERROR","DOWN","EXITED","SHUTDOWN_FAILED"].includes(status))return "bad";
+  if(["STARTING","RESTARTING","STOPPING","STALE","BACKOFF"].includes(status))return "warn";
+  return "muted";
+}
+function metadata(label){
+  const cell=element("div"),value=element("dd","","Waiting");cell.append(element("dt","",label),value);return {cell,value};
+}
+function initializeCards(){
+  for(const def of TEAM_DEFINITIONS){
+    const card=element("article","bot");card.setAttribute("aria-label",def.name+" Python worker");
+    const top=element("div","bot-top"),title=element("div"),health=element("span","pill muted","Waiting for status");
+    title.append(element("div","symbol",def.name),element("div","asset",def.asset));top.append(title,health);
+    const state=element("div","bot-state"),enabled=element("span","pill muted","Configuration unknown"),stateValue=element("span","","Not observed");
+    state.append(enabled,element("span","state-label","Worker:"),stateValue);
+    const data=element("dl"),heartbeat=metadata("Last heartbeat"),heartbeatAge=metadata("Heartbeat age"),pid=metadata("Process ID"),score=metadata("Legacy score · unverified");
+    data.append(heartbeat.cell,heartbeatAge.cell,pid.cell,score.cell);
+    const note=element("p","bot-note","Waiting for a status snapshot from the Python backend.");
+    card.append(top,state,data,note);$("bots").append(card);
+    cards.set(def.name,{health,enabled,stateValue,heartbeat:heartbeat.value,heartbeatAge:heartbeatAge.value,pid:pid.value,score:score.value,note});
+  }
+  $("processes").append(element("li","empty","Waiting for process observations."));
+  $("events").append(element("li","empty","Waiting for recorded events."));
+}
+function renderTeams(teams){
+  const byName=new Map(teams.filter(t=>t&&typeof t.name==="string").map(t=>[t.name,t]));
+  for(const def of TEAM_DEFINITIONS){
+    const row=cards.get(def.name),team=byName.get(def.name)||{};
+    const health=Object.prototype.hasOwnProperty.call(HEALTH_LABELS,team.health)?HEALTH_LABELS[team.health]:HEALTH_LABELS.missing;
+    row.health.className="pill "+health.tone;row.health.textContent=health.label;
+    row.enabled.className="pill "+(team.enabled===true?"good":"muted");
+    row.enabled.textContent=team.enabled===true?"Enabled":team.enabled===false?"Disabled":"Configuration unknown";
+    row.stateValue.textContent=text(team.worker_state,"Not observed");row.stateValue.className=processTone(team.worker_state);
+    row.heartbeat.textContent=team.heartbeat?formatTime(team.heartbeat):"No recorded heartbeat";
+    row.heartbeat.title=team.heartbeat?formatTime(team.heartbeat,fullTime):"";
+    row.heartbeatAge.textContent=team.heartbeat?age(team.heartbeat_age_seconds):"—";
+    row.pid.textContent=Number.isInteger(team.pid)&&team.pid>0?String(team.pid):"—";
+    row.score.textContent=typeof team.score==="number"&&Number.isFinite(team.score)?team.score.toFixed(2):"Not recorded";
+    row.note.textContent=text(team.notes,"No additional worker notes.");
+  }
+  $("bots").setAttribute("aria-busy","false");
+}
+function renderProcesses(processes){
+  const list=$("processes");list.replaceChildren();$("process-count").textContent=processes.length+" observed";
+  if(!processes.length){list.append(element("li","empty","No supervised processes have been recorded."));return;}
+  for(const process of processes){
+    if(!process||typeof process!=="object")continue;
+    const item=element("li","process"),top=element("div","process-top");
+    let label=text(process.status,"Unknown"),tone=processTone(label);
+    if(["RUNNING","STARTING"].includes(label.toUpperCase())&&process.health!=="fresh"){
+      label+=" · "+text(process.health,"unknown")+" observation";tone="warn";
+    }
+    top.append(element("span","process-name",text(process.name,"Unnamed process")),element("span","pill "+tone,label));
+    const pid=Number.isInteger(process.pid)&&process.pid>0?String(process.pid):"—";
+    item.append(top,element("p","process-meta","PID "+pid+" · restarts "+number(process.restarts)+" · exit "+text(process.exit_code)));
+    if(process.notes)item.append(element("p","process-note",text(process.notes)));list.append(item);
   }
 }
-
-function renderWorkers() {
-  const container = document.getElementById("workers");
-  container.innerHTML = "";
-
-  workers.forEach(worker => {
-    const div = document.createElement("div");
-    div.className = "worker";
-
-    div.innerHTML = `
-      <div>
-        <div class="worker-name">${worker.name}</div>
-        <div class="worker-sub">${worker.sub}</div>
-      </div>
-
-      <div class="${worker.pnl >= 0 ? "positive" : "negative"}">
-        ${money(worker.pnl)}
-      </div>
-    `;
-
-    container.appendChild(div);
-  });
-}
-
-function updateDashboard() {
-  document.getElementById("equity").innerText = money(state.balance);
-  document.getElementById("pnl").innerText = money(state.pnl);
-  document.getElementById("vault").innerText = money(state.pnl);
-  document.getElementById("trades").innerText = state.trades;
-
-  const winRate = state.trades
-    ? Math.round((state.wins / state.trades) * 100)
-    : 0;
-
-  document.getElementById("winRate").innerText = winRate + "%";
-
-  const pnlClass = state.pnl >= 0 ? "value positive" : "value negative";
-  document.getElementById("pnl").className = pnlClass;
-
-  document.getElementById("vault").className =
-    "vault-value " + (state.pnl >= 0 ? "positive" : "negative");
-
-  renderWorkers();
-}
-
-function addLog(text) {
-  const log = document.getElementById("log");
-  const time = new Date().toLocaleTimeString();
-  log.innerHTML = time + " - " + text + "<br>" + log.innerHTML;
-}
-
-function resetAccount() {
-  state = { ...defaultState };
-  workers = defaultWorkers.map(worker => ({ ...worker }));
-  saveState();
-  addLog("Account reset. Starting balance restored.");
-  updateDashboard();
-}
-
-function paperTrade() {
-  if (state.killed) {
-    addLog("Trade blocked. Kill switch is ON.");
-    return;
+function renderEvents(events){
+  const bounded=events.slice(0,30),signature=JSON.stringify(bounded);
+  if(signature===lastEventsSignature)return;lastEventsSignature=signature;
+  const list=$("events"),previousTop=list.scrollTop;list.replaceChildren();$("event-count").textContent=bounded.length+" recent";
+  if(!bounded.length){list.append(element("li","empty","No system events have been recorded yet."));return;}
+  for(const event of bounded){
+    if(!event||typeof event!=="object")continue;
+    const item=element("li","event"),time=element("time","",formatTime(event.created_at,shortTime)),content=element("div");
+    if(Number.isFinite(Date.parse(event.created_at))){time.dateTime=event.created_at;time.title=formatTime(event.created_at,fullTime);}
+    content.append(element("div","event-title",text(event.team_name,"System")+" · "+text(event.event_type,"Event")),element("p","event-detail",text(event.details,"No details recorded.")));
+    item.append(time,content);list.append(item);
   }
-
-  const symbol = document.getElementById("symbol").value;
-  const direction = document.getElementById("direction").value;
-  const risk = Number(document.getElementById("risk").value);
-  const lossLimit = Number(document.getElementById("lossLimit").value);
-
-  if (!Number.isFinite(risk) || risk <= 0) {
-    addLog("Risk amount must be a positive number.");
-    return;
-  }
-
-  if (!Number.isFinite(lossLimit) || lossLimit <= 0) {
-    addLog("Daily loss limit must be a positive number.");
-    return;
-  }
-
-  if (state.pnl <= -lossLimit) {
-    state.killed = true;
-    saveState();
-    addLog("Daily loss limit reached.");
-    updateDashboard();
-    return;
-  }
-
-  const workerIndex = Math.floor(Math.random() * workers.length);
-  const win = Math.random() < 0.47;
-
-  let result;
-
-  if (win) {
-    result = risk * (0.5 + Math.random() * 1.5);
-  } else {
-    result = -risk * (0.5 + Math.random() * 0.5);
-  }
-
-  result = Math.round(result * 100) / 100;
-
-  state.balance += result;
-  state.pnl += result;
-  state.trades++;
-  workers[workerIndex].pnl += result;
-
-  if (win) {
-    state.wins++;
-  }
-
-  addLog(
-    workers[workerIndex].name +
-    " | " +
-    symbol +
-    " " +
-    direction +
-    " | " +
-    money(result)
-  );
-
-  saveState();
-  updateDashboard();
+  list.scrollTop=previousTop<3?0:previousTop;
 }
-
-function toggleKill() {
-  state.killed = !state.killed;
-  saveState();
-  addLog(state.killed ? "Kill switch ON." : "Trading resumed.");
-  updateDashboard();
+function validatePayload(payload){
+  if(!payload||typeof payload!=="object"||!Array.isArray(payload.teams)||!Array.isArray(payload.processes)||!Array.isArray(payload.events)||!payload.summary||typeof payload.summary!=="object"||!Number.isFinite(Date.parse(payload.generated_at))||payload.database_available===false)
+    throw new Error("Invalid or unavailable status snapshot.");
+  return payload;
 }
-
-updateDashboard();
+function renderSnapshot(payload){
+  renderTeams(payload.teams);renderProcesses(payload.processes);renderEvents(payload.events);
+  $("fresh").textContent=number(payload.summary.fresh_workers)+" / 4";$("enabled").textContent=number(payload.summary.enabled_teams)+" / 4";
+  $("running").textContent=number(payload.summary.running_processes);$("mode").textContent=text(payload.mode,"Python status")+" · read-only dashboard";
+  $("updated").textContent="Snapshot "+formatTime(payload.generated_at)+" · received "+localTime.format(new Date(lastReceivedAt));
+  $("workspace").dataset.stale="false";$("snapshot-tag").hidden=true;$("error").hidden=true;
+  $("connection").className="good";$("connection").replaceChildren(element("i","dot"),document.createTextNode("Backend connected"));
+  $("connection").firstChild.setAttribute("aria-hidden","true");receivedSnapshot=true;
+}
+function reportFailure(){
+  $("workspace").dataset.stale="true";$("connection").className="warn";
+  $("connection").replaceChildren(element("i","dot"),document.createTextNode(receivedSnapshot?"Connection lost":"Backend unavailable"));
+  $("connection").firstChild.setAttribute("aria-hidden","true");$("snapshot-tag").hidden=!receivedSnapshot;$("error").hidden=false;
+  $("error").textContent=receivedSnapshot?"Connection lost. Cards show the last snapshot received at "+localTime.format(new Date(lastReceivedAt))+"; their observations may now be stale. Retrying automatically.":"Could not load worker status. Start the Python runner and open this page from its dashboard address. Retrying automatically.";
+  if(!receivedSnapshot){$("updated").textContent="No status snapshot received";$("bots").setAttribute("aria-busy","false");}
+}
+function schedule(){
+  if(pollTimer!==null)clearTimeout(pollTimer);pollTimer=null;
+  if(!document.hidden)pollTimer=setTimeout(()=>{pollTimer=null;refreshStatus();},5000);
+}
+async function refreshStatus(){
+  if(inFlight)return;if(pollTimer!==null)clearTimeout(pollTimer);pollTimer=null;inFlight=true;
+  $("refresh").disabled=true;$("refresh").setAttribute("aria-busy","true");
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
+  try{
+    const response=await fetch("/api/status",{cache:"no-store",credentials:"same-origin",signal:controller.signal});
+    if(!response.ok)throw new Error("Status request failed.");
+    const payload=validatePayload(await response.json());lastReceivedAt=Date.now();renderSnapshot(payload);
+  }catch(error){reportFailure();}
+  finally{clearTimeout(timeout);inFlight=false;$("refresh").disabled=false;$("refresh").removeAttribute("aria-busy");schedule();}
+}
+$("refresh").addEventListener("click",refreshStatus);
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){if(pollTimer!==null)clearTimeout(pollTimer);pollTimer=null;}
+  else if(!inFlight)refreshStatus();
+});
+initializeCards();refreshStatus();
 </script>
-
 </body>
 </html>
