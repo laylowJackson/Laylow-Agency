@@ -85,7 +85,7 @@ def main():
                         assert page.locator(".city-team-manager").count() == 8, "Missing city team managers"
                         assert page.locator(".city-big-manager").count() == 1, "Missing Big Manager"
                         assert page.locator("#city-fresh").inner_text() == "8 / 8"
-                        assert "NOT RECORDED" in page.locator("#city-map").inner_text()
+                        assert "NOT RECORDED" in page.locator("#city-map").text_content()
                         assert "STANDBY" in page.locator('.city-tower[data-team="SPY"]').get_attribute("aria-label")
                         assert page.locator("#world").get_attribute("data-motion") == "off"
                         page.locator("#city-motion").click()
