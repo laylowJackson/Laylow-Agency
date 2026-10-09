@@ -65,6 +65,7 @@ def main():
                 browser = playwright.chromium.launch(args=["--enable-unsafe-swiftshader"])
                 try:
                     for width, height in ((1440, 1000), (390, 844)):
+                        fixture.pop("payroll",None)
                         page = browser.new_page(viewport={"width": width, "height": height})
                         errors = []
                         page.on("pageerror", lambda error: errors.append(str(error)))
@@ -136,11 +137,29 @@ def main():
                         assert "WATCH ONLY" in page.locator("body").inner_text()
                         assert page.locator(".specialists img").count() == 0, "Specialist text parsed as HTML"
                         assert "Ten fixture team reports" in page.locator("#big-summary").inner_text()
+                        fixture["payroll"]=dict(available=True,fresh=True,day=clock_now.date().isoformat(),timezone="America/New_York",
+                            total_net_cents=10000,all_time_net_cents=10000,basis="CI closed-trade fixture",
+                            sources=[dict(source="ci-paper-export",as_of=now)],
+                            workers=[dict(team_name="AAPL",closed_trades=1,wins=1,losses=0,net_cents=10000)],
+                            daily=[dict(day=clock_now.date().isoformat(),net_cents=10000)],
+                            recent=[dict(team_name="AAPL",trade_id="fixture-closed",closed_at=now,source="ci-paper-export",net_cents=10000)])
+                        page.locator("#refresh").click()
+                        page.wait_for_function("document.getElementById('payroll-today').textContent.includes('100.00')")
+                        assert page.locator("#payroll-chart rect").count()>0
+                        assert "ci-paper-export" in page.locator("#payroll-basis").inner_text()
+                        assert "100.00" in page.locator('.world-3d-label[data-team="AAPL"]').inner_text()
+                        page.locator("#city-enter-office").click()
+                        assert "100.00" in page.locator("#office-earned").inner_text()
+                        assert "ci-paper-export" in page.locator("#office-performance-note").inner_text()
+                        page.keyboard.press("Escape")
+                        risk=page.locator("#profit-amount-AAPL")
+                        risk.fill("123.45")
                         earnings=page.locator("#earnings-AAPL")
                         earnings.fill("unsaved input")
                         page.locator("#refresh").click()
                         page.wait_for_function("!document.getElementById('refresh').disabled")
                         assert earnings.input_value()=="unsaved input", "Poll discarded an edit"
+                        assert risk.input_value()=="123.45","Poll discarded profit-brake edit"
                         assert page.locator("#city-team-title").inner_text() == "AAPL", "Poll discarded district selection"
                         button=page.locator(".bot:has(#earnings-AAPL) [data-control=headline]")
                         expected=not fixture["teams"][0]["controls"]["headline_locked"]

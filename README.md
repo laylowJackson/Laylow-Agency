@@ -82,7 +82,9 @@ exists.
 The World view uses local WebGL geometry: rotate by dragging or using arrow keys,
 zoom with the buttons, and reset the camera from its controls. Select a tower sign
 to enter that team's office, or select a district in the dock and press Enter bot
-office. The office includes a seated robot with headphones, a market terminal,
+office. Ambient lighting starts off; reduced-motion preferences and hidden tabs pause it.
+The background market line uses the selected team's recorded closing prices only.
+The office includes a seated robot with headphones, a market terminal,
 signal scanner, performance terminal and recorded decision/order history. Choose
 a specialist desk to inspect its vote and reasoning. Escape or Return to city
 closes the office. If WebGL is unavailable, the accessible SVG map and all recorded

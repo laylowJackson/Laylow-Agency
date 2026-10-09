@@ -38,9 +38,9 @@ class Scene {
   const shader=(type,source)=>{const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error("Shader could not compile");return s;};
   const p=gl.createProgram();
   gl.attachShader(p,shader(gl.VERTEX_SHADER,"attribute vec3 position;attribute vec3 color;uniform mat4 camera;varying vec3 tint;varying float depth;void main(){gl_Position=camera*vec4(position,1.0);tint=color;depth=gl_Position.w;}"));
-  gl.attachShader(p,shader(gl.FRAGMENT_SHADER,"precision mediump float;varying vec3 tint;varying float depth;void main(){float fog=clamp((depth-25.0)/150.0,0.0,0.6);gl_FragColor=vec4(mix(tint,vec3(0.025,0.035,0.08),fog),1.0);}"));
+  gl.attachShader(p,shader(gl.FRAGMENT_SHADER,"precision mediump float;varying vec3 tint;varying float depth;uniform float ambientPulse;void main(){float fog=clamp((depth-25.0)/150.0,0.0,0.6);gl_FragColor=vec4(mix(tint*(1.0+ambientPulse*step(0.65,max(tint.r,max(tint.g,tint.b)))),vec3(0.025,0.035,0.08),fog),1.0);}"));
   gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error("Renderer could not link");
-  gl.useProgram(p);this.program=p;this.buffer=gl.createBuffer();this.position=gl.getAttribLocation(p,"position");this.color=gl.getAttribLocation(p,"color");this.camera=gl.getUniformLocation(p,"camera");
+  gl.useProgram(p);this.program=p;this.buffer=gl.createBuffer();this.position=gl.getAttribLocation(p,"position");this.color=gl.getAttribLocation(p,"color");this.camera=gl.getUniformLocation(p,"camera");this.pulse=gl.getUniformLocation(p,"ambientPulse");
   gl.enable(gl.DEPTH_TEST);gl.clearColor(.018,.023,.055,1);
   this.yaw=.52;this.pitch=kind==="office"?.22:.56;this.distance=kind==="office"?9:51;this.target=kind==="office"?[0,1.6,0]:[0,2,4];this.data=[];this.labels=[];
   this.resize=new ResizeObserver(()=>this.draw());this.resize.observe(canvas);
@@ -153,6 +153,7 @@ class Scene {
   gl.enableVertexAttribArray(this.color);gl.vertexAttribPointer(this.color,3,gl.FLOAT,false,24,12);
   const t=this.target,r=this.distance,eye=[t[0]+r*Math.sin(this.yaw)*Math.cos(this.pitch),t[1]+r*Math.sin(this.pitch),t[2]+r*Math.cos(this.yaw)*Math.cos(this.pitch)];
   this.matrix=cameraMatrix(eye,t,w/h);gl.uniformMatrix4fv(this.camera,false,new Float32Array(this.matrix));
+  gl.uniform1f(this.pulse,byId("world").dataset.motion==="on"&&!document.hidden?.12+.10*Math.sin(performance.now()/700):0);
   gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.drawArrays(gl.TRIANGLES,0,this.vertices||0);canvas.dataset.ready="true";
   if(this.kind==="city")placeLabels();
  }
@@ -214,5 +215,17 @@ window.Laylow3D={
  enter(name){try{if(!office)office=new Scene(byId("office-3d"),"office");office.office(name);office.officeBars(snapshot?.teams?.find(row=>row.name===name)?.analysis?.bars||[]);byId("office-render-note").textContent="Bot office · drag to look around";}catch(error){byId("office-render-note").textContent="3D office unavailable; recorded workstation panels remain available.";}},
  select(){this.update(snapshot||{},online);}
 };
+let ambientFrame=null,ambientLast=0;
+function scheduleAmbient(){
+ if(ambientFrame!==null){cancelAnimationFrame(ambientFrame);ambientFrame=null;}
+ if(!city||document.hidden||byId("world").dataset.motion!=="on"){city?.draw();return;}
+ const frame=stamp=>{if(document.hidden||byId("world").dataset.motion!=="on"){ambientFrame=null;return;}
+  if(stamp-ambientLast>50){ambientLast=stamp;city.draw();if(office&&byId("office-dialog").open)office.draw();}
+  ambientFrame=requestAnimationFrame(frame);
+ };
+ ambientFrame=requestAnimationFrame(frame);
+}
+new MutationObserver(scheduleAmbient).observe(byId("world"),{attributes:true,attributeFilter:["data-motion"]});
+document.addEventListener("visibilitychange",scheduleAmbient);
 start();window.Laylow3D.update(bridge.snapshot()||{},bridge.connected());
 })();
