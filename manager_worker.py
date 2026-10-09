@@ -1,4 +1,4 @@
-"""Run eight team assessments and aggregate them without order authority."""
+"""Run configured team assessments and aggregate them without order authority."""
 import argparse
 import copy
 import json
@@ -10,8 +10,8 @@ from manager_hierarchy import build_manager_reports
 from config import TEAM_NAMES
 
 def save_reports(reports, db_path=None):
-    if len(reports) != 9 or {row["team_name"] for row in reports} != set(TEAM_NAMES) | {"BIG_MANAGER"}:
-        raise ValueError("Expected eight team reports and one Big Manager")
+    if len(reports) != len(TEAM_NAMES) + 1 or {row["team_name"] for row in reports} != set(TEAM_NAMES) | {"BIG_MANAGER"}:
+        raise ValueError(f"Expected {len(TEAM_NAMES)} team reports and one Big Manager")
     prepared = [(row["team_name"], json.dumps(row, allow_nan=False), row["generated_at"]) for row in reports]
     with connect_db(db_path) as connection:
         connection.execute("BEGIN IMMEDIATE")

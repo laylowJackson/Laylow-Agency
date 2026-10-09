@@ -185,7 +185,7 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
       </div>
       <aside class="city-overview glass" aria-label="Agency overview">
         <div class="glass-heading">AGENCY OVERVIEW <span class="tiny-orbit" aria-hidden="true"></span></div>
-        <dl><div><dt>Fresh workers</dt><dd id="city-fresh">— / 10</dd></div><div><dt>Specialist votes</dt><dd id="city-votes">Not recorded</dd></div><div><dt>Manager reports</dt><dd id="city-managers">— / 10</dd></div><div><dt>Realized P&amp;L</dt><dd class="muted">Not recorded</dd></div></dl>
+        <dl><div><dt>Fresh workers</dt><dd id="city-fresh">— / 10</dd></div><div><dt>Specialist votes</dt><dd id="city-votes">Not recorded</dd></div><div><dt>Manager reports</dt><dd id="city-managers">— / 10</dd></div><div><dt>Realized P&amp;L</dt><dd id="city-net" class="muted">Not recorded</dd></div></dl>
         <p id="city-observation">Waiting for backend observations</p>
       </aside>
       <div class="city-map-caption">THE VAULT <span>Ten districts. One agency.</span></div>
@@ -782,6 +782,7 @@ function renderBarChart(payroll){
 }
 function renderExtended(snapshot){
  const payroll=snapshot.payroll||{},workers=Array.isArray(payroll.workers)?payroll.workers:[],reports=snapshot.teams||[];
+ $("city-net").textContent=money(payroll.total_net_cents);$("city-net").className=payroll.total_net_cents>0?"good":payroll.total_net_cents<0?"bad":"muted";
  $("payroll-today").textContent=money(payroll.total_net_cents);$("payroll-total").textContent=money(payroll.all_time_net_cents);
  $("payroll-trades").textContent=payroll.available?String(workers.reduce((sum,row)=>sum+(row.closed_trades||0),0)):"—";
  for(const [id,value]of[["payroll-today",payroll.total_net_cents],["payroll-total",payroll.all_time_net_cents]])$(id).className=value>0?"good":value<0?"bad":"muted";

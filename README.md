@@ -1,6 +1,6 @@
 # Laylow Agency — ten teams and a manager hierarchy
 
-Four stock teams (SPY, QQQ, AAPL, TSLA) and four independent futures watch teams (NQ1!, ES1!, MGC1!, MNQ1!). Each team has specialist rule bots, its own read-only Team Manager, and a report to the Big Manager. The dashboard shows observed state and recorded analysis; it never generates demo market quotes or profits.
+Four stock teams (SPY, QQQ, AAPL, TSLA) and six independent futures watch teams (NQ1!, ES1!, MGC1!, MNQ1!, MES1!, GC1!). Each team has specialist rule bots, its own read-only Team Manager, and a report to the Big Manager. The dashboard shows observed state and recorded analysis; it never generates demo market quotes or profits.
 
 ## Start on Windows
 
@@ -30,8 +30,8 @@ Analyze/paper modes can incur OpenAI usage and require suitable Alpaca market-da
 | TSLA | Breakout, Momentum, Volume-Volatility, Trend | 3 of 4 | 1.75 |
 | SPY, QQQ | Trend, VWAP, Momentum | 2 of 3 | 1.25 |
 | NQ1!, MNQ1! | Trend, Momentum, Breakout | 2 of 3 | Watch only |
-| ES1! | Trend, VWAP, Momentum | 2 of 3 | Watch only |
-| MGC1! | Trend, Breakout, Mean Reversion | 2 of 3 | Watch only |
+| ES1!, MES1! | Trend, VWAP, Momentum | 2 of 3 | Watch only |
+| MGC1!, GC1! | Trend, Breakout, Mean Reversion | 2 of 3 | Watch only |
 
 At least 35 validated OHLCV bars and 10 current-session bars are required. Source bars older than five minutes or with invalid timestamps/prices cannot produce an entry. ATR is the average of the last 14 true ranges. Trend compares EMA9/EMA21; momentum measures five bars; breakout compares the prior twenty-bar range. Stock VWAP uses the current regular Eastern session. Futures VWAP is explicitly a rolling 120-bar window.
 
@@ -53,13 +53,13 @@ A unique local intent is saved before submission. Pending/uncertain outcomes blo
 
 ## Futures data
 
-Futures run as four separate processes and have no trading-client/order path. Set LAYLOW_FUTURES_CSV_DIR to a directory containing NQ.csv, ES.csv, MGC.csv and MNQ.csv. Relative paths resolve against the project. Your data exporter must atomically replace each CSV with validated current contract/continuous data that you identify yourself; this build does not connect a futures data vendor or infer rollover mappings.
+Futures run as six separate processes and have no trading-client/order path. Set LAYLOW_FUTURES_CSV_DIR to a directory containing NQ.csv, ES.csv, MGC.csv, MNQ.csv, MES.csv and GC.csv. Relative paths resolve against the project. Your data exporter must atomically replace each CSV with validated current contract/continuous data that you identify yourself; this build does not connect a futures data vendor or infer rollover mappings.
 
 CSV columns: timestamp,open,high,low,close,volume. Rows must be ascending and unique, with timezone-aware ISO timestamps, positive finite OHLC values and nonnegative finite volume. Limit 10,000 rows/5 MB per file. Missing files or invalid data are reported; stale data produces SKIP. No synthetic prices or full-size proxy prices are substituted for micro contracts.
 
 ## Managers and observed health
 
-Ten Team Managers independently assess their team's heartbeat, votes, event controls and local order intent state. INFO/CAUTION/CRITICAL reports go to the Big Manager. A single manager process persists all nine reports atomically every 30 seconds. Managers have no order authority. Optional AI summaries are visibly disabled, awaiting configuration, ready, or unavailable; they never override rule assessments.
+Ten Team Managers independently assess their team's heartbeat, votes, event controls and local order intent state. INFO/CAUTION/CRITICAL reports go to the Big Manager. A single manager process persists all eleven reports atomically every 30 seconds. Managers have no order authority. Optional AI summaries are visibly disabled, awaiting configuration, ready, or unavailable; they never override rule assessments.
 
 The dashboard polls /api/status every five seconds, preserves unsaved event inputs, escapes provider text, and keeps the last snapshot with a connection-loss warning. It displays manager report timestamps so cached reports are not presented as current. /healthz checks SQLite readability, not provider connectivity.
 
@@ -67,36 +67,9 @@ A phone cannot reach a computer's localhost URL. A separate authenticated hostin
 
 ## Reliability and packaging
 
-One supervisor owns eleven children: ten team processes, manager assessments, dashboard, and snapshot service. It uses bounded restart delays, independent logs, fresh process observations and controlled shutdown. Legacy launchers delegate to the same supervisor. LAYLOW_DATA_DIR selects where records/logs are saved; relative paths resolve against the project. Existing databases are migrated without deleting historical rows or conflating enabled flags with worker health.
+One supervisor owns thirteen children: ten team processes, manager assessments, dashboard, and snapshot service. It uses bounded restart delays, independent logs, fresh process observations and controlled shutdown. Legacy launchers delegate to the same supervisor. LAYLOW_DATA_DIR selects where records/logs are saved; relative paths resolve against the project. Existing databases are migrated without deleting historical rows or conflating enabled flags with worker health.
 
 Run python -m unittest discover -s tests -v after installing requirements. CI checks Windows/Linux Python 3.11/3.12, mocked provider/order boundaries, real credential-free startup/shutdown, and Chromium desktop/phone dashboard behavior. Run python package_build.py for dist/Laylow-Agency-improved.zip. Credentials, databases, logs, virtual environments, legacy sample backtests and fake performance generators are excluded from the runtime download.
-
-
-## Interactive agency city
-
-The World view is a local SVG city inspired by the supplied neon tower references.
-Ten team districts surround a gold Vault and purple Big Manager hub. There are
-32 specialist robot characters and ten Team Manager characters. Select a tower
-by click, tap, Enter or Space, or use the district dock. The inspector displays
-the same recorded Python status, consensus, source-bar timestamp, ATR, relative
-volume and manager report used by the team cards. Open team controls jumps to
-that team's existing controls. On phones, swipe the city horizontally; the dock
-also centers the selected district.
-
-City lights are decoration. Bot eyes, report links and status labels use backend
-observations. Stale analysis is labeled as recorded, and lost connections retain
-the last snapshot while marking observations unconfirmed. The Vault counts recent
-heartbeats; realized P&L remains **Not recorded** because this dashboard has no
-broker balance or realized earnings ledger. Futures districts remain watch only.
-
-Ambient motion starts off and can be enabled with the toolbar button. Operating
-system reduced-motion preferences override it. The city uses no external fonts,
-image services, market simulations or additional credentials.
-
-After downloading an updated ZIP, extract it into a new folder and stop the old
-runner before starting the new copy. Your already-open dashboard will show this
-version only when the server serves the updated code. Copy any existing local
-configuration yourself; downloadable packages keep all credential fields blank.
 
 
 ## 3D city and robot offices

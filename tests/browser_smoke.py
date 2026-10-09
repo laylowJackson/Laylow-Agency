@@ -135,7 +135,7 @@ def main():
                               "LAYLOW_CITY_PREVIEW_" + label + "_END",flush=True)
                         assert "WATCH ONLY" in page.locator("body").inner_text()
                         assert page.locator(".specialists img").count() == 0, "Specialist text parsed as HTML"
-                        assert "Eight fixture team reports" in page.locator("#big-summary").inner_text()
+                        assert "Ten fixture team reports" in page.locator("#big-summary").inner_text()
                         earnings=page.locator("#earnings-AAPL")
                         earnings.fill("unsaved input")
                         page.locator("#refresh").click()
@@ -171,6 +171,22 @@ def main():
                     assert reduced.locator("#city-motion").is_disabled()
                     assert reduced.evaluate("Array.from(document.querySelectorAll('.city-floating,.city-ambient')).every(node => getComputedStyle(node).animationName === 'none')")
                     reduced.close()
+                    fallback = browser.new_page(viewport={"width":390,"height":844})
+                    fallback.add_init_script("""const original=HTMLCanvasElement.prototype.getContext;
+                        HTMLCanvasElement.prototype.getContext=function(kind,...args){
+                            return kind==="webgl"?null:original.call(this,kind,...args);
+                        };""")
+                    fallback.route("**/api/status",lambda route:route.fulfill(
+                        status=200,content_type="application/json",body=json.dumps(fixture)))
+                    fallback.goto(url,wait_until="domcontentloaded")
+                    fallback.wait_for_function("document.body.innerText.includes('ci-worker-note')")
+                    assert fallback.locator("#world").get_attribute("data-view")=="map"
+                    assert fallback.locator("#city-view").is_disabled()
+                    fallback.locator('#city-dock button[data-team="AAPL"]').click()
+                    fallback.locator("#city-enter-office").click()
+                    assert fallback.locator("#office-chart polyline").count()==3
+                    assert "unavailable" in fallback.locator("#office-render-note").inner_text()
+                    fallback.close()
                 finally:
                     browser.close()
         finally:

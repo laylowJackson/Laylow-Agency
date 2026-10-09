@@ -139,6 +139,43 @@ class WorkerTests(unittest.TestCase):
                            enabled_check=lambda: False)
         services.broker.submit_order.assert_not_called()
 
+    def test_profit_brake_blocks_before_broker_queries(self):
+        from trading_records import set_profit_brake, import_closed_trades
+        services = self.make_services()
+        now = datetime.now(timezone.utc)
+        set_profit_brake("AAPL", "50", self.db)
+        import_closed_trades([dict(trade_id="profit",team_name="AAPL",
+            closed_at=now.isoformat(),gross_pnl="50",fees="0")],
+            "paper-account", "paper", now, self.db, now=now)
+        decision = dict(direction="LONG",action="APPROVE",reason="test",
+            stop_distance=2,atr=2,vwap=100,analysis_time=now.isoformat())
+        result = submit_paper_order("AAPL","blocked-profit",decision,100,services,self.db)
+        self.assertIn("PROFIT_BRAKE_HIT",result)
+        services.broker.get_clock.assert_not_called()
+        services.broker.submit_order.assert_not_called()
+
+    def test_profit_import_during_request_build_blocks_intent_transaction(self):
+        from trading_records import set_profit_brake, import_closed_trades
+        services = self.make_services()
+        now = datetime.now(timezone.utc)
+        set_profit_brake("AAPL", "50", self.db)
+        import_closed_trades([], "paper-account", "paper", now, self.db, now=now)
+        def crossing_target(*args):
+            stamp = datetime.now(timezone.utc)
+            import_closed_trades([dict(trade_id="race-profit",team_name="AAPL",
+                closed_at=stamp.isoformat(),gross_pnl="51",fees="0")],
+                "paper-account", "paper", stamp, self.db, now=stamp)
+            return object()
+        services.paper_request.side_effect = crossing_target
+        decision = dict(direction="LONG",action="APPROVE",reason="test",
+            stop_distance=2,atr=2,vwap=100,analysis_time=now.isoformat())
+        result = submit_paper_order("AAPL","race-profit",decision,100,services,self.db)
+        self.assertIn("PROFIT_BRAKE_HIT",result)
+        services.paper_request.assert_called_once()
+        services.broker.submit_order.assert_not_called()
+        with connect_db(self.db) as conn:
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM paper_orders").fetchone()[0],0)
+
     def test_sdk_request_attaches_exit_orders_and_client_id(self):
         services = Services.__new__(Services)  # no clients or API calls
         order = services.paper_request("AAPL", dict(direction="LONG"), 100, 2, "test-id")

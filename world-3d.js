@@ -101,7 +101,17 @@ class Scene {
   }
   this.building(0,13,6,"#a670ff",3);this.robot(0,6.5,13,"#bc8aff",1.05);this.ring(0,7.2,13,2,"#c697ff");
   this.labels.push({x:0,y:8.4,z:13,name:"BIG MANAGER",special:"manager"});
-  this.upload();this.draw();
+  this.cityBase=this.data.slice();this.upload();this.draw();
+ }
+ marketBackdrop(bars,key){
+  if(this.backdropKey===key||!this.cityBase)return;this.backdropKey=key;this.data=this.cityBase.slice();
+  const prices=bars.map(row=>Number(row.close)).filter(value=>Number.isFinite(value)&&value>0).slice(-48);
+  if(prices.length>1){const lo=Math.min(...prices),spread=Math.max(...prices)-lo||1;
+   for(let i=1;i<prices.length;i++){const ax=-24+(i-1)*48/(prices.length-1),bx=-24+i*48/(prices.length-1),ay=8+(prices[i-1]-lo)*5/spread,by=8+(prices[i]-lo)*5/spread;
+    const vertices=[[ax,ay-.04,-23],[bx,by-.04,-23],[bx,by+.04,-23],[ax,ay-.04,-23],[bx,by+.04,-23],[ax,ay+.04,-23]];
+    for(const vertex of vertices)this.data.push(...vertex,...hex("#5fcaed"));
+   }
+  }this.upload();this.draw();
  }
  office(symbol){
   this.symbol=symbol;this.data=[];
@@ -115,7 +125,7 @@ class Scene {
    this.box(x,1.1,-.45,.1,.55,.1,"#657595");this.box(x,1.45,-.45,1.45,1.05,.16,"#111626");
    this.box(x,1.51,-.35,1.32,.91,.03,"#122a3c");
   }
-  this.box(0,1.24,1.55,1.2,1.1,.17,"#242747");this.box(0,.45,1.65,1.4,.16,.85,"#2d3452");
+  this.box(0,.8,1.95,1.2,.55,.17,"#383761");this.box(0,.45,1.65,1.4,.16,.85,"#2d3452");
   this.robot(0,.6,1.25,color,1,true);
   this.box(0,1.23,.45,1,.035,.4,"#4b4d73");
   for(let i=0;i<8;i++)this.box(-1.8+i*.48,1.25,.52,.16,.02,.1,i%2?color:"#ffc874");
@@ -147,9 +157,9 @@ class Scene {
   if(this.kind==="city")placeLabels();
  }
  installCamera(){
-  let drag=null,moved=false;
-  this.canvas.addEventListener("pointerdown",event=>{drag={x:event.clientX,y:event.clientY};moved=false;this.canvas.setPointerCapture(event.pointerId);});
-  this.canvas.addEventListener("pointermove",event=>{if(!drag)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>3)moved=true;
+  let drag=null,moved=false,start=null;
+  this.canvas.addEventListener("pointerdown",event=>{drag={x:event.clientX,y:event.clientY};start={...drag};moved=false;this.canvas.setPointerCapture(event.pointerId);});
+  this.canvas.addEventListener("pointermove",event=>{if(!drag)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(event.clientX-start.x)+Math.abs(event.clientY-start.y)>3)moved=true;
    this.yaw+=dx*.006;this.pitch=Math.max(.12,Math.min(1.3,this.pitch+dy*.004));drag={x:event.clientX,y:event.clientY};this.draw();});
   this.canvas.addEventListener("pointerup",event=>{drag=null;if(this.kind==="city"&&!moved){const rect=this.canvas.getBoundingClientRect();let chosen=null,distance=55;
    for(const label of this.labels){if(label.special)continue;const p=this.project(label.x,label.y-2,label.z);if(!p)continue;const dist=Math.hypot(p.x-(event.clientX-rect.left),p.y-(event.clientY-rect.top));if(dist<distance){chosen=label.name;distance=dist;}}
@@ -176,13 +186,13 @@ function start(){
    const button=document.createElement("button");button.type="button";button.className="world-3d-label";button.dataset.team=row.name;
    button.style.setProperty("--district-color",row.color);
    const name=document.createElement("strong");name.textContent=row.name;const state=document.createElement("span");state.textContent="Not observed";
-   button.append(name,state);button.addEventListener("click",()=>{bridge.select(row.name,false);bridge.enter(row.name);});byId("city-3d-labels").append(button);labels.set(row.name,button);
+   const net=document.createElement("span");net.className="world-3d-net";net.textContent="Net not recorded";button.append(name,state,net);button.addEventListener("click",()=>{bridge.select(row.name,false);bridge.enter(row.name);});byId("city-3d-labels").append(button);labels.set(row.name,button);
   }
   for(const [name,label] of[["THE VAULT","Recorded activity"],["BIG MANAGER","Team reports"]]){
    const node=document.createElement("div");node.className="world-3d-label city-hq-label";node.textContent=name+" · "+label;byId("city-3d-labels").append(node);labels.set(name,node);
   }
   city.city();byId("world").dataset.view="3d";byId("city-view").textContent="Use city map";
-  byId("city-render-note").textContent="Drag to orbit · arrow keys rotate · select a tower sign to enter";
+  byId("city-render-note").textContent="Background line uses selected team's recorded closes · drag to orbit · arrow keys rotate · select a tower sign to enter";
  }catch(error){byId("world").dataset.view="map";byId("city-view").disabled=true;byId("city-render-note").textContent="3D rendering unavailable on this device. The interactive city map remains available.";}
  byId("city-view").addEventListener("click",()=>{const three=byId("world").dataset.view!=="3d";byId("world").dataset.view=three?"3d":"map";byId("city-view").textContent=three?"Use city map":"Use 3D city";if(three)city?.draw();});
  byId("city-camera-reset").addEventListener("click",()=>{if(city){city.yaw=.52;city.pitch=.56;city.distance=51;city.target=[0,2,4];city.draw();}});
@@ -190,9 +200,17 @@ function start(){
 }
 window.Laylow3D={
  update(data,connected){snapshot=data;online=connected;for(const [name,node]of labels){if(node.tagName!=="BUTTON")continue;const team=data.teams?.find(row=>row.name===name)||{};
-  node.lastChild.textContent=connected?team.controls?.profit_brake?.status==="PROFIT_BRAKE_HIT"?"PROFIT BRAKE HIT":team.health==="fresh"?team.worker_state:"Not recently observed":"Last snapshot";
+  node.children[1].textContent=connected?team.controls?.profit_brake?.status==="PROFIT_BRAKE_HIT"?"PROFIT BRAKE HIT":team.health==="fresh"?team.worker_state:"Not recently observed":"Last snapshot";
+  const worker=data.payroll?.workers?.find(row=>row.team_name===name),amount=worker?.net_cents;
+  node.lastChild.textContent=Number.isFinite(amount)?(amount>=0?"+":"−")+"$"+(Math.abs(amount)/100).toFixed(2)+" net today":"Net not recorded";
+  node.lastChild.style.color=amount>0?"#65efc1":amount<0?"#ff718b":"#b8c5da";
   node.dataset.selected=String(bridge.selected()===name);
- }if(office&&byId("office-dialog").open){const analysis=data.teams?.find(row=>row.name===office.symbol)?.analysis||{};office.officeBars(Array.isArray(analysis.bars)?analysis.bars:[]);}},
+ }
+ const total=data.payroll?.total_net_cents;
+ if(labels.has("THE VAULT"))labels.get("THE VAULT").textContent=Number.isFinite(total)?"THE VAULT · "+(total>=0?"+":"−")+"$"+(Math.abs(total)/100).toFixed(2)+" net today":"THE VAULT · Net not recorded";
+ const analysis=data.teams?.find(row=>row.name===bridge.selected())?.analysis||{};
+ city?.marketBackdrop(Array.isArray(analysis.bars)?analysis.bars:[],bridge.selected()+"/"+(analysis.bar_time||"empty"));
+ if(office&&byId("office-dialog").open){const analysis=data.teams?.find(row=>row.name===office.symbol)?.analysis||{};office.officeBars(Array.isArray(analysis.bars)?analysis.bars:[]);}},
  enter(name){try{if(!office)office=new Scene(byId("office-3d"),"office");office.office(name);office.officeBars(snapshot?.teams?.find(row=>row.name===name)?.analysis?.bars||[]);byId("office-render-note").textContent="Bot office · drag to look around";}catch(error){byId("office-render-note").textContent="3D office unavailable; recorded workstation panels remain available.";}},
  select(){this.update(snapshot||{},online);}
 };

@@ -119,3 +119,5 @@ class RecordsTests(unittest.TestCase):
         response=create_app(self.db).test_client().get("/world-3d.js")
         self.assertEqual(response.status_code,200)
         self.assertIn("webgl",response.get_data(as_text=True))
+
+        response.close()
