@@ -89,7 +89,7 @@ class Scene {
   for(let i=0;i<40;i++){const x=-28+i*1.45,h=1.5+(i*7%11)*.48;this.building(x,-21,h,"#535182",.8);}
   this.building(0,-3,11,"#ffd278",3.3);this.building(0,-3,12.3,"#ffdb8c",1.6);this.ring(0,13.2,-3,2,"#ffe5a7");
   this.box(0,12.8,-3,.12,18,.12,"#fff1cb");this.ring(0,.3,-3,4,"#4eb8e2");
-  this.labels.push({x:0,y:11,z:-3,name:"THE VAULT",special:"vault"});
+  this.labels.push({x:0,y:15,z:-3,name:"THE VAULT",special:"vault"});
   for(const district of bridge.districts){
    const [x,z]=positions[district.name]||[0,0],h=district.name.endsWith("!")?4.5:7;
    this.building(x,z,h,district.color);this.ring(x,h+.6,z,1.25,district.color);this.robot(x,h+.65,z,district.color,.75);
@@ -100,7 +100,7 @@ class Scene {
    this.labels.push({x,y:h+2.4,z,name:district.name});
   }
   this.building(0,13,6,"#a670ff",3);this.robot(0,6.5,13,"#bc8aff",1.05);this.ring(0,7.2,13,2,"#c697ff");
-  this.labels.push({x:0,y:8.4,z:13,name:"BIG MANAGER",special:"manager"});
+  this.labels.push({x:0,y:3.5,z:13,name:"BIG MANAGER",special:"manager"});
   this.cityBase=this.data.slice();this.upload();this.draw();
  }
  marketBackdrop(bars,key){
@@ -153,7 +153,7 @@ class Scene {
   gl.enableVertexAttribArray(this.color);gl.vertexAttribPointer(this.color,3,gl.FLOAT,false,24,12);
   const t=this.target,r=this.distance,eye=[t[0]+r*Math.sin(this.yaw)*Math.cos(this.pitch),t[1]+r*Math.sin(this.pitch),t[2]+r*Math.cos(this.yaw)*Math.cos(this.pitch)];
   this.matrix=cameraMatrix(eye,t,w/h);gl.uniformMatrix4fv(this.camera,false,new Float32Array(this.matrix));
-  gl.uniform1f(this.pulse,byId("world").dataset.motion==="on"&&!document.hidden?.12+.10*Math.sin(performance.now()/700):0);
+  gl.uniform1f(this.pulse,byId("world").dataset.motion==="on" && !document.hidden ? .12 + .10*Math.sin(performance.now()/700) : 0);
   gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.drawArrays(gl.TRIANGLES,0,this.vertices||0);canvas.dataset.ready="true";
   if(this.kind==="city")placeLabels();
  }

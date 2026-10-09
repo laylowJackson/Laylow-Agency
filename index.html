@@ -156,6 +156,17 @@ select{font:inherit;min-height:44px;background:#15213a;color:var(--text);border:
 .camera-controls{right:8px;bottom:45px}.payroll-metrics{gap:12px}.payroll-metrics strong{font-size:19px}.payroll-metrics span{font-size:10px}.payroll-layout,.office-monitors{grid-template-columns:1fr}
 dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font-size:21px}.office-header button{font-size:10px;padding:8px}.office-options{gap:9px}#office-3d{height:260px}.city-render-note{font-size:10px;padding:9px 12px}}
 
+
+@media(max-width:800px){
+ .city-world[data-view="3d"] .city-viewport{display:flex;flex-direction:column}
+ .city-world[data-view="3d"] .city-overview{position:relative;order:-1;left:auto;top:auto;width:calc(100% - 24px);margin:12px;padding:12px}
+ .city-world[data-view="3d"] .city-overview dl{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 15px}
+ .city-world[data-view="3d"] .city-overview p{margin-top:9px}
+ .city-world[data-view="3d"] .city-3d-wrap{height:440px;flex-shrink:0}
+ .city-world[data-view="3d"] .world-3d-label[data-team]:not([data-selected="true"]),.city-world[data-view="3d"] .city-hq-label{display:none}
+ .city-world[data-view="3d"] .city-map-caption{position:static;padding:12px 16px}
+ .city-world[data-view="3d"] .mobile-pan-hint{display:none}
+}
 </style>
 </head>
 <body>

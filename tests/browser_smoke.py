@@ -109,6 +109,9 @@ def main():
                         page.wait_for_function("document.getElementById('city-3d').dataset.ready==='true'")
                         assert page.locator("#world").get_attribute("data-view")=="3d"
                         assert page.locator(".world-3d-label[data-team]").count()==10
+                        if width<800:
+                            assert page.locator(".world-3d-label[data-team]:visible").count()==1
+                            assert page.locator(".city-overview").bounding_box()["y"]+page.locator(".city-overview").bounding_box()["height"] <= page.locator("#city-3d").bounding_box()["y"]
                         assert "Not recorded" in page.locator("#payroll-today").inner_text()
                         page.locator("#city-enter-office").click()
                         assert page.locator("#office-dialog").is_visible()
