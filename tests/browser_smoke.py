@@ -1,7 +1,7 @@
 """Chromium checks with fixture status data; no broker or OpenAI requests."""
 import base64
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import os
 import re
 import socket
@@ -27,29 +27,32 @@ def main():
         fixture = {
             "generated_at": "2026-10-08T18:00:00+00:00", "mode": "observe",
             "database_available": True,
-            "summary": {"fresh_workers": 8, "enabled_teams": 8, "running_processes": 11,
-                        "total_teams": 8, "fresh": 8, "enabled": 8, "running": 11},
+            "summary": {"fresh_workers": 10, "enabled_teams": 10, "running_processes": 13,
+                        "total_teams": 10, "fresh": 10, "enabled": 10, "running": 13},
             "teams": [
                 dict(name=symbol, enabled=True, worker_state="STANDBY", health="fresh",
                      heartbeat="2026-10-08T18:00:00+00:00", heartbeat_age_seconds=2,
                      pid=100 + index, score=None,
                      notes="ci-worker-note " + symbol +
                            " <img src=x onerror=window.__injected=true>")
-                for index, symbol in enumerate(("AAPL", "TSLA", "SPY", "QQQ", "NQ1!", "ES1!", "MGC1!", "MNQ1!"))
+                for index, symbol in enumerate(("AAPL", "TSLA", "SPY", "QQQ", "NQ1!", "ES1!", "MGC1!", "MNQ1!", "MES1!", "GC1!"))
             ],
             "processes": [dict(name="teams/aapl_team.py", pid=100, status="RUNNING", health="fresh",
                                exit_code=None, restarts=0, notes="fixture process")],
             "events": [dict(team_name="AAPL", event_type="STARTED",
                             details="fixture event", created_at="2026-10-08T18:00:00+00:00")],
         }
-        now = datetime.now(timezone.utc).isoformat()
+        clock_now = datetime.now(timezone.utc)
+        now = clock_now.isoformat()
         fixture["generated_at"] = now
         fixture["csrf_token"] = "fixture-csrf"
         fixture["managers"] = [dict(team_name=row["name"],severity="INFO",summary="Fixture team assessment",generated_at=now) for row in fixture["teams"]]
-        fixture["big_manager"] = dict(severity="INFO",summary="Eight fixture team reports",ai_status="disabled",generated_at=now)
+        fixture["big_manager"] = dict(severity="INFO",summary="Ten fixture team reports",ai_status="disabled",generated_at=now)
         fixture["teams"][0]["analysis"] = dict(direction="LONG",agreement=3,required=2,
             reason="Fixture consensus",source="CI fixture only",state="READY",bar_time=now,updated_at=now,indicators=dict(atr=2,relative_volume=1.5),
             votes=[dict(name="Trend",direction="LONG",reason="<img src=x onerror=window.__injected=true>")])
+        fixture["teams"][0]["analysis"]["bars"] = [dict(timestamp=(clock_now-timedelta(minutes=29-index)).isoformat(),open=100+index*.2,high=101+index*.2,low=99+index*.2,close=100+index*.2,volume=1000) for index in range(30)]
+        fixture["teams"][0]["analysis"]["indicators"]["vwap"] = 103
         fixture["teams"][0]["controls"] = dict(headline_locked=False,earnings_at="",earnings_status="UNKNOWN",lock_reason="Earnings unknown")
         posted = []
         def mutation(route):
@@ -59,7 +62,7 @@ def main():
             route.fulfill(status=200,content_type="application/json",body='{"saved":true}')
         try:
             with sync_playwright() as playwright:
-                browser = playwright.chromium.launch()
+                browser = playwright.chromium.launch(args=["--enable-unsafe-swiftshader"])
                 try:
                     for width, height in ((1440, 1000), (390, 844)):
                         page = browser.new_page(viewport={"width": width, "height": height})
@@ -72,20 +75,20 @@ def main():
                         page.goto(url, wait_until="domcontentloaded")
                         page.wait_for_function(
                             "document.body.innerText.includes('ci-worker-note')", timeout=10000)
-                        assert page.locator(".bot").count() == 8, "Missing worker cards"
+                        assert page.locator(".bot").count() == 10, "Missing worker cards"
                         assert page.locator("#mode").inner_text().lower().find("observe") >= 0
                         assert page.locator(".bot-note img").count() == 0, "Notes parsed as HTML"
                         assert not page.evaluate("Boolean(window.__injected)"), "Injected HTML ran"
                         assert page.evaluate(
                             "document.documentElement.scrollWidth <= window.innerWidth + 1"
                         ), f"Horizontal overflow at {width}px"
-                        assert page.locator(".specialists li").count() == 26, "Missing specialist vote slots"
-                        assert page.locator(".city-tower").count() == 8, "Missing city districts"
-                        assert page.locator(".city-specialist").count() == 26, "Missing city robots"
-                        assert page.locator(".city-team-manager").count() == 8, "Missing city team managers"
+                        assert page.locator(".specialists li").count() == 32, "Missing specialist vote slots"
+                        assert page.locator(".city-tower").count() == 10, "Missing city districts"
+                        assert page.locator(".city-specialist").count() == 32, "Missing city robots"
+                        assert page.locator(".city-team-manager").count() == 10, "Missing city team managers"
                         assert page.locator(".city-big-manager").count() == 1, "Missing Big Manager"
-                        assert page.locator("#city-fresh").inner_text() == "8 / 8"
-                        assert "NOT RECORDED" in page.locator("#city-map").text_content()
+                        assert page.locator("#city-fresh").inner_text() == "10 / 10"
+                        assert "P&L VIA TRADE EXPORT" in page.locator("#city-map").text_content()
                         assert "STANDBY" in page.locator('.city-tower[data-team="SPY"]').get_attribute("aria-label")
                         assert page.locator("#world").get_attribute("data-motion") == "off"
                         page.locator("#city-motion").click()
@@ -96,10 +99,33 @@ def main():
                         assert page.locator("#city-consensus").inner_text() == "Consensus LONG"
                         assert "CI fixture only" in page.locator("#city-analysis-time").inner_text()
                         assert page.locator("#city-bot-list img").count() == 0
+                        page.locator("#city-view").click()
                         page.locator('.city-tower[data-team="QQQ"]').focus()
                         page.keyboard.press("Enter")
                         assert page.locator("#city-team-title").inner_text() == "QQQ"
                         page.locator('#city-dock button[data-team="AAPL"]').click()
+                        page.locator("#city-view").click()
+                        page.wait_for_function("document.getElementById('city-3d').dataset.ready==='true'")
+                        assert page.locator("#world").get_attribute("data-view")=="3d"
+                        assert page.locator(".world-3d-label[data-team]").count()==10
+                        assert "Not recorded" in page.locator("#payroll-today").inner_text()
+                        page.locator("#city-enter-office").click()
+                        assert page.locator("#office-dialog").is_visible()
+                        assert "AAPL" in page.locator("#office-title").inner_text()
+                        page.wait_for_function("document.getElementById('office-3d').dataset.ready==='true'")
+                        page.locator("#office-worker").select_option("Trend")
+                        assert "Trend" in page.locator("#office-title").inner_text()
+                        assert "recorded bars" in page.locator("#office-chart-note").inner_text()
+                        assert page.locator("#office-chart polyline").count()==3
+                        assert "Not recorded" in page.locator("#office-earned").inner_text()
+                        assert page.locator("#office-votes img").count()==0
+                        office_preview=page.locator("#office-dialog").screenshot(type="jpeg",quality=76,animations="disabled")
+                        office_label="DESKTOP" if width>800 else "PHONE"
+                        print("LAYLOW_OFFICE_PREVIEW_"+office_label+"_BEGIN"+
+                              base64.b64encode(office_preview).decode("ascii")+
+                              "LAYLOW_OFFICE_PREVIEW_"+office_label+"_END",flush=True)
+                        page.keyboard.press("Escape")
+                        assert not page.locator("#office-dialog").is_visible()
                         page.locator("#city-open-team").click()
                         assert page.locator(".bot.city-selected").get_attribute("aria-label") == "AAPL Python worker"
                         preview = page.locator("#world").screenshot(type="jpeg",quality=76,animations="disabled")
@@ -150,7 +176,7 @@ def main():
         finally:
             server.shutdown()
             thread.join(timeout=5)
-    print("Dashboard browser checks passed: desktop, phone, city selection, 26 robots, reduced motion, text safety and connection loss.")
+    print("Dashboard browser checks passed: desktop, phone, city selection, 32 robots, reduced motion, text safety and connection loss.")
 
 
 if __name__ == "__main__":

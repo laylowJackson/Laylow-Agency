@@ -1,4 +1,4 @@
-# Laylow Agency — eight teams and a manager hierarchy
+# Laylow Agency — ten teams and a manager hierarchy
 
 Four stock teams (SPY, QQQ, AAPL, TSLA) and four independent futures watch teams (NQ1!, ES1!, MGC1!, MNQ1!). Each team has specialist rule bots, its own read-only Team Manager, and a report to the Big Manager. The dashboard shows observed state and recorded analysis; it never generates demo market quotes or profits.
 
@@ -9,7 +9,7 @@ Four stock teams (SPY, QQQ, AAPL, TSLA) and four independent futures watch teams
 3. In the Laylow-Agency folder, double-click SETUP_WINDOWS.bat, then START_WINDOWS.bat.
 4. Open http://127.0.0.1:5000. Keep the terminal open. Ctrl+C stops the supervisor and its children.
 
-Credentials are intentionally blank. Default observe mode starts eight workers, the managers, the dashboard and the snapshot service without any provider requests or orders. CHECK_SETUP.bat checks prerequisites without printing secrets. Logs are under the configured data directory's logs folder.
+Credentials are intentionally blank. Default observe mode starts ten workers, the managers, the dashboard and the snapshot service without any provider requests or orders. CHECK_SETUP.bat checks prerequisites without printing secrets. Logs are under the configured data directory's logs folder.
 
 ## Configure later
 
@@ -59,7 +59,7 @@ CSV columns: timestamp,open,high,low,close,volume. Rows must be ascending and un
 
 ## Managers and observed health
 
-Eight Team Managers independently assess their team's heartbeat, votes, event controls and local order intent state. INFO/CAUTION/CRITICAL reports go to the Big Manager. A single manager process persists all nine reports atomically every 30 seconds. Managers have no order authority. Optional AI summaries are visibly disabled, awaiting configuration, ready, or unavailable; they never override rule assessments.
+Ten Team Managers independently assess their team's heartbeat, votes, event controls and local order intent state. INFO/CAUTION/CRITICAL reports go to the Big Manager. A single manager process persists all nine reports atomically every 30 seconds. Managers have no order authority. Optional AI summaries are visibly disabled, awaiting configuration, ready, or unavailable; they never override rule assessments.
 
 The dashboard polls /api/status every five seconds, preserves unsaved event inputs, escapes provider text, and keeps the last snapshot with a connection-loss warning. It displays manager report timestamps so cached reports are not presented as current. /healthz checks SQLite readability, not provider connectivity.
 
@@ -67,7 +67,7 @@ A phone cannot reach a computer's localhost URL. A separate authenticated hostin
 
 ## Reliability and packaging
 
-One supervisor owns eleven children: eight team processes, manager assessments, dashboard, and snapshot service. It uses bounded restart delays, independent logs, fresh process observations and controlled shutdown. Legacy launchers delegate to the same supervisor. LAYLOW_DATA_DIR selects where records/logs are saved; relative paths resolve against the project. Existing databases are migrated without deleting historical rows or conflating enabled flags with worker health.
+One supervisor owns eleven children: ten team processes, manager assessments, dashboard, and snapshot service. It uses bounded restart delays, independent logs, fresh process observations and controlled shutdown. Legacy launchers delegate to the same supervisor. LAYLOW_DATA_DIR selects where records/logs are saved; relative paths resolve against the project. Existing databases are migrated without deleting historical rows or conflating enabled flags with worker health.
 
 Run python -m unittest discover -s tests -v after installing requirements. CI checks Windows/Linux Python 3.11/3.12, mocked provider/order boundaries, real credential-free startup/shutdown, and Chromium desktop/phone dashboard behavior. Run python package_build.py for dist/Laylow-Agency-improved.zip. Credentials, databases, logs, virtual environments, legacy sample backtests and fake performance generators are excluded from the runtime download.
 
@@ -75,8 +75,8 @@ Run python -m unittest discover -s tests -v after installing requirements. CI ch
 ## Interactive agency city
 
 The World view is a local SVG city inspired by the supplied neon tower references.
-Eight team districts surround a gold Vault and purple Big Manager hub. There are
-26 specialist robot characters and eight Team Manager characters. Select a tower
+Ten team districts surround a gold Vault and purple Big Manager hub. There are
+32 specialist robot characters and ten Team Manager characters. Select a tower
 by click, tap, Enter or Space, or use the district dock. The inspector displays
 the same recorded Python status, consensus, source-bar timestamp, ATR, relative
 volume and manager report used by the team cards. Open team controls jumps to
@@ -97,3 +97,68 @@ After downloading an updated ZIP, extract it into a new folder and stop the old
 runner before starting the new copy. Your already-open dashboard will show this
 version only when the server serves the updated code. Copy any existing local
 configuration yourself; downloadable packages keep all credential fields blank.
+
+
+## 3D city and robot offices
+
+The city now includes ten teams and 32 specialist bots. MES1! and GC1! are separate
+watch-only futures districts, reading MES.csv and GC.csv respectively. They follow
+the same configuration and source-data rules as ES/MGC; no futures order client
+exists.
+
+The World view uses local WebGL geometry: rotate by dragging or using arrow keys,
+zoom with the buttons, and reset the camera from its controls. Select a tower sign
+to enter that team's office, or select a district in the dock and press Enter bot
+office. The office includes a seated robot with headphones, a market terminal,
+signal scanner, performance terminal and recorded decision/order history. Choose
+a specialist desk to inspect its vote and reasoning. Escape or Return to city
+closes the office. If WebGL is unavailable, the accessible SVG map and all recorded
+data panels remain available.
+
+Market charts use up to 240 OHLCV bars saved with actual worker analysis. Close
+prices and EMA lines use those bars; the VWAP reference is the latest recorded
+strategy value. Missing bars remain empty. Offices label stale observations.
+Payroll is team-level; the system does not invent separate specialist earnings.
+Neither the city nor offices manufacture prices, fills, account equity or profits.
+
+## Closed-trade imports and Payroll
+
+Payroll and its daily bar chart are backed by imported, completed trades.
+Order intents and model decisions never count as earnings. There is no automatic
+broker fill reconciliation in this version. Export completeness and realized
+PnL accounting must be supplied by the export producer.
+
+Prepare a CSV with columns:
+trade_id,team_name,closed_at,gross_pnl,fees
+
+Use a stable source name identifying one account/export stream, then run:
+python import_trade_records.py YOUR_EXPORT.csv --source YOUR_ACCOUNT_EXPORT --mode paper --as-of YOUR_COMPLETE_EXPORT_TIMESTAMP
+
+closed_at and --as-of require ISO timestamps with timezone. gross_pnl is the
+completed trade's realized USD amount before fees; fees must be supplied and
+nonnegative. Dollar values allow at most two decimals. Use one stable source per
+mode: alternate sources are rejected to prevent duplicate account totals.
+Repeated unchanged trade IDs are idempotent; conflicting IDs reject the entire
+batch. Older export coverage timestamps cannot replace newer ones. Imports must
+contain completed trades through their declared as-of timestamp. The producer
+must also import a complete empty export to confirm a zero-trade session.
+
+Live exports can be retained separately with --mode live, but do not influence
+the paper Payroll or paper profit brakes. Session days use America/New_York.
+Payroll shows source, coverage time, freshness, net results after stated fees,
+trades, wins/losses and up to 30 daily results. Account balance and open positions
+are not inferred from these exports.
+
+## Optional paper-entry profit brake
+
+Each stock team's existing control card includes an optional USD net-profit target.
+It starts disabled. Save a positive amount to arm it, or save an empty value to
+disable it. This control uses the same local Host, Origin and CSRF restrictions.
+
+With a brake configured, a complete paper export no older than 90 seconds is
+required; missing/stale coverage blocks new paper entries. Reaching the target
+latches the brake for the New York session day, including when later losses reduce
+the net amount. Raising the target does not clear a same-day latch. The brake is
+checked again inside the order-intent transaction. It never closes existing
+positions, cancels broker orders or sends additional orders. Futures stay watch
+only regardless of any export records. No target amount is preset.

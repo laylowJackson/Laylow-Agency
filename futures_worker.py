@@ -9,7 +9,7 @@ from team_worker import TeamWorker, load_settings, team_enabled, utc_now
 from db_utils import save_analysis
 from specialist_engine import evaluate_team
 
-CSV_NAMES = {"NQ1!": "NQ.csv", "ES1!": "ES.csv", "MGC1!": "MGC.csv", "MNQ1!": "MNQ.csv"}
+CSV_NAMES = {"NQ1!": "NQ.csv", "ES1!": "ES.csv", "MGC1!": "MGC.csv", "MNQ1!": "MNQ.csv", "MES1!": "MES.csv", "GC1!": "GC.csv"}
 
 def read_csv_bars(team_name, directory):
     root = Path(directory).expanduser()

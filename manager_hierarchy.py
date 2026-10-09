@@ -65,8 +65,8 @@ def build_manager_reports(status_payload, analyses, controls, ledger_summary, no
     big = {"team_name": "BIG_MANAGER", "kind": "big_manager", "manager_name": "Big Manager",
            "engine": "rules", "ai_status": "disabled", "severity": severity, "status": severity,
            "generated_at": current.isoformat(), "team_count": len(reports),
-           "summary": str(len(attention)) + " of eight teams need attention" if attention
-                      else "All eight team reports have no reported issue",
+           "summary": str(len(attention)) + " of "+str(len(TEAM_NAMES))+" teams need attention" if attention
+                      else "All "+str(len(TEAM_NAMES))+" team reports have no reported issue",
            "reports": [{"team_name": row["team_name"], "severity": row["severity"],
                         "summary": row["summary"]} for row in reports],
            "severity_counts": {level: sum(row["severity"] == level for row in reports) for level in SEVERITY}}

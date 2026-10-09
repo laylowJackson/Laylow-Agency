@@ -15,7 +15,7 @@ DATA_DIR = DATA_DIR.resolve()
 DB_PATH = str(DATA_DIR / "team_status.db")
 LOG_DIR = DATA_DIR / "logs"
 STOCK_TEAM_NAMES = ["SPY", "QQQ", "AAPL", "TSLA"]
-FUTURES_TEAM_NAMES = ["NQ1!", "ES1!", "MGC1!", "MNQ1!"]
+FUTURES_TEAM_NAMES = ["NQ1!", "ES1!", "MGC1!", "MNQ1!", "MES1!", "GC1!"]
 TEAM_NAMES = STOCK_TEAM_NAMES + FUTURES_TEAM_NAMES
 REFRESH_SECONDS = 300
 HEARTBEAT_SECONDS = 30
@@ -35,5 +35,5 @@ STARTUP_PROCESSES = [
     "dashboard.py", "runtime_manager.py", "manager_worker.py",
     "teams/spy_team.py", "teams/qqq_team.py",
     "teams/aapl_team.py", "teams/tsla_team.py",
-    "teams/nq_team.py", "teams/es_team.py", "teams/mgc_team.py", "teams/mnq_team.py",
+    "teams/nq_team.py", "teams/es_team.py", "teams/mgc_team.py", "teams/mnq_team.py", "teams/mes_team.py", "teams/gc_team.py",
 ]

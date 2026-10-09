@@ -301,6 +301,10 @@ def submit_paper_order(symbol, decision_id, decision, price, services,
         if assess_controls(symbol, dict(saved_control) if saved_control else {},
                            enabled=team_enabled(symbol, db_path))["entry_locked"]:
             return "Entry blocked by a saved control"
+        from trading_records import brake_from_connection
+        brake = brake_from_connection(conn,symbol,persist=True)
+        if brake["locked"]:
+            return "Entry blocked: " + brake["status"]
         conn.execute(
             "INSERT INTO paper_orders VALUES (?,?,?,?,?,?,?,?)",
             (client_id, decision_id, symbol, utc_now().isoformat(), None,

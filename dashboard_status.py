@@ -90,7 +90,7 @@ def build_dashboard_payload(db_path=None, now=None):
     path = database_path(db_path)
     data = {name: [] for name in
             ("team_status","team_scores","worker_status","process_status","system_events",
-             "team_analysis","team_controls","manager_reports","paper_orders")}
+             "team_analysis","team_controls","manager_reports","paper_orders","worker_decisions","closed_trades","trade_exports","risk_brakes")}
     errors, available = [], False
     if path != ":memory:" and Path(path).is_file():
         try:
@@ -100,7 +100,7 @@ def build_dashboard_payload(db_path=None, now=None):
                 conn.execute("PRAGMA query_only = ON")
                 conn.execute("BEGIN")
                 for table in data:
-                    data[table] = _read_rows(conn, table, 20 if table == "system_events" else None)
+                    data[table] = _read_rows(conn, table, 20 if table in {"system_events","worker_decisions"} else None)
                 available = True
         except (sqlite3.Error, OSError):
             data = {table: [] for table in data}
@@ -124,6 +124,8 @@ def build_dashboard_payload(db_path=None, now=None):
         summary["order_count"] += 1
         summary["pending_or_uncertain"] += str(row.get("status")).upper() in {"PENDING", "UNCERTAIN"}
         summary["latest_status"] = row.get("status")
+    from trading_records import assess_profit_brake, payroll_payload
+    brakes = _latest_by(data["risk_brakes"], "team_name")
     teams = []
     for name in names:
         control, score, worker = controls.get(name, {}), scores.get(name, {}), workers.get(name, {})
@@ -132,9 +134,15 @@ def build_dashboard_payload(db_path=None, now=None):
         enabled = (_flag(control.get("active"))
                    and str(control.get("status","")).upper() not in {"DISABLED","PAUSED","STOPPED"}
                    and not _flag(score.get("is_disabled")))
+        assessed = assess_controls(name, entry_controls.get(name), enabled, now)
+        brake = assess_profit_brake(name,brakes.get(name),data["closed_trades"],data["trade_exports"],now)
+        assessed["profit_brake"] = brake
+        if brake["locked"]:
+            assessed["entry_locked"] = True
+            assessed["lock_reason"] = "; ".join(filter(None,[assessed["lock_reason"],brake["status"]]))
         teams.append({
             "name":name, "enabled":enabled,
-            "controls":assess_controls(name, entry_controls.get(name), enabled, now),
+            "controls":assessed,
             "analysis":analyses.get(name), "specialists":TEAM_SPECS.get(name, {}),
             "execution_health":ledger.get(name, {"order_count":0,"pending_or_uncertain":0}), "worker_state":worker.get("state") or "NOT_STARTED",
             "health":health, "heartbeat":heartbeat, "heartbeat_age_seconds":age,
@@ -167,6 +175,8 @@ def build_dashboard_payload(db_path=None, now=None):
     }
     return {"generated_at":now.isoformat(), "mode":LAYLOW_MODE, "database_available":available,
             "teams":teams, "managers":[managers[name] for name in TEAM_NAMES if name in managers],
+            "payroll":payroll_payload(data["closed_trades"],data["trade_exports"],TEAM_NAMES,now,"paper"),
+            "recent_orders":data["paper_orders"][-20:][::-1], "recent_decisions":data["worker_decisions"],
             "big_manager":managers.get("BIG_MANAGER"), "processes":processes, "events":events, "summary":summary, "errors":errors}
 
 

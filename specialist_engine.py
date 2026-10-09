@@ -48,7 +48,8 @@ def evaluate_team(team_name, bars, source="market_data", observed_at=None,
               "bar_time": bars[-1]["timestamp"].isoformat() if bars else None,
               "direction": "SKIP", "agreement": 0, "required": spec["required"],
               "votes": [], "indicators": {}, "watch_only": team_name not in STOCK_TEAM_NAMES,
-              "reason": "Insufficient bars", "state": "INSUFFICIENT_DATA"}
+              "reason": "Insufficient bars", "state": "INSUFFICIENT_DATA",
+              "bars": [dict(row, timestamp=row["timestamp"].isoformat()) for row in bars[-240:]]}
     def skip(reason, state="INSUFFICIENT_DATA"):
         result.update(reason=reason, state=state)
         return result

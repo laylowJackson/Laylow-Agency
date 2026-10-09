@@ -11,6 +11,8 @@ import unittest
 import urllib.request
 from pathlib import Path
 
+from config import TEAM_NAMES
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -45,7 +47,7 @@ class RuntimeIntegrationTests(unittest.TestCase):
                         ) as response:
                             payload = json.load(response)
                         teams = payload["teams"]
-                        if len(teams) == 8 and all(
+                        if len(teams) == len(TEAM_NAMES) and all(
                             team["worker_state"] == "STANDBY" and team["health"] == "fresh"
                             for team in teams
                         ):
@@ -54,9 +56,9 @@ class RuntimeIntegrationTests(unittest.TestCase):
                         pass
                     time.sleep(.2)
                 else:
-                    self.fail("Eight standby workers did not report fresh heartbeats\n" + diagnostics())
+                    self.fail("All standby workers did not report fresh heartbeats\n" + diagnostics())
                 pids = [row["pid"] for row in payload["processes"] if row.get("pid")]
-                self.assertEqual(len({team["pid"] for team in teams}), 8)
+                self.assertEqual(len({team["pid"] for team in teams}), len(TEAM_NAMES))
                 self.assertTrue(all("credentials" in team["notes"] for team in teams))
             finally:
                 process.send_signal(signal.SIGTERM)

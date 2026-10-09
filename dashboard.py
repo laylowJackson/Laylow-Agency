@@ -41,6 +41,14 @@ def create_app(db_path=None):
     def index():
         return send_file(Path(ROOT_DIR) / "index.html", conditional=False)
 
+    @application.get("/world-3d.js")
+    def world_script():
+        return send_file(Path(ROOT_DIR) / "world-3d.js",mimetype="text/javascript",conditional=False)
+
+    @application.post("/api/teams/<team_name>/profit-brake")
+    def profit_brake(team_name):
+        return change_control(team_name,"profit")
+
     @application.get("/api/status")
     def status():
         try:
@@ -70,11 +78,14 @@ def create_app(db_path=None):
         ):
             return jsonify({"error": "invalid_control_token_or_origin"}), 403
         body = request.get_json(silent=True)
-        field = "locked" if kind == "headline" else "earnings_at"
+        field = "locked" if kind == "headline" else "amount" if kind == "profit" else "earnings_at"
         if not isinstance(body, dict) or set(body) != {field} or (kind == "headline" and type(body.get(field)) is not bool):
             return jsonify({"error": "invalid_control_body"}), 400
         try:
-            if kind == "headline":
+            if kind == "profit":
+                from trading_records import set_profit_brake
+                set_profit_brake(team_name,body[field],database)
+            elif kind == "headline":
                 update_control(team_name, headline_locked=body[field], db_path=database)
             else:
                 update_control(team_name, earnings_at=body[field], db_path=database)

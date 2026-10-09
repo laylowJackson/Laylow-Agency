@@ -44,7 +44,14 @@ def read_entry_controls(team_name, db_path=None, enabled=True, now=None):
     from db_utils import connect_db
     with connect_db(db_path) as connection:
         row = connection.execute("SELECT * FROM team_controls WHERE team_name=?", (team_name,)).fetchone()
-    return assess_controls(team_name, dict(row) if row else {}, enabled, now)
+        from trading_records import brake_from_connection
+        brake = brake_from_connection(connection,team_name,now,persist=True)
+    result = assess_controls(team_name, dict(row) if row else {}, enabled, now)
+    result["profit_brake"] = brake
+    if brake["locked"]:
+        result["entry_locked"] = True
+        result["lock_reason"] = "; ".join(filter(None,[result["lock_reason"],brake["status"]]))
+    return result
 
 def update_control(team_name, *, headline_locked=None, earnings_at=None, db_path=None):
     from db_utils import _write_connection, utc_now

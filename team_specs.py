@@ -9,4 +9,6 @@ TEAM_SPECS = {
     "ES1!": {"bots": ["Trend", "VWAP", "Momentum"], "required": 2, "atr_factor": 1.5},
     "MGC1!": {"bots": ["Trend", "Breakout", "Mean Reversion"], "required": 2, "atr_factor": 1.5},
     "MNQ1!": {"bots": ["Trend", "Momentum", "Breakout"], "required": 2, "atr_factor": 1.5},
+    "MES1!": {"bots": ["Trend", "VWAP", "Momentum"], "required": 2, "atr_factor": 1.5},
+    "GC1!": {"bots": ["Trend", "Breakout", "Mean Reversion"], "required": 2, "atr_factor": 1.5},
 }

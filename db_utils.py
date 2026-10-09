@@ -98,6 +98,16 @@ def ensure_system_tables(db_path=None):
                 team_name TEXT PRIMARY KEY, headline_locked INTEGER NOT NULL DEFAULT 0,
                 earnings_at TEXT, updated_at TEXT NOT NULL)""")
 
+            conn.execute("""CREATE TABLE IF NOT EXISTS closed_trades (
+                source TEXT NOT NULL, mode TEXT NOT NULL, trade_id TEXT NOT NULL,
+                team_name TEXT NOT NULL, closed_at TEXT NOT NULL, gross_cents INTEGER NOT NULL,
+                fee_cents INTEGER NOT NULL, PRIMARY KEY(source,mode,trade_id))""")
+            conn.execute("""CREATE TABLE IF NOT EXISTS trade_exports (
+                source TEXT NOT NULL, mode TEXT NOT NULL, as_of TEXT NOT NULL, imported_at TEXT NOT NULL,
+                PRIMARY KEY(source,mode))""")
+            conn.execute("""CREATE TABLE IF NOT EXISTS risk_brakes (
+                team_name TEXT PRIMARY KEY, limit_cents INTEGER, hit_day TEXT, updated_at TEXT NOT NULL)""")
+
 
 def _write_connection(db_path=None):
     ensure_system_tables(db_path)

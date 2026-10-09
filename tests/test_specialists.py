@@ -38,7 +38,7 @@ class SpecialistTests(unittest.TestCase):
         self.assertAlmostEqual(apple["indicators"]["atr"], 2)
         self.assertAlmostEqual(apple["indicators"]["stop_distance"], 2.5)
         self.assertAlmostEqual(tesla["indicators"]["stop_distance"], 3.5)
-        for team in ("NQ1!", "ES1!", "MGC1!", "MNQ1!"):
+        for team in ("NQ1!", "ES1!", "MGC1!", "MNQ1!", "MES1!", "GC1!"):
             analysis = evaluate_team(team, bars(), observed_at=NOW)
             self.assertTrue(analysis["watch_only"])
             self.assertEqual(len(analysis["votes"]), 3)
@@ -149,14 +149,14 @@ class RuntimeFeatureTests(unittest.TestCase):
             report["reports"].clear()
             return dict(ai_status="ready",ai_summary="Fixture summary",severity="CRITICAL",reports=[])
         reports=run_cycle(self.db,enricher=fake)
-        self.assertEqual(len(reports),9)
+        self.assertEqual(len(reports),len(TEAM_NAMES)+1)
         self.assertEqual(reports[-1]["severity"],"INFO")
-        self.assertEqual(len(reports[-1]["reports"]),8)
+        self.assertEqual(len(reports[-1]["reports"]),len(TEAM_NAMES))
         self.assertEqual(reports[-1]["ai_summary"],"Fixture summary")
         self.assertEqual(reports[0]["bot_votes"],[])
         self.assertEqual(len(next(row for row in reports if row["team_name"]=="AAPL")["bot_votes"]),4)
         with connect_db(self.db) as connection:
-            self.assertEqual(connection.execute("SELECT COUNT(*) FROM manager_reports").fetchone()[0],9)
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM manager_reports").fetchone()[0],len(TEAM_NAMES)+1)
         payload=dict(mode="paper",teams=[dict(name=name,worker_state="STANDBY",health="fresh") for name in TEAM_NAMES])
         controls={name:assess_controls(name,enabled=True,now=NOW) for name in TEAM_NAMES}
         critical=build_manager_reports(payload,{},controls,{"TSLA":{"pending_or_uncertain":1}},now=NOW)
