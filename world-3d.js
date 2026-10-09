@@ -42,7 +42,7 @@ class Scene {
   gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error("Renderer could not link");
   gl.useProgram(p);this.program=p;this.buffer=gl.createBuffer();this.position=gl.getAttribLocation(p,"position");this.color=gl.getAttribLocation(p,"color");this.camera=gl.getUniformLocation(p,"camera");this.pulse=gl.getUniformLocation(p,"ambientPulse");
   gl.enable(gl.DEPTH_TEST);gl.clearColor(.018,.023,.055,1);
-  this.yaw=.52;this.pitch=kind==="office"?.22:.56;this.distance=kind==="office"?9:51;this.target=kind==="office"?[0,1.6,0]:[0,2,4];this.data=[];this.labels=[];
+  this.yaw=.52;this.pitch=kind==="city"?.56:kind==="council"?.42:.22;this.distance=kind==="city"?51:kind==="council"?14:9;this.target=kind==="city"?[0,2,4]:[0,1.6,0];this.data=[];this.labels=[];
   this.resize=new ResizeObserver(()=>this.draw());this.resize.observe(canvas);
   this.installCamera();canvas.addEventListener("webglcontextlost",event=>{event.preventDefault();this.failed=true;canvas.dataset.ready="false";if(kind==="city"){byId("city-render-note").textContent="3D context lost. Use the accessible city map below.";byId("world").dataset.view="map";}});
   canvas.addEventListener("webglcontextrestored",()=>{byId("city-render-note").textContent="Reload to restore 3D rendering; the map remains available.";});
@@ -140,6 +140,15 @@ class Scene {
   }
   this.upload();this.draw();
  }
+ councilRoom(members){
+  this.data=[];this.box(0,-.2,0,14,.2,12,"#241f35");this.box(0,0,-5.5,14,5,.16,"#413044");
+  for(const x of[-6,-3,0,3,6]){this.box(x,0,-5.35,.1,4.4,.08,"#a47c4c");this.sphere(x,4,-5,.14,"#ffe58f");}
+  this.box(0,1,-4.8,4,2,.1,"#252541");this.box(0,0,0,1,1,1,"#aa8858");
+  for(let i=0;i<36;i++){const a=i*Math.PI*2/36;this.box(Math.cos(a)*2.2,1.1,Math.sin(a)*2.2,1.5,.2,1.5,"#756342");}
+  this.box(0,1.1,0,4,.2,4,"#897743");this.ring(0,1.32,0,2.9,"#ffe58f");
+  for(let i=0;i<6;i++){const a=i*Math.PI/3,x=Math.sin(a)*3.8,z=Math.cos(a)*3.8,m=members[i]||{},color=/^#[0-9a-f]{6}$/i.test(m.color)?m.color:["#74c8ff","#ad94ff","#ff7cb0","#ffb86c","#70e1bd","#ffe58f"][i];this.box(x,.35,z,1,.2,.85,"#393250");this.robot(x,.6,z,color,.95,true);this.ring(x,2.16,z,.5,color);}
+  this.upload();this.draw();
+ }
  upload(){const gl=this.gl;gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(this.data),gl.STATIC_DRAW);this.vertices=this.data.length/6;}
  project(x,y,z){
   const p=[x,y,z,1],m=this.matrix;if(!m)return null;const out=[0,0,0,0];for(let row=0;row<4;row++)for(let k=0;k<4;k++)out[row]+=m[k*4+row]*p[k];
@@ -168,10 +177,10 @@ class Scene {
   }});
   this.canvas.addEventListener("pointercancel",()=>{drag=null;});
   this.canvas.addEventListener("wheel",event=>{if(!event.ctrlKey)return;event.preventDefault();this.distance=Math.max(this.kind==="city"?24:5,Math.min(this.kind==="city"?80:14,this.distance+event.deltaY*.03));this.draw();},{passive:false});
-  this.canvas.addEventListener("keydown",event=>{if(!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","+","-"].includes(event.key))return;event.preventDefault();if(event.key==="ArrowLeft")this.yaw-=.12;if(event.key==="ArrowRight")this.yaw+=.12;if(event.key==="ArrowUp")this.pitch=Math.min(1.3,this.pitch+.08);if(event.key==="ArrowDown")this.pitch=Math.max(.12,this.pitch-.08);if(event.key==="+")this.distance=Math.max(24,this.distance-3);if(event.key==="-")this.distance=Math.min(80,this.distance+3);this.draw();});
+  this.canvas.addEventListener("keydown",event=>{if(!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","+","-"].includes(event.key))return;event.preventDefault();if(event.key==="ArrowLeft")this.yaw-=.12;if(event.key==="ArrowRight")this.yaw+=.12;if(event.key==="ArrowUp")this.pitch=Math.min(1.3,this.pitch+.08);if(event.key==="ArrowDown")this.pitch=Math.max(.12,this.pitch-.08);if(event.key==="+")this.distance=Math.max(this.kind==="city"?24:5,this.distance-3);if(event.key==="-")this.distance=Math.min(this.kind==="city"?80:20,this.distance+3);this.draw();});
  }
 }
-let city=null,office=null,snapshot=null,online=false;
+let city=null,office=null,councilScene=null,councilKey="",snapshot=null,online=false;
 const labels=new Map();
 function placeLabels(){
  if(!city)return;
@@ -200,6 +209,9 @@ function start(){
  for(const [id,delta]of[["city-zoom-in",-4],["city-zoom-out",4]])byId(id).addEventListener("click",()=>{if(city){city.distance=Math.max(24,Math.min(80,city.distance+delta));city.draw();}});
 }
 window.Laylow3D={
+ council(members){try{if(!councilScene)councilScene=new Scene(byId("council-3d"),"council");const key=JSON.stringify(members.map(m=>m.color));if(key!==councilKey){councilKey=key;councilScene.councilRoom(members);}byId("council-render-note").textContent="Six seats · drag or arrow keys to orbit · read all opinions below.";}catch(error){byId("council-render-note").textContent="3D chamber unavailable; opinions and decisions remain accessible below.";}},
+ resetCouncil(){if(councilScene){councilScene.yaw=.52;councilScene.pitch=.42;councilScene.distance=14;councilScene.draw();}},
+
  update(data,connected){snapshot=data;online=connected;for(const [name,node]of labels){if(node.tagName!=="BUTTON")continue;const team=data.teams?.find(row=>row.name===name)||{};
   node.children[1].textContent=connected?team.controls?.profit_brake?.status==="PROFIT_BRAKE_HIT"?"PROFIT BRAKE HIT":team.health==="fresh"?team.worker_state:"Not recently observed":"Last snapshot";
   const worker=data.payroll?.workers?.find(row=>row.team_name===name),amount=worker?.net_cents;

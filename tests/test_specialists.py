@@ -108,7 +108,8 @@ class RuntimeFeatureTests(unittest.TestCase):
         services.quote.return_value = 106.8
         services.decide.return_value = dict(direction="SHORT",action="APPROVE",reason="fixture")
         worker = TeamWorker("AAPL",self.db,lambda:self.settings,lambda settings:services)
-        with patch("team_worker.evaluate_team",return_value=evaluate_team("AAPL",bars(),observed_at=NOW)):
+        update_control("AAPL",earnings_at=(NOW+timedelta(days=7)).isoformat(),db_path=self.db)
+        with patch("team_worker.utc_now",return_value=NOW), patch("team_worker.evaluate_team",return_value=evaluate_team("AAPL",bars(),observed_at=NOW)):
             worker.cycle()
         with connect_db(self.db) as connection:
             self.assertEqual(connection.execute("SELECT direction FROM worker_decisions").fetchone()[0],"SKIP")

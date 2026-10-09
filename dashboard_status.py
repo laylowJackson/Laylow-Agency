@@ -90,7 +90,7 @@ def build_dashboard_payload(db_path=None, now=None):
     path = database_path(db_path)
     data = {name: [] for name in
             ("team_status","team_scores","worker_status","process_status","system_events",
-             "team_analysis","team_controls","manager_reports","paper_orders","worker_decisions","closed_trades","trade_exports","risk_brakes")}
+             "team_analysis","team_controls","manager_reports","paper_orders","worker_decisions","closed_trades","trade_exports","risk_brakes","council_deliberations")}
     errors, available = [], False
     if path != ":memory:" and Path(path).is_file():
         try:
@@ -100,7 +100,7 @@ def build_dashboard_payload(db_path=None, now=None):
                 conn.execute("PRAGMA query_only = ON")
                 conn.execute("BEGIN")
                 for table in data:
-                    data[table] = _read_rows(conn, table, 20 if table in {"system_events","worker_decisions"} else None)
+                    data[table] = _read_rows(conn, table, 20 if table in {"system_events","worker_decisions","council_deliberations"} else None)
                 available = True
         except (sqlite3.Error, OSError):
             data = {table: [] for table in data}
@@ -151,6 +151,15 @@ def build_dashboard_payload(db_path=None, now=None):
             "score_source":"legacy_unverified" if score else None,
             "control_status":control.get("status"), "updated_at":worker.get("updated_at"),
         })
+    from council import MEMBERS, assess_council
+    reviews=[assess_council(t["name"],t["analysis"],t["controls"],t["execution_health"],LAYLOW_MODE,now)
+             for t in teams if t["name"] in TEAM_NAMES]
+    deliberations=[]
+    for row in data["council_deliberations"]:
+        try:
+            report=json.loads(row["payload_json"])
+            if isinstance(report,dict): deliberations.append(report)
+        except (ValueError,TypeError): pass
     processes = []
     for row in data["process_status"]:
         process = {key:row.get(key) for key in
@@ -174,6 +183,7 @@ def build_dashboard_payload(db_path=None, now=None):
                                 for item in processes),
     }
     return {"generated_at":now.isoformat(), "mode":LAYLOW_MODE, "database_available":available,
+            "council":{"members":list(MEMBERS),"reviews":reviews,"history":deliberations},
             "teams":teams, "managers":[managers[name] for name in TEAM_NAMES if name in managers],
             "payroll":payroll_payload(data["closed_trades"],data["trade_exports"],TEAM_NAMES,now,"paper"),
             "recent_orders":data["paper_orders"][-20:][::-1], "recent_decisions":data["worker_decisions"],

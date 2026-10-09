@@ -168,11 +168,12 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
  .city-world[data-view="3d"] .mobile-pan-hint{display:none}
 }
 </style>
+<link rel="stylesheet" href="/council.css">
 </head>
 <body>
 <a class="skip-link" href="#bots-title">Skip to bots</a>
 <main id="workspace" data-stale="false">
-<header><div class="brand"><svg class="brand-crown" viewBox="0 0 36 26" aria-hidden="true"><path d="M3 8l8 7 7-12 7 12 8-7-4 15H7Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="3" r="2" fill="currentColor"/></svg>laylow<span>.</span><small>Agency</small></div><nav class="world-navigation" aria-label="Dashboard sections"><a href="#world">◈ WORLD</a><a href="#bots-title">▥ TEAMS</a><a href="#big-title">◉ MANAGERS</a><a href="#event-title">↗ ACTIVITY</a></nav><div class="header-actions"><span class="mode" id="mode">Python status dashboard</span><button id="refresh" type="button">Refresh status</button></div></header>
+<header><div class="brand"><svg class="brand-crown" viewBox="0 0 36 26" aria-hidden="true"><path d="M3 8l8 7 7-12 7 12 8-7-4 15H7Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="3" r="2" fill="currentColor"/></svg>laylow<span>.</span><small>Agency</small></div><nav class="world-navigation" aria-label="Dashboard sections"><a href="#world">◈ WORLD</a><a href="#council">◎ COUNCIL</a><a href="#bots-title">▥ TEAMS</a><a href="#big-title">◉ MANAGERS</a><a href="#event-title">↗ ACTIVITY</a></nav><div class="header-actions"><span class="mode" id="mode">Python status dashboard</span><button id="refresh" type="button">Refresh status</button></div></header>
 <section class="intro" aria-labelledby="page-title">
 <div><div class="eyebrow">Your agency · Night shift</div><h1 id="page-title">Bots in view.</h1><p>Explore your team districts, specialist bots, and manager hierarchy.</p></div>
 <div class="connection"><strong id="connection" class="muted" role="status"><i class="dot" aria-hidden="true"></i>Connecting to backend</strong><span id="updated">Waiting for the first status snapshot</span><div class="snapshot-tag" id="snapshot-tag" hidden>Last snapshot · connection lost</div></div>
@@ -221,6 +222,14 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
   <div class="world-footer"><span id="city-world-status">Awaiting backend · city status not observed</span><span>32 specialists · 10 team managers · 1 Big Manager</span></div>
 </section>
 
+<section id="council" class="panel council-panel" aria-labelledby="council-title">
+<div class="section-head"><div><div class="world-kicker">SIX PERSPECTIVES / ONE DECISION</div><h2 id="council-title">The Council</h2></div><a href="#world">Return to city ↑</a></div>
+<p class="muted">Different personalities, different risk opinions. Explicit rules on the same source bars; the existing AI review may veto or reduce their decision.</p>
+<div class="council-options"><label for="council-team">Proposal district</label><select id="council-team"></select><button id="council-reset" type="button">Reset chamber view</button></div>
+<div class="council-layout"><div><div class="council-stage"><canvas id="council-3d" tabindex="0" aria-label="Six robot seats around a council table. Drag or arrow keys to orbit."></canvas><div class="council-sign">THE COUNCIL</div></div><p id="council-render-note" class="city-source">Preparing chamber</p></div>
+<div class="council-verdict"><span class="world-kicker" id="council-context">CURRENT EVIDENCE REVIEW</span><strong id="council-action" role="status">Waiting for backend</strong><p id="council-reason">No observed opinions.</p><p id="council-evidence" class="city-source"></p><p id="council-authority" class="city-source">Four of six must support proceeding. Hard locks cannot be outvoted.</p><p id="council-last" class="city-source"></p></div></div>
+<div id="council-members" class="council-members" aria-label="Council opinions"></div><h3 class="small-heading">Recorded deliberations</h3><ol id="council-history" class="council-history"></ol>
+</section>
 <section class="panel payroll-panel" aria-labelledby="payroll-title">
  <div class="section-head"><div><div class="world-kicker">RECORDED RESULTS</div><h2 id="payroll-title">Payroll · Today</h2></div><span id="payroll-source" class="muted">No closed-trade export</span></div>
  <div class="payroll-metrics"><div><span>Today's net</span><strong id="payroll-today">—</strong></div><div><span>Recorded total</span><strong id="payroll-total">—</strong></div><div><span>Closed trades today</span><strong id="payroll-trades">—</strong></div></div>
@@ -792,6 +801,7 @@ function renderBarChart(payroll){
  cityText(svg,15,213,rows[0].day,10);cityText(svg,465,213,rows[rows.length-1].day,10,"#93a5c5",{"text-anchor":"end"});
 }
 function renderExtended(snapshot){
+ window.LaylowCouncil?.update(snapshot,connected);
  const payroll=snapshot.payroll||{},workers=Array.isArray(payroll.workers)?payroll.workers:[],reports=snapshot.teams||[];
  $("city-net").textContent=money(payroll.total_net_cents);$("city-net").className=payroll.total_net_cents>0?"good":payroll.total_net_cents<0?"bad":"muted";
  $("payroll-today").textContent=money(payroll.total_net_cents);$("payroll-total").textContent=money(payroll.all_time_net_cents);
@@ -876,5 +886,6 @@ window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select
 initializeCards();initializeCity();refreshStatus();
 </script>
 <script src="/world-3d.js"></script>
+<script src="/council-ui.js"></script>
 </body>
 </html>

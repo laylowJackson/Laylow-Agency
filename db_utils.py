@@ -94,6 +94,9 @@ def ensure_system_tables(db_path=None):
             for table in ("team_analysis", "manager_reports"):
                 conn.execute(f"""CREATE TABLE IF NOT EXISTS {table} (
                     team_name TEXT PRIMARY KEY, payload_json TEXT NOT NULL, updated_at TEXT NOT NULL)""")
+            conn.execute("""CREATE TABLE IF NOT EXISTS council_deliberations (
+                proposal_id TEXT PRIMARY KEY, team_name TEXT NOT NULL, payload_json TEXT NOT NULL, created_at TEXT NOT NULL)""")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_council_team ON council_deliberations(team_name,created_at)")
             conn.execute("""CREATE TABLE IF NOT EXISTS team_controls (
                 team_name TEXT PRIMARY KEY, headline_locked INTEGER NOT NULL DEFAULT 0,
                 earnings_at TEXT, updated_at TEXT NOT NULL)""")

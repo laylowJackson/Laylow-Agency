@@ -253,6 +253,10 @@ def submit_paper_order(symbol, decision_id, decision, price, services,
         ).fetchone()
     if pending or duplicate:
         return "Order intent already exists; inspect the paper ledger"
+    from council import authorization_error
+    with connect_db(db_path) as council_connection:
+        council_error=authorization_error(council_connection,symbol,decision_id,decision)
+    if council_error: return council_error
     if not services.broker.get_clock().is_open:
         return "Market is closed"
     if any(p.symbol == symbol for p in services.broker.get_all_positions()):
@@ -295,6 +299,8 @@ def submit_paper_order(symbol, decision_id, decision, price, services,
             (symbol,),
         ).fetchone():
             return "Another order intent is pending"
+        council_error=authorization_error(conn,symbol,decision_id,decision)
+        if council_error: return council_error
         # The writer transaction prevents a control edit racing the local intent write.
         from entry_controls import assess_controls
         saved_control = conn.execute("SELECT * FROM team_controls WHERE team_name=?", (symbol,)).fetchone()
@@ -379,8 +385,11 @@ class TeamWorker:
         self.report("ANALYZING", "Evaluating OHLCV specialist votes")
         analysis = evaluate_team(self.symbol, self.services.bars(self.symbol), source="Alpaca IEX minute bars")
         save_analysis(self.symbol, analysis, self.db_path)
-        if analysis["direction"] == "SKIP":
-            self.report("ANALYSIS_READY", "SKIP: " + analysis["reason"])
+        from council import review_proposal
+        council=review_proposal(self.symbol,analysis,settings["mode"],self.db_path,now=utc_now())
+        decision_id=council["proposal_id"]
+        if council["action"]=="SKIP":
+            self.report("ANALYSIS_READY","Council WAIT: "+council["reason"])
             return
         price = self.services.quote(self.symbol)
         with connect_db(self.db_path) as conn:
@@ -392,10 +401,12 @@ class TeamWorker:
         if decision["direction"] != analysis["direction"]:
             decision = dict(direction="SKIP", action="SKIP",
                             reason="AI did not confirm the specialist consensus")
+        if council["action"]=="REDUCE_RISK" and decision["action"]=="APPROVE":
+            decision["action"]="REDUCE_RISK"
+        decision["reason"]+=" | Council: "+council["reason"]
         decision.update(stop_distance=analysis["indicators"]["stop_distance"],
                         atr=analysis["indicators"]["atr"], vwap=analysis["indicators"]["vwap"],
                         analysis_time=analysis["bar_time"])
-        decision_id = uuid.uuid4().hex
         with connect_db(self.db_path) as conn:
             conn.execute(
                 "INSERT INTO worker_decisions VALUES (?,?,?,?,?,?,?,?)",

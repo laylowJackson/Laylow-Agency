@@ -115,10 +115,24 @@ class WorkerTests(unittest.TestCase):
         services.paper_request.return_value = object()
         return services
 
+    def council_approve(self, decision_id, decision):
+        from council import record_council
+        from db_utils import save_analysis
+        analysis=dict(team_name="AAPL",source="unit fixture",bar_time=decision["analysis_time"],
+            direction="LONG",state="READY",agreement=3,required=2,
+            votes=[dict(name=n,direction="LONG") for n in ("Trend","Momentum","VWAP")],
+            indicators=dict(atr=decision["atr"],vwap=decision["vwap"],stop_distance=decision["stop_distance"],
+                            relative_volume=2,extension_atr=.5))
+        save_analysis("AAPL",analysis,self.db)
+        report=record_council("AAPL",analysis,dict(enabled=True,entry_locked=False),{},"paper",
+                             self.db,proposal_id=decision_id)
+        decision["action"]=report["action"]
+
     def test_uncertain_submission_blocks_repeated_and_new_intents(self):
         services = self.make_services()
         services.broker.submit_order.side_effect = TimeoutError("fake timeout")
         decision = dict(direction="LONG", action="APPROVE", reason="test", stop_distance=2, atr=2, vwap=100, analysis_time=datetime.now(timezone.utc).isoformat())
+        self.council_approve("decision-1",decision)
         result = submit_paper_order("AAPL", "decision-1", decision, 100,
                                    services, self.db)
         self.assertIn("uncertain", result)
@@ -135,6 +149,7 @@ class WorkerTests(unittest.TestCase):
         submit_paper_order("AAPL", "decision-1", decision, 100, services, self.db)
         services.broker.submit_order.assert_not_called()
         decision["action"] = "APPROVE"
+        self.council_approve("decision-2",decision)
         submit_paper_order("AAPL", "decision-2", decision, 100, services, self.db,
                            enabled_check=lambda: False)
         services.broker.submit_order.assert_not_called()
@@ -169,6 +184,7 @@ class WorkerTests(unittest.TestCase):
         services.paper_request.side_effect = crossing_target
         decision = dict(direction="LONG",action="APPROVE",reason="test",
             stop_distance=2,atr=2,vwap=100,analysis_time=now.isoformat())
+        self.council_approve("race-profit",decision)
         result = submit_paper_order("AAPL","race-profit",decision,100,services,self.db)
         self.assertIn("PROFIT_BRAKE_HIT",result)
         services.paper_request.assert_called_once()

@@ -50,6 +50,8 @@ class FuturesWorker(TeamWorker):
             return
         analysis = evaluate_team(self.symbol, self.bars_loader(self.symbol, directory), source="Configured futures CSV")
         save_analysis(self.symbol, analysis, self.db_path)
+        from council import review_proposal
+        review_proposal(self.symbol,analysis,settings["mode"],self.db_path,now=utc_now())
         self.report("WATCH_ONLY", analysis["direction"] + ": " + analysis["reason"])
 
 def run_future(symbol):

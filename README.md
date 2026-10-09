@@ -137,3 +137,8 @@ the net amount. Raising the target does not clear a same-day latch. The brake is
 checked again inside the order-intent transaction. It never closes existing
 positions, cancels broker orders or sends additional orders. Futures stay watch
 only regardless of any export records. No target amount is preset.
+
+## Council
+Six deterministic personalities debate the same evidence: Anchor protects capital, Proof requires broad support, Flux favors momentum, Rebel challenges extended or disputed entries, Steward reduces volatility exposure, and Sentinel enforces entry controls. Four of six must support proceeding. Hard gates cannot be outvoted; risk reduction halves the existing budget. These are explicit rule policies, not fine-tuned language models or profitability forecasts.
+
+Current dashboard reviews are read-only. Worker deliberations separately record all opinions, source fingerprint, proposal ID, timestamp and policy version. Existing AI can veto or reduce but cannot reverse or increase council risk. Stock paper submissions verify fresh recorded approval, source identity and risk terms before broker requests and again before the intent write. Existing risk checks remain mandatory. Futures remain watch-only.

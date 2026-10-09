@@ -45,6 +45,14 @@ def create_app(db_path=None):
     def world_script():
         return send_file(Path(ROOT_DIR) / "world-3d.js",mimetype="text/javascript",conditional=False)
 
+    @application.get("/council-ui.js")
+    def council_script():
+        return send_file(Path(ROOT_DIR)/"council-ui.js",mimetype="text/javascript",conditional=False)
+
+    @application.get("/council.css")
+    def council_styles():
+        return send_file(Path(ROOT_DIR)/"council.css",mimetype="text/css",conditional=False)
+
     @application.post("/api/teams/<team_name>/profit-brake")
     def profit_brake(team_name):
         return change_control(team_name,"profit")
