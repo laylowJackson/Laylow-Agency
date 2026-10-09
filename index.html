@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b1410">
+<meta name="theme-color" content="#070d19">
 <meta name="description" content="Laylow Agency: Python worker status, process health, and recorded events.">
-<title>Laylow Agency · Bots</title>
+<title>Laylow Agency · City</title>
 <style>
 :root{color-scheme:dark;--bg:#0b1410;--surface:#131f18;--raised:#1c2b21;--border:#304237;--text:#edf5e9;--muted:#aabcae;--lime:#c6ed93;--amber:#ffd187;--red:#ffaba3}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -42,17 +42,132 @@ dl{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 
 [data-stale="true"] .bot,[data-stale="true"] .panel,[data-stale="true"] .metrics{border-color:#665030}
 footer{color:var(--muted);font-size:12px;margin-top:24px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}footer p{margin:0;max-width:760px}.snapshot-tag{font-size:12px;color:var(--amber);margin-top:6px}
 @media(max-width:700px){main{padding:20px 16px 30px}.intro{margin-top:26px}.connection{text-align:left}.bots,.lower{grid-template-columns:1fr}.metric{padding:14px 12px}.metric-value{font-size:23px}.metric-detail,.metric-label{font-size:11px}.bot,.panel{padding:18px}.brand small{margin-left:10px}.event{grid-template-columns:58px minmax(0,1fr);gap:10px}}
+
+/* City geometry and robots are local SVG. No external assets or market simulations. */
+:root{--bg:#050912;--surface:#0c1423;--raised:#152039;--border:#263956;--text:#eaf0ff;--muted:#93a5c5;--lime:#42e2ad;--amber:#ffc56a;--red:#ff697d}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{background:radial-gradient(ellipse at 55% 0,#111734 0,transparent 45%),var(--bg)}
+main{max-width:1680px;padding:22px 28px 40px}
+header{padding-bottom:17px}.brand{font-style:italic;letter-spacing:-1.6px;text-transform:uppercase;font-size:26px;position:relative;padding-top:5px}.brand span{color:#ff354f}.brand small{font-style:normal;font-size:10px;letter-spacing:4px}
+.brand-crown{display:inline-block;width:32px;height:23px;margin-right:7px;vertical-align:middle;color:#ff354f}
+.world-navigation{display:flex;gap:4px;align-items:center;padding:4px;border:1px solid #1b2a43;background:#050a14;border-radius:12px}
+.world-navigation a{padding:10px 14px;min-height:44px;display:flex;align-items:center;gap:7px;text-decoration:none;color:#a1b1ce;font-size:11px;font-weight:750;letter-spacing:1px;border-radius:8px}
+.world-navigation a:first-child{color:#ffdbe0;background:#271020;border:1px solid #da324b}
+.world-navigation a:hover{color:#fff;background:#182239}
+.intro{margin:24px 0 16px;align-items:center}.intro h1{font-size:clamp(26px,3vw,36px)}.intro .eyebrow{color:#ad90ff}.intro p{max-width:700px}
+.city-world{border:1px solid #273655;border-radius:18px;overflow:hidden;margin:0 0 24px;background:#070d19;box-shadow:0 22px 70px #0006}
+.world-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 22px;border-bottom:1px solid #24324d;flex-wrap:wrap;background:linear-gradient(90deg,#131627,#0a111d)}
+.world-kicker{font-size:10px;letter-spacing:2px;color:#a898d9;font-weight:650}.world-toolbar h2{font-size:20px;letter-spacing:-.4px;margin-top:5px}
+.world-tools{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.world-hint{font-size:12px;color:var(--muted)}
+#city-motion{padding:8px 12px;font-size:12px;background:#111b2c;border-color:#344361}
+.world-stage{display:grid;grid-template-columns:minmax(0,1fr) 295px;min-width:0;position:relative}
+.city-viewport{position:relative;min-width:0;overflow:hidden;background:radial-gradient(ellipse at 50% 65%,#241d59 0,#08142c 44%,#040a15 80%)}
+.city-pan{width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#5b4c9c #091223;overscroll-behavior:contain}
+#city-map{display:block;min-width:1020px;width:100%;height:auto;overflow:hidden}
+.glass{background:linear-gradient(145deg,#080f1df2,#080e1ae8);border:1px solid #3a4c70;box-shadow:0 10px 24px #0008}
+.city-overview{position:absolute;left:18px;top:20px;width:190px;padding:14px;border-radius:10px;pointer-events:none}
+.glass-heading{font-size:10px;font-weight:750;letter-spacing:1px;display:flex;gap:12px;justify-content:space-between;border-bottom:1px solid #26344c;padding-bottom:10px;margin-bottom:12px}
+.city-overview dl{display:grid;grid-template-columns:1fr;gap:11px}.city-overview dl>div{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.city-overview dt{font-size:11px}.city-overview dd{font-size:12px;color:#9ef5d1;font-weight:650;margin:0}
+.city-overview dd.muted{color:#90a1be}.city-overview p{font-size:10px;margin:13px 0 0;color:var(--muted);line-height:1.4}
+.tiny-orbit{width:9px;height:9px;border:1px solid #a68bff;border-radius:50%;box-shadow:0 0 9px #9363ff}
+.city-inspector{padding:22px 18px;border-width:0 0 0 1px;border-color:#2a3b5b;min-width:0;display:flex;flex-direction:column}
+.inspector-title{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:13px 0 3px}.inspector-title h3{font-size:30px;letter-spacing:-1px;margin:0;color:var(--district-color,#55eabc)}
+#city-team-asset{font-size:12px;margin:4px 0 18px}
+.city-quote{background:linear-gradient(120deg,#18263a,#111525);border:1px solid #324359;border-radius:10px;padding:14px}
+.city-quote>span{display:block;font-size:19px;font-weight:650}.city-quote small{color:var(--muted);font-size:11px;display:block;margin-top:4px}
+.city-team-metrics{padding:16px 0;border-bottom:1px solid #283651;gap:16px}.city-team-metrics dd{font-size:17px}
+.district-label{font-size:9px;font-weight:700;letter-spacing:1.5px;color:#92a0bb;margin:18px 0 8px}
+.city-bot-list{list-style:none;margin:0;padding:0}.city-bot-list li{padding:9px 0;border-bottom:1px solid #22314a;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px}
+.bot-avatar{width:27px;height:27px;border:1px solid currentColor;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#172236;color:var(--district-color);flex-shrink:0}
+.bot-avatar svg{width:21px;height:21px}.city-bot-name{flex:1}.city-vote{font-size:10px;font-weight:750;white-space:nowrap}
+.city-inspector .manager-note{font-size:11px;margin:2px 0 5px;line-height:1.55}
+.city-source{font-size:10px;color:var(--muted);margin:8px 0 0}
+.city-entry-state{font-size:11px;color:#d8c59c;background:#211b16;border:1px solid #493c28;padding:10px;border-radius:8px;margin:14px 0}
+.city-primary{font-size:11px;background:#1c223d;border:1px solid #69578e;min-height:44px;margin-top:auto}
+.city-map-caption{position:absolute;left:20px;bottom:24px;pointer-events:none;font-size:11px;font-weight:750;letter-spacing:3px;color:#ffdfa0;text-shadow:0 2px 12px #000}
+.city-map-caption span{display:block;font-size:10px;font-weight:450;letter-spacing:.4px;margin-top:4px;color:#a5b4d6}
+.city-dock-wrap{display:flex;align-items:center;gap:16px;padding:13px 18px;border-top:1px solid #283853;background:#080e1a;min-width:0}
+.dock-label{font-size:9px;letter-spacing:1.4px;color:#8698b7;white-space:nowrap}
+.city-dock{display:flex;gap:6px;overflow-x:auto;min-width:0;flex:1;padding:3px;scrollbar-width:thin;scrollbar-color:#66549c transparent}
+.city-dock button{min-height:44px;padding:9px 12px;min-width:74px;font-size:11px;font-weight:750;border-radius:8px;flex-shrink:0;border-color:#233956;background:#0e1828}
+.city-dock button[aria-pressed=true]{border-color:var(--district-color);box-shadow:inset 0 0 15px #49319a35}
+.dock-state{width:6px;height:6px;display:inline-block;border-radius:50%;margin-left:7px;background:#69738d}
+.manager-shortcut{font-size:10px;color:#c7abff;text-decoration:none;white-space:nowrap;min-height:44px;display:flex;align-items:center}
+.world-footer{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 20px;border-top:1px solid #1c2a43;font-size:10px;color:#8a9dbd}
+.mobile-pan-hint{display:none}
+.city-tower{cursor:pointer}.city-tower .tower-selection{opacity:0;transition:opacity .2s}
+.city-tower[data-selected=true] .tower-selection,.city-tower:focus-visible .tower-selection{opacity:1}
+.city-tower:focus-visible{outline:none}.city-tower:hover .tower-face{filter:brightness(1.18)}
+.city-tower[data-observed=false] .status-halo{opacity:.23}
+.city-team-symbol{font-family:system-ui,sans-serif;font-weight:800;fill:#eff4ff}
+.city-specialist,.city-team-manager{pointer-events:none}
+.city-wire{transition:opacity .2s}.robot-eye{transition:fill .2s}
+.city-ambient{animation:city-glimmer 5s ease-in-out infinite}
+.city-floating{animation:city-hover 4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.city-world[data-motion=off] .city-ambient,.city-world[data-motion=off] .city-floating{animation:none}
+@keyframes city-glimmer{0%,100%{opacity:.38}50%{opacity:.85}}
+@keyframes city-hover{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.bot.city-selected{border-color:var(--district-color,#9876f8);box-shadow:0 0 0 1px #8562c444}
+.bot{scroll-margin-top:25px}.metrics{margin-top:0}.metric-value{color:#dfe6fb}
+@media(max-width:1160px){main{padding:18px}.world-navigation a{padding:9px 10px}.world-stage{grid-template-columns:minmax(0,1fr) 270px}.city-overview{width:165px;padding:11px}.city-inspector{padding:18px 15px}.dock-label{display:none}.world-hint{display:none}}
+@media(max-width:800px){header{gap:12px}.world-navigation{order:3;width:100%;justify-content:space-between}.world-navigation a{font-size:10px;padding:10px 9px;justify-content:center;flex:1}.header-actions{margin-left:auto}.brand small{display:block;margin-left:41px;font-size:8px;letter-spacing:3px}
+.intro{margin:18px 0}.intro h1{font-size:28px}.connection{font-size:12px}.world-stage{grid-template-columns:1fr}.world-toolbar{padding:15px;gap:10px}.world-toolbar h2{font-size:17px}.world-tools{gap:8px}
+.city-overview{width:165px;left:12px;top:12px;background:#060e1de8}.city-overview dl{gap:7px}.glass-heading{font-size:9px}
+.city-inspector{border-width:1px 0 0;border-color:#344469;padding:18px}.city-inspector .city-bot-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px}.city-bot-list li{flex-wrap:wrap;gap:7px}.city-bot-name{min-width:65px}
+.city-inspector .city-team-metrics{display:flex;gap:35px}.city-team-metrics>div{min-width:95px}.city-primary{margin-top:5px;width:100%}
+.city-dock-wrap{padding:10px;gap:8px;flex-wrap:wrap}.city-dock{flex-basis:100%}.manager-shortcut{min-height:30px;margin-left:auto}
+.city-map-caption{bottom:25px;font-size:9px;left:13px}.mobile-pan-hint{display:block;position:absolute;right:12px;bottom:13px;font-size:10px;color:#c0b4eb;margin:0;pointer-events:none}
+.world-footer{padding:10px 13px;font-size:9px}.world-footer span:last-child{display:none}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.city-ambient,.city-floating{animation:none!important}.city-tower .tower-selection,.city-wire,.robot-eye{transition:none}}
+
 </style>
 </head>
 <body>
 <a class="skip-link" href="#bots-title">Skip to bots</a>
 <main id="workspace" data-stale="false">
-<header><div class="brand">laylow<span>.</span><small>Agency</small></div><div class="header-actions"><span class="mode" id="mode">Python status dashboard</span><button id="refresh" type="button">Refresh status</button></div></header>
+<header><div class="brand"><svg class="brand-crown" viewBox="0 0 36 26" aria-hidden="true"><path d="M3 8l8 7 7-12 7 12 8-7-4 15H7Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="3" r="2" fill="currentColor"/></svg>laylow<span>.</span><small>Agency</small></div><nav class="world-navigation" aria-label="Dashboard sections"><a href="#world">◈ WORLD</a><a href="#bots-title">▥ TEAMS</a><a href="#big-title">◉ MANAGERS</a><a href="#event-title">↗ ACTIVITY</a></nav><div class="header-actions"><span class="mode" id="mode">Python status dashboard</span><button id="refresh" type="button">Refresh status</button></div></header>
 <section class="intro" aria-labelledby="page-title">
-<div><div class="eyebrow">Your Python workers</div><h1 id="page-title">Bots in view.</h1><p>Team heartbeats, supervised processes, and recorded events from the Python backend.</p></div>
+<div><div class="eyebrow">Your agency · Night shift</div><h1 id="page-title">Bots in view.</h1><p>Explore your team districts, specialist bots, and manager hierarchy.</p></div>
 <div class="connection"><strong id="connection" class="muted" role="status"><i class="dot" aria-hidden="true"></i>Connecting to backend</strong><span id="updated">Waiting for the first status snapshot</span><div class="snapshot-tag" id="snapshot-tag" hidden>Last snapshot · connection lost</div></div>
 </section>
 <p id="error" class="alert" role="alert" hidden></p>
+
+<section id="world" class="city-world" aria-labelledby="world-title">
+  <div class="world-toolbar">
+    <div><span class="world-kicker">LAYLOW / WORLD 01</span><h2 id="world-title">The agency never sleeps.</h2></div>
+    <div class="world-tools"><span class="world-hint">Select a tower to inspect its team</span><button id="city-motion" type="button" aria-pressed="false">Ambient motion</button></div>
+  </div>
+  <div class="world-stage">
+    <div class="city-viewport">
+      <div id="city-pan" class="city-pan" tabindex="0" aria-label="City map. Scroll horizontally on small screens to explore all districts.">
+        <svg id="city-map" viewBox="0 0 1600 920" role="group" aria-label="Laylow City. Eight interactive team towers, specialist robots and manager headquarters."></svg>
+      </div>
+      <aside class="city-overview glass" aria-label="Agency overview">
+        <div class="glass-heading">AGENCY OVERVIEW <span class="tiny-orbit" aria-hidden="true"></span></div>
+        <dl><div><dt>Fresh workers</dt><dd id="city-fresh">— / 8</dd></div><div><dt>Specialist votes</dt><dd id="city-votes">Not recorded</dd></div><div><dt>Manager reports</dt><dd id="city-managers">— / 8</dd></div><div><dt>Realized P&amp;L</dt><dd class="muted">Not recorded</dd></div></dl>
+        <p id="city-observation">Waiting for backend observations</p>
+      </aside>
+      <div class="city-map-caption">THE VAULT <span>Eight districts. One agency.</span></div>
+      <p class="mobile-pan-hint">Swipe the city to explore ↔</p>
+    </div>
+    <aside id="city-inspector" class="city-inspector glass" aria-labelledby="city-team-title">
+      <div class="world-kicker">DISTRICT INSPECTOR</div>
+      <div class="inspector-title"><h3 id="city-team-title">SPY</h3><span id="city-team-state" class="pill muted">Not observed</span></div>
+      <p id="city-team-asset" class="muted">S&amp;P 500 ETF</p>
+      <div class="city-quote"><span id="city-consensus">Awaiting analysis</span><small id="city-agreement">2 of 3 votes required</small></div>
+      <dl class="city-team-metrics"><div><dt>ATR</dt><dd id="city-atr">—</dd></div><div><dt>Relative volume</dt><dd id="city-rvol">—</dd></div></dl>
+      <div class="district-label">SPECIALIST BOTS</div><ul id="city-bot-list" class="city-bot-list"></ul>
+      <div class="district-label">TEAM MANAGER → BIG MANAGER</div><p id="city-manager-note" class="manager-note">Awaiting assessment</p>
+      <p id="city-analysis-time" class="city-source">No source bars recorded</p>
+      <p id="city-entry-state" class="city-entry-state">Waiting for controls</p>
+      <button id="city-open-team" class="city-primary" type="button">Open SPY team controls ↗</button>
+    </aside>
+  </div>
+  <div class="city-dock-wrap"><div class="dock-label">TEAM DISTRICTS</div><div id="city-dock" class="city-dock" role="group" aria-label="Select a city team"></div><a class="manager-shortcut" href="#big-title">AI MANAGER ↗</a></div>
+  <div class="world-footer"><span id="city-world-status">Awaiting backend · city status not observed</span><span>26 specialists · 8 team managers · 1 Big Manager</span></div>
+</section>
+
 <section class="metrics" aria-label="Runtime overview">
 <div class="metric"><div class="metric-label">Recent heartbeats</div><div class="metric-value" id="fresh">—</div><div class="metric-detail">Fresh observations / eight teams</div></div>
 <div class="metric"><div class="metric-label">Configured teams</div><div class="metric-value" id="enabled">—</div><div class="metric-detail">Enabled configuration</div></div>
@@ -116,7 +231,7 @@ function metadata(label){
 }
 function initializeCards(){
   for(const def of TEAM_DEFINITIONS){
-    const card=element("article","bot");card.setAttribute("aria-label",def.name+" Python worker");
+    const card=element("article","bot");card.tabIndex=-1;card.setAttribute("aria-label",def.name+" Python worker");
     const top=element("div","bot-top"),title=element("div"),health=element("span","pill muted","Waiting for status");
     title.append(element("div","symbol",def.name),element("div","asset",def.asset));top.append(title,health);
     const state=element("div","bot-state"),enabled=element("span","pill muted","Configuration unknown"),stateValue=element("span","","Not observed");
@@ -145,7 +260,7 @@ function initializeCards(){
       headline.addEventListener("click",()=>mutateControl(def.name,"headline-lock",{locked:!controls.locked},controls));
     }
     card.append(top,state,data,consensus,votes,manager,note);if(controls)card.append(controls.wrapper);$("bots").append(card);
-    cards.set(def.name,{health,enabled,stateValue,heartbeat:heartbeat.value,heartbeatAge:heartbeatAge.value,pid:pid.value,score:score.value,note,consensus,votes,manager,controls});
+    cards.set(def.name,{card,health,enabled,stateValue,heartbeat:heartbeat.value,heartbeatAge:heartbeatAge.value,pid:pid.value,score:score.value,note,consensus,votes,manager,controls});
   }
   $("processes").append(element("li","empty","Waiting for process observations."));
   $("events").append(element("li","empty","Waiting for recorded events."));
@@ -225,8 +340,8 @@ function validatePayload(payload){
 }
 function renderSnapshot(payload){
   csrfToken=typeof payload.csrf_token==="string"?payload.csrf_token:"";connected=true;
-  renderTeams(payload.teams);renderProcesses(payload.processes);renderEvents(payload.events);
-  $("fresh").textContent=number(payload.summary.fresh_workers)+" / 8";$("enabled").textContent=number(payload.summary.enabled_teams)+" / 4";
+  renderTeams(payload.teams);renderProcesses(payload.processes);renderEvents(payload.events);renderCity(payload);
+  $("fresh").textContent=number(payload.summary.fresh_workers)+" / 8";$("enabled").textContent=number(payload.summary.enabled_teams)+" / 8";
   const reports=Array.isArray(payload.managers)?payload.managers:[], big=payload.big_manager||{};
   $("big-severity").textContent=text(big.severity,"Awaiting report");
   $("big-severity").className="pill "+severityTone(big.severity);
@@ -247,7 +362,7 @@ function renderSnapshot(payload){
   $("connection").firstChild.setAttribute("aria-hidden","true");receivedSnapshot=true;
 }
 function reportFailure(){
-  connected=false;
+  connected=false;cityConnectionLost();
   for(const row of cards.values()){if(row.controls){row.controls.save.disabled=true;row.controls.headline.disabled=true;}}
   $("workspace").dataset.stale="true";$("connection").className="warn";
   $("connection").replaceChildren(element("i","dot"),document.createTextNode(receivedSnapshot?"Connection lost":"Backend unavailable"));
@@ -300,7 +415,284 @@ document.addEventListener("visibilitychange",()=>{
   if(document.hidden){if(pollTimer!==null)clearTimeout(pollTimer);pollTimer=null;}
   else if(!inFlight)refreshStatus();
 });
-initializeCards();refreshStatus();
+
+/* The city is a view of the same Python snapshot used by the team cards. */
+const CITY_DISTRICTS=[
+ {name:"SPY",x:580,y:505,h:210,color:"#44edac"},
+ {name:"QQQ",x:1000,y:505,h:210,color:"#4acaff"},
+ {name:"AAPL",x:405,y:630,h:180,color:"#ff657e"},
+ {name:"TSLA",x:1175,y:630,h:180,color:"#ff455c"},
+ {name:"NQ1!",x:590,y:765,h:145,color:"#ac7bff"},
+ {name:"ES1!",x:990,y:765,h:145,color:"#49e5dc"},
+ {name:"MGC1!",x:330,y:795,h:110,color:"#ffd278"},
+ {name:"MNQ1!",x:1250,y:795,h:110,color:"#d889ff"}
+];
+const cityNodes=new Map(),cityDock=new Map();
+let citySelected="SPY",citySnapshot=null;
+const cityMotionQuery=window.matchMedia("(prefers-reduced-motion: reduce)");
+function citySVG(tag,attrs={},content){
+ const result=document.createElementNS("http://www.w3.org/2000/svg",tag);
+ for(const [key,value] of Object.entries(attrs))result.setAttribute(key,String(value));
+ if(content!==undefined)result.textContent=content;
+ return result;
+}
+function cityAdd(parent,tag,attrs={},content){const child=citySVG(tag,attrs,content);parent.append(child);return child;}
+function cityText(parent,x,y,content,size=14,color="#acbddb",extra={}){
+ return cityAdd(parent,"text",{x,y,fill:color,"font-size":size,"font-family":"system-ui,sans-serif",...extra},content);
+}
+function cityBlock(parent,x,y,width,depth,height,color,windows=true){
+ const a=[x,y],b=[x-width*.86,y-width*.5],c=[x+(depth-width)*.86,y-(depth+width)*.5],d=[x+depth*.86,y-depth*.5];
+ const up=p=>[p[0],p[1]-height],points=ps=>ps.map(p=>p.join(",")).join(" ");
+ cityAdd(parent,"polygon",{points:points([a,b,up(b),up(a)]),fill:"#11182b",stroke:color,"stroke-opacity":.5,"stroke-width":1,class:"tower-face"});
+ cityAdd(parent,"polygon",{points:points([a,d,up(d),up(a)]),fill:"#1b2340",stroke:color,"stroke-opacity":.55,"stroke-width":1,class:"tower-face"});
+ cityAdd(parent,"polygon",{points:points([up(a),up(b),up(c),up(d)]),fill:"#2b3157",stroke:color,"stroke-opacity":.75});
+ if(windows){
+  for(let row=12;row<height-7;row+=13){
+   for(let col=8;col<width-4;col+=10){
+    const lit=(Math.floor(row/13)+Math.floor(col/10)*3+Math.floor(x))%7!==0;
+    if(lit)cityAdd(parent,"path",{d:"M "+(x-col*.86)+" "+(y-col*.5-row)+" l -3 -1.75 l 0 -5 l 3 1.75 z",fill:color,opacity:((row+col)%5===0)?.9:.37});
+   }
+   for(let col=8;col<depth-4;col+=10){
+    const lit=(Math.floor(row/13)*3+Math.floor(col/10)+Math.floor(y))%6!==0;
+    if(lit)cityAdd(parent,"path",{d:"M "+(x+col*.86)+" "+(y-col*.5-row)+" l 3 -1.75 l 0 -5 l -3 1.75 z",fill:"#fff1ce",opacity:((row+col)%4===0)?.85:.4});
+   }
+  }
+ }
+ return {roof:y-height-(width+depth)*.25};
+}
+function cityRobot(parent,x,y,color,scale=1,className=""){
+ const robot=cityAdd(parent,"g",{transform:"translate("+x+" "+y+") scale("+scale+")",class:className});
+ cityAdd(robot,"ellipse",{cx:0,cy:19,rx:13,ry:5,fill:"#000",opacity:.6});
+ cityAdd(robot,"path",{d:"M -5 10 v 7 M 5 10 v 7 M -9 0 l -6 7 M 9 0 l 6 7",stroke:color,"stroke-width":4,"stroke-linecap":"round"});
+ cityAdd(robot,"rect",{x:-8,y:-1,width:16,height:13,rx:4,fill:"#141e38",stroke:color,"stroke-width":1.5});
+ cityAdd(robot,"path",{d:"M 0 -16 v -6",stroke:color,"stroke-width":1.5});
+ cityAdd(robot,"circle",{cx:0,cy:-23,r:2.5,fill:color});
+ cityAdd(robot,"rect",{x:-12,y:-16,width:24,height:18,rx:5,fill:"#101a31",stroke:color,"stroke-width":1.5});
+ cityAdd(robot,"rect",{x:-8,y:-12,width:16,height:9,rx:3,fill:"#050c16"});
+ const eyes=[cityAdd(robot,"circle",{cx:-4,cy:-7,r:2,fill:"#75839e",class:"robot-eye"}),cityAdd(robot,"circle",{cx:4,cy:-7,r:2,fill:"#75839e",class:"robot-eye"})];
+ cityAdd(robot,"path",{d:"M -3 7 h 6",stroke:color,"stroke-width":1});
+ return {robot,eyes};
+}
+function cityPanel(parent,x,y,width,heading,color){
+ const panel=cityAdd(parent,"g",{transform:"translate("+x+" "+y+")"});
+ cityAdd(panel,"rect",{width,height:69,rx:9,fill:"#050d1c","fill-opacity":.94,stroke:color,"stroke-opacity":.6});
+ cityText(panel,12,22,heading,17,color,{"font-weight":800});
+ const state=cityText(panel,12,42,"NOT OBSERVED",9,"#8494b1",{"letter-spacing":1});
+ const detail=cityText(panel,12,57,"Awaiting source bars",9,"#9baccc");
+ return {state,detail};
+}
+function initializeCity(){
+ const svg=$("city-map"),defs=cityAdd(svg,"defs");
+ for(const [id,color] of [["city-gold","#ffd278"],["city-purple","#ab6cff"],["city-water","#173159"]]){
+  const gradient=cityAdd(defs,"linearGradient",{id,x1:0,y1:0,x2:0,y2:1});
+  cityAdd(gradient,"stop",{offset:"0%","stop-color":color,"stop-opacity":id==="city-water"?.5:.8});
+  cityAdd(gradient,"stop",{offset:"100%","stop-color":color,"stop-opacity":0});
+ }
+ const glow=cityAdd(defs,"filter",{id:"city-glow",x:"-80%",y:"-80%",width:"260%",height:"260%"});
+ cityAdd(glow,"feGaussianBlur",{stdDeviation:3,result:"blur"});
+ const merge=cityAdd(glow,"feMerge");cityAdd(merge,"feMergeNode",{in:"blur"});cityAdd(merge,"feMergeNode",{in:"SourceGraphic"});
+ const sky=cityAdd(svg,"g",{"aria-hidden":true});
+ for(let i=0;i<96;i++){
+  const x=(i*157+31)%1600,y=(i*97+13)%320;
+  cityAdd(sky,"circle",{cx:x,cy:y,r:i%11===0?1.8:.8,fill:"#bed9ff",opacity:i%4===0?.7:.25});
+ }
+ cityAdd(sky,"ellipse",{cx:790,cy:550,rx:650,ry:300,fill:"url(#city-water)"});
+ // A quiet skyline sits behind the eight working districts.
+ for(let i=0;i<42;i++){
+  const x=70+i*36,y=375+(i%5)*14,h=24+(i*29)%115;
+  cityBlock(sky,x,y,18+(i%3)*7,18,h,"#48537b",true);
+ }
+ for(let i=0;i<13;i++)cityAdd(sky,"path",{d:"M "+(40+i*9)+" "+(700+i*11)+" Q 780 "+(850+i*8)+" "+(1560-i*9)+" "+(700+i*11),fill:"none",stroke:"#5c86c8","stroke-opacity":.06,"stroke-width":2});
+ const ground=cityAdd(svg,"g",{"aria-hidden":true});
+ cityAdd(ground,"path",{d:"M 200 610 L 790 300 L 1380 610 L 790 910 Z",fill:"#0d1730",stroke:"#344671","stroke-width":2});
+ cityAdd(ground,"path",{d:"M 200 610 L 790 910 L 1380 610 L 1380 626 L 790 926 L 200 626 Z",fill:"#18233e",stroke:"#5e54ad","stroke-width":1.5});
+ for(let i=1;i<12;i++){
+  const shift=i*49;
+  cityAdd(ground,"path",{d:"M "+(200+shift)+" "+(610-shift*.525)+" L "+(790+shift)+" "+(910-shift*.525),stroke:"#29416a","stroke-opacity":.37,fill:"none"});
+  cityAdd(ground,"path",{d:"M "+(200+shift)+" "+(610+shift*.509)+" L "+(790+shift)+" "+(300+shift*.525),stroke:"#29416a","stroke-opacity":.37,fill:"none"});
+ }
+ cityAdd(ground,"ellipse",{cx:790,cy:612,rx:395,ry:184,fill:"none",stroke:"#070c16","stroke-width":27});
+ cityAdd(ground,"ellipse",{cx:790,cy:612,rx:395,ry:184,fill:"none",stroke:"#665492","stroke-width":1.3});
+ cityAdd(ground,"ellipse",{cx:790,cy:612,rx:395,ry:184,fill:"none",stroke:"#dfc193","stroke-opacity":.62,"stroke-width":1.5,"stroke-dasharray":"4 19"});
+ cityAdd(ground,"ellipse",{cx:790,cy:573,rx:127,ry:53,fill:"#151726",stroke:"#dfaa54","stroke-width":2});
+ cityAdd(ground,"ellipse",{cx:790,cy:573,rx:102,ry:41,fill:"#113654",stroke:"#4cb5de","stroke-width":2});
+ cityAdd(ground,"ellipse",{cx:790,cy:573,rx:81,ry:31,fill:"#22627a","fill-opacity":.35,stroke:"#83e7ff","stroke-width":1,"stroke-dasharray":"3 12"});
+ for(let i=0;i<56;i++){
+  const theta=i*Math.PI*2/56,x=790+Math.cos(theta)*460,y=612+Math.sin(theta)*221;
+  cityAdd(ground,"ellipse",{cx:x,cy:y+5,rx:5,ry:2,fill:"#000",opacity:.55});
+  cityAdd(ground,"path",{d:"M "+x+" "+(y-13)+" l -5 15 h 10 z",fill:i%3===0?"#398b84":"#274e63"});
+  if(i%2===0)cityAdd(ground,"circle",{cx:x,cy:y+6,r:2,fill:"#e1ba7a",filter:"url(#city-glow)"});
+ }
+ // Connection paths only brighten when a recent manager report exists.
+ const wires=cityAdd(svg,"g",{"aria-hidden":true});
+ for(const district of CITY_DISTRICTS){
+  district.wire=cityAdd(wires,"path",{d:"M "+district.x+" "+district.y+" Q "+district.x+" 820 790 830",fill:"none",stroke:district.color,"stroke-width":1.5,"stroke-dasharray":"5 9",opacity:.16,class:"city-wire"});
+ }
+ const architecture=cityAdd(svg,"g");
+ // The Vault shows recorded counts, never invented trading earnings.
+ const vault=cityAdd(architecture,"g",{"aria-label":"The Vault, recorded agency activity"});
+ cityAdd(vault,"path",{d:"M 769 0 H 811 L 799 276 H 781 Z",fill:"url(#city-gold)",class:"city-ambient"});
+ cityAdd(vault,"path",{d:"M 790 0 V 276",stroke:"#ffe9aa","stroke-width":4,filter:"url(#city-glow)",opacity:.85});
+ cityBlock(vault,790,574,110,110,20,"#ffd278",false);
+ cityBlock(vault,790,555,78,78,265,"#e5b454");
+ cityBlock(vault,790,290,55,55,55,"#ffd278");
+ cityBlock(vault,790,235,28,28,30,"#ffd278",false);
+ cityAdd(vault,"ellipse",{cx:790,cy:204,rx:41,ry:14,fill:"none",stroke:"#ffdc8f","stroke-width":2,filter:"url(#city-glow)"});
+ cityAdd(vault,"path",{d:"M 764 315 l 4 18 h 43 l 4 -18 l -14 9 l -12 -18 l -11 18 z",fill:"none",stroke:"#ffd278","stroke-width":2.5});
+ cityText(vault,790,363,"THE VAULT",25,"#ffe5a5",{"text-anchor":"middle","font-weight":800,"letter-spacing":2});
+ cityText(vault,790,389,"RECORDED ACTIVITY",9,"#b1a78d",{"text-anchor":"middle","letter-spacing":2});
+ const vaultCount=cityText(vault,790,420,"— / 8",30,"#ffda81",{"text-anchor":"middle","font-weight":750,id:"city-vault-count"});
+ cityText(vault,790,441,"RECENT TEAM HEARTBEATS",8,"#d2bf94",{"text-anchor":"middle","letter-spacing":1});
+ cityText(vault,790,462,"P&L NOT RECORDED",10,"#b1a78d",{"text-anchor":"middle"});
+ for(const district of CITY_DISTRICTS){
+  const def=TEAM_DEFINITIONS.find(row=>row.name===district.name);
+  const group=cityAdd(architecture,"g",{class:"city-tower",role:"button",tabindex:0,"data-team":district.name,"data-observed":false,"data-selected":false,"aria-pressed":false,"aria-label":district.name+" district, not observed"});
+  cityAdd(group,"title",{},district.name+" team. Select to inspect its Python worker and specialist votes.");
+  cityAdd(group,"ellipse",{cx:district.x,cy:district.y-21,rx:99,ry:40,fill:district.color,"fill-opacity":.09,stroke:district.color,"stroke-width":2,filter:"url(#city-glow)",class:"tower-selection"});
+  cityBlock(group,district.x,district.y,78,78,13,district.color,false);
+  cityBlock(group,district.x,district.y-13,51,51,district.h,district.color);
+  const roof=district.y-13-district.h-25.5;
+  const halo=cityAdd(group,"ellipse",{cx:district.x,cy:roof+7,rx:39,ry:13,fill:"none",stroke:district.color,"stroke-width":2,filter:"url(#city-glow)",class:"status-halo"});
+  const roofBot=cityRobot(group,district.x,roof-19,district.color,1.6,"city-floating");
+  cityText(group,district.x,roof+74,district.name,22,"#fff",{"text-anchor":"middle",class:"city-team-symbol"});
+  cityText(group,district.x,roof+94,district.name.endsWith("!")?"WATCH ONLY":"STOCK TEAM",7,district.color,{"text-anchor":"middle","letter-spacing":1});
+  cityAdd(group,"path",{d:"M "+district.x+" "+(roof+7)+" V "+(roof-86),stroke:district.color,"stroke-width":2,"stroke-opacity":.2});
+  const labelX=district.x<790?district.x-171:district.x+59;
+  const panel=cityPanel(group,labelX,roof-22,140,district.name,district.color);
+  const specialists=[];
+  for(let index=0;index<def.bots.length;index++){
+   const robot=cityRobot(group,district.x-48+index*31,district.y+8+index*6,district.color,.75,"city-specialist");
+   cityAdd(robot.robot,"title",{},def.bots[index]+" specialist, awaiting analysis");
+   specialists.push({...robot,name:def.bots[index]});
+  }
+  const manager=cityRobot(group,district.x+69,district.y-30,district.color,.9,"city-team-manager");
+  cityAdd(manager.robot,"title",{},district.name+" Team Manager, awaiting report");
+  cityText(group,district.x+69,district.y-1,"TM",7,district.color,{"text-anchor":"middle"});
+  cityNodes.set(district.name,{group,halo,roofBot,specialists,manager,panel,district,def});
+  group.addEventListener("click",()=>selectCityDistrict(district.name,true));
+  group.addEventListener("keydown",event=>{
+   if(event.key==="Enter"||event.key===" "){event.preventDefault();selectCityDistrict(district.name,true);}
+  });
+  const button=element("button","",""+district.name),state=element("span","dock-state");
+  button.type="button";button.dataset.team=district.name;button.style.setProperty("--district-color",district.color);button.setAttribute("aria-pressed","false");
+  state.setAttribute("aria-hidden","true");button.append(state);$("city-dock").append(button);
+  button.addEventListener("click",()=>selectCityDistrict(district.name,true));
+  cityDock.set(district.name,{button,state});
+ }
+ const big=cityAdd(architecture,"g",{class:"city-big-manager","aria-label":"Big Manager district"});
+ cityBlock(big,790,835,98,98,16,"#ab6cff",false);
+ cityBlock(big,790,819,65,65,173,"#ab6cff");
+ cityAdd(big,"ellipse",{cx:790,cy:610,rx:50,ry:17,fill:"none",stroke:"#c998ff","stroke-width":2,filter:"url(#city-glow)"});
+ const bigBot=cityRobot(big,790,587,"#bd85ff",1.8,"city-floating");
+ cityText(big,790,715,"BIG MANAGER",14,"#d7beff",{"font-weight":750,"text-anchor":"middle","letter-spacing":1});
+ cityText(big,790,734,"8 TEAM MANAGERS",8,"#c5b4e5",{"text-anchor":"middle","letter-spacing":1});
+ cityAdd(big,"rect",{x:767,y:753,width:46,height:33,rx:6,fill:"#8b40e0","fill-opacity":.25,stroke:"#ba8bff"});
+ cityText(big,790,776,"AI",22,"#eddbff",{"font-weight":750,"text-anchor":"middle"});
+ cityNodes.set("BIG",{group:big,roofBot:bigBot});
+ $("city-motion").addEventListener("click",()=>setCityMotion($("world").dataset.motion!=="on"));
+ const motionChanged=()=>{if(cityMotionQuery.matches)setCityMotion(false);};
+ if(cityMotionQuery.addEventListener)cityMotionQuery.addEventListener("change",motionChanged);
+ setCityMotion(false);selectCityDistrict(citySelected,false);
+ $("city-open-team").addEventListener("click",()=>{
+  const card=cards.get(citySelected).card;card.scrollIntoView({behavior:cityMotionQuery.matches?"auto":"smooth",block:"start"});
+  const focus=card.querySelector("button:not([hidden])")||card;focus.focus({preventScroll:true});
+ });
+ requestAnimationFrame(()=>{const pan=$("city-pan");if(pan.scrollWidth>pan.clientWidth)pan.scrollLeft=790*svg.getBoundingClientRect().width/1600-pan.clientWidth/2;});
+}
+function setCityMotion(enabled){
+ const on=enabled&&!cityMotionQuery.matches;
+ $("world").dataset.motion=on?"on":"off";$("city-motion").setAttribute("aria-pressed",String(on));
+ $("city-motion").textContent=cityMotionQuery.matches?"Motion reduced":on?"Ambient motion on":"Ambient motion off";
+ $("city-motion").disabled=cityMotionQuery.matches;
+}
+function cityRecentReport(report){
+ if(!report||!report.generated_at)return false;
+ const elapsed=Date.now()-Date.parse(report.generated_at);return Number.isFinite(elapsed)&&elapsed>=-30000&&elapsed<=90000;
+}
+function cityAnalysisRecent(analysis){
+ if(!analysis)return false;
+ const elapsed=Date.now()-Date.parse(analysis.updated_at||analysis.observed_at||"");
+ return Number.isFinite(elapsed)&&elapsed>=-30000&&elapsed<=90000&&analysis.state==="READY";
+}
+function cityEyes(robot,color){for(const eye of robot.eyes)eye.setAttribute("fill",color);}
+function selectCityDistrict(symbol,panTo=false){
+ citySelected=symbol;
+ for(const [name,row] of cityNodes){
+  if(name==="BIG")continue;
+  const selected=name===symbol;row.group.dataset.selected=String(selected);row.group.setAttribute("aria-pressed",String(selected));
+  cityDock.get(name).button.setAttribute("aria-pressed",String(selected));
+  const card=cards.get(name).card;card.classList.toggle("city-selected",selected);card.style.setProperty("--district-color",row.district.color);
+ }
+ renderCityInspector();
+ if(panTo){
+  const pan=$("city-pan");if(pan.scrollWidth>pan.clientWidth){
+   pan.scrollTo({left:cityNodes.get(symbol).district.x*$("city-map").getBoundingClientRect().width/1600-pan.clientWidth/2,behavior:cityMotionQuery.matches?"auto":"smooth"});
+  }
+ }
+}
+function renderCityInspector(){
+ const row=cityNodes.get(citySelected);if(!row)return;
+ const team=(citySnapshot?.teams||[]).find(item=>item.name===citySelected)||{};
+ const analysis=team.analysis||{},fresh=connected&&team.health==="fresh",current=connected&&cityAnalysisRecent(analysis);
+ const votes=Array.isArray(analysis.votes)?analysis.votes:[],report=(citySnapshot?.managers||[]).find(item=>item.team_name===citySelected)||{};
+ $("city-inspector").style.setProperty("--district-color",row.district.color);
+ $("city-team-title").textContent=citySelected;$("city-team-asset").textContent=row.def.asset;
+ const state=$("city-team-state");state.textContent=!connected&&citySnapshot?"Last snapshot":fresh?text(team.worker_state,"Observed"):team.health==="stale"?"Heartbeat stale":"Not observed";
+ state.className="pill "+(fresh?processTone(team.worker_state):"muted");
+ $("city-consensus").textContent=analysis.direction?(current?"Consensus ":"Last recorded ")+text(analysis.direction):"Awaiting analysis";
+ $("city-agreement").textContent=(analysis.direction?text(analysis.agreement,"0")+"/"+row.def.bots.length+" recorded votes · ":"")+row.def.required+"/"+row.def.bots.length+" required"+(citySelected.endsWith("!")?" · WATCH ONLY":"");
+ $("city-atr").textContent=number(analysis.indicators?.atr);$("city-rvol").textContent=number(analysis.indicators?.relative_volume);
+ $("city-bot-list").replaceChildren();
+ for(const name of row.def.bots){
+  const vote=votes.find(item=>item.name===name)||{},item=element("li"),avatar=element("span","bot-avatar");
+  avatar.setAttribute("aria-hidden","true");
+  const icon=citySVG("svg",{viewBox:"0 0 24 24"});cityAdd(icon,"rect",{x:4,y:6,width:16,height:13,rx:3,fill:"none",stroke:"currentColor"});
+  cityAdd(icon,"path",{d:"M 12 3 v 3 M 8 12 h 2 M 14 12 h 2 M 9 16 h 6",stroke:"currentColor","stroke-width":1.5});avatar.append(icon);
+  const direction=element("span","city-vote",text(vote.direction,"Waiting"));direction.classList.add(current&&vote.direction==="LONG"?"good":current&&vote.direction==="SHORT"?"bad":"muted");
+  item.append(avatar,element("span","city-bot-name",name),direction);item.title=text(vote.reason,"No recorded analysis");$("city-bot-list").append(item);
+ }
+ $("city-manager-note").textContent=report.summary?"Team Manager · "+text(report.severity)+" · "+text(report.summary)+" · "+reportAge(report.generated_at):"Team Manager awaits a recorded assessment.";
+ $("city-analysis-time").textContent=analysis.direction?"Recorded source "+text(analysis.source,"unavailable")+" · bar "+formatTime(analysis.bar_time)+" · "+text(analysis.state,"state unavailable")+(current?"":" · freshness unconfirmed"):"No source bars recorded.";
+ const control=team.controls||{};
+ $("city-entry-state").textContent=citySelected.endsWith("!")?"Watch only · this futures district cannot send orders.":!connected?"Connection unavailable · controls disabled.":citySnapshot?.mode==="observe"?"Observe mode · analysis only. "+text(control.lock_reason,""):control.entry_locked===true?"Entry locked · "+text(control.lock_reason):"Entry controls · "+text(control.lock_reason,"see team details");
+ $("city-open-team").textContent="Open "+citySelected+" team "+(citySelected.endsWith("!")?"details":"controls")+" ↗";
+}
+function renderCity(snapshot){
+ citySnapshot=snapshot;
+ let observed=0,recordedVotes=0,managers=0;
+ for(const district of CITY_DISTRICTS){
+  const row=cityNodes.get(district.name),team=(snapshot.teams||[]).find(item=>item.name===district.name)||{};
+  const fresh=connected&&team.health==="fresh",analysis=team.analysis||{},current=connected&&cityAnalysisRecent(analysis);
+  const votes=Array.isArray(analysis.votes)?analysis.votes:[],report=(snapshot.managers||[]).find(item=>item.team_name===district.name)||{};
+  const reportCurrent=connected&&cityRecentReport(report);
+  if(fresh)observed++;recordedVotes+=row.def.bots.filter(name=>votes.some(vote=>vote.name===name)).length;if(reportCurrent)managers++;
+  row.group.dataset.observed=String(fresh);
+  const state=!connected?"LAST SNAPSHOT":fresh?text(team.worker_state,"OBSERVED"):team.health==="stale"?"HEARTBEAT STALE":"NOT OBSERVED";
+  row.group.setAttribute("aria-label",district.name+" district, "+state);
+  row.panel.state.textContent=state;row.panel.state.setAttribute("fill",fresh&&["RUNNING","ALIVE","READY"].includes(team.worker_state)?"#42e2ad":"#9eacc9");
+  row.panel.detail.textContent=analysis.direction?(current?"Consensus ":"Recorded ")+text(analysis.direction)+" · "+text(analysis.agreement,"0")+"/"+row.def.bots.length:"Awaiting source bars";
+  cityEyes(row.roofBot,fresh?district.color:"#75839e");
+  for(const bot of row.specialists){
+   const vote=votes.find(item=>item.name===bot.name)||{};
+   cityEyes(bot,current?(vote.direction==="LONG"?"#42e2ad":vote.direction==="SHORT"?"#ff697d":"#ffc56a"):"#75839e");
+   bot.robot.querySelector("title").textContent=bot.name+" · "+text(vote.direction,"Waiting")+" · "+text(vote.reason,"No recorded analysis")+(current?"":" · last recorded or unconfirmed");
+  }
+  cityEyes(row.manager,reportCurrent?(report.severity==="CRITICAL"?"#ff697d":report.severity==="CAUTION"?"#ffc56a":district.color):"#75839e");
+  district.wire.setAttribute("opacity",reportCurrent?.5:.12);
+  const dock=cityDock.get(district.name);dock.state.style.background=fresh&&["RUNNING","ALIVE","READY"].includes(team.worker_state)?"#42e2ad":fresh?"#ffc56a":"#69738d";dock.button.setAttribute("aria-label",district.name+" · "+state);
+ }
+ const big=snapshot.big_manager||{};cityEyes(cityNodes.get("BIG").roofBot,connected&&cityRecentReport(big)?"#c998ff":"#75839e");
+ $("city-fresh").textContent=observed+" / 8";$("city-vault-count").textContent=observed+" / 8";$("city-votes").textContent=recordedVotes?recordedVotes+" / 26":"Not recorded";$("city-managers").textContent=managers+" / 8";
+ $("city-observation").textContent=connected?"Recorded Python status · "+formatTime(snapshot.generated_at):"Connection lost · city shows the last snapshot.";
+ $("city-world-status").textContent=connected?"BACKEND CONNECTED · "+text(snapshot.mode,"unknown").toUpperCase()+" MODE":"CONNECTION LOST · OBSERVATIONS UNCONFIRMED";
+ renderCityInspector();
+}
+function cityConnectionLost(){
+ if(citySnapshot)renderCity(citySnapshot);
+ else {$("city-world-status").textContent="BACKEND UNAVAILABLE · WAITING FOR PYTHON";$("city-observation").textContent="No worker observations available.";renderCityInspector();}
+}
+
+initializeCards();initializeCity();refreshStatus();
 </script>
 </body>
 </html>

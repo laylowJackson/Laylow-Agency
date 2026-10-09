@@ -70,3 +70,30 @@ A phone cannot reach a computer's localhost URL. A separate authenticated hostin
 One supervisor owns eleven children: eight team processes, manager assessments, dashboard, and snapshot service. It uses bounded restart delays, independent logs, fresh process observations and controlled shutdown. Legacy launchers delegate to the same supervisor. LAYLOW_DATA_DIR selects where records/logs are saved; relative paths resolve against the project. Existing databases are migrated without deleting historical rows or conflating enabled flags with worker health.
 
 Run python -m unittest discover -s tests -v after installing requirements. CI checks Windows/Linux Python 3.11/3.12, mocked provider/order boundaries, real credential-free startup/shutdown, and Chromium desktop/phone dashboard behavior. Run python package_build.py for dist/Laylow-Agency-improved.zip. Credentials, databases, logs, virtual environments, legacy sample backtests and fake performance generators are excluded from the runtime download.
+
+
+## Interactive agency city
+
+The World view is a local SVG city inspired by the supplied neon tower references.
+Eight team districts surround a gold Vault and purple Big Manager hub. There are
+26 specialist robot characters and eight Team Manager characters. Select a tower
+by click, tap, Enter or Space, or use the district dock. The inspector displays
+the same recorded Python status, consensus, source-bar timestamp, ATR, relative
+volume and manager report used by the team cards. Open team controls jumps to
+that team's existing controls. On phones, swipe the city horizontally; the dock
+also centers the selected district.
+
+City lights are decoration. Bot eyes, report links and status labels use backend
+observations. Stale analysis is labeled as recorded, and lost connections retain
+the last snapshot while marking observations unconfirmed. The Vault counts recent
+heartbeats; realized P&L remains **Not recorded** because this dashboard has no
+broker balance or realized earnings ledger. Futures districts remain watch only.
+
+Ambient motion starts off and can be enabled with the toolbar button. Operating
+system reduced-motion preferences override it. The city uses no external fonts,
+image services, market simulations or additional credentials.
+
+After downloading an updated ZIP, extract it into a new folder and stop the old
+runner before starting the new copy. Your already-open dashboard will show this
+version only when the server serves the updated code. Copy any existing local
+configuration yourself; downloadable packages keep all credential fields blank.
