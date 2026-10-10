@@ -181,6 +181,7 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 @media(max-width:800px){.world-3d-label[data-selected=true]{padding:7px 10px}.world-3d-label strong{font-size:11px}}
 
 
+.city-council-label{pointer-events:auto;--district-color:#70e2e8}.city-world[data-view="3d"] .city-council-label{display:block}
 .city-hq-building{cursor:pointer}.city-hq-building:focus-visible{outline:2px solid #ffdfa0;outline-offset:5px}
 </style>
 <link rel="stylesheet" href="/council.css">
@@ -208,7 +209,7 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
         <div class="camera-controls"><button id="city-zoom-in" type="button" aria-label="Zoom in">+</button><button id="city-zoom-out" type="button" aria-label="Zoom out">−</button><button id="city-camera-reset" type="button">Reset camera</button></div>
       </div>
       <div id="city-pan" class="city-pan" tabindex="0" aria-label="City map. Scroll horizontally on small screens to explore all districts.">
-        <svg id="city-map" viewBox="0 0 1600 920" role="group" aria-label="Laylow City. Ten interactive team towers, specialist robots and manager headquarters."></svg>
+        <svg id="city-map" viewBox="0 0 1600 920" role="group" aria-label="Laylow City. Ten interactive team towers, The Council building, specialist robots and manager headquarters."></svg>
       </div>
       <aside class="city-overview glass" aria-label="Agency overview">
         <div class="glass-heading">AGENCY OVERVIEW <span class="tiny-orbit" aria-hidden="true"></span></div>
@@ -697,6 +698,18 @@ function initializeCity(){
  cityAdd(big,"rect",{x:767,y:753,width:46,height:33,rx:6,fill:"#8b40e0","fill-opacity":.25,stroke:"#ba8bff"});
  cityText(big,790,776,"AI",22,"#eddbff",{"font-weight":750,"text-anchor":"middle"});
  cityNodes.set("BIG",{group:big,roofBot:bigBot});
+ // Council headquarters has its own entrance, separate from the ten trading teams.
+ const council=cityAdd(architecture,"g",{class:"city-council-building city-hq-building",role:"button",tabindex:0,"aria-label":"Open The Council chamber"});
+ bindCityBuilding(council,"THE COUNCIL");
+ cityAdd(council,"title",{},"The Council. Click or press Enter to enter the six-member council chamber.");
+ cityBlock(council,790,905,132,28,10,"#70e2e8",false);
+ cityBlock(council,790,895,110,28,56,"#70e2e8");
+ cityAdd(council,"ellipse",{cx:790,cy:812,rx:61,ry:14,fill:"#152b43",stroke:"#ffe0a2","stroke-width":2,filter:"url(#city-glow)"});
+ const councilColors=["#70e2e8","#ac7bff","#ffd278","#ff657e","#44edac","#4acaff"];
+ councilColors.forEach((color,index)=>cityRobot(council,745+index*18,807+Math.abs(2.5-index)*2,color,.58));
+ cityText(council,790,864,"THE COUNCIL",13,"#cefcff",{"font-weight":800,"text-anchor":"middle","letter-spacing":1});
+ cityText(council,790,882,"6 VOICES · ENTER",8,"#ffe0a2",{"text-anchor":"middle","letter-spacing":1});
+
  $("city-motion").addEventListener("click",()=>setCityMotion($("world").dataset.motion!=="on"));
  const motionChanged=()=>{if(cityMotionQuery.matches)setCityMotion(false);};
  if(cityMotionQuery.addEventListener)cityMotionQuery.addEventListener("change",motionChanged);
@@ -728,7 +741,7 @@ function bindCityBuilding(node,name){
  node.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();openCityBuilding(name);}});
 }
 function openCityBuilding(name){
- const destination=name==="THE VAULT"?"payroll-title":name==="BIG MANAGER"?"big-title":null;
+ const destination=name==="THE COUNCIL"?"council-title":name==="THE VAULT"?"payroll-title":name==="BIG MANAGER"?"big-title":null;
  if(destination){const section=$(destination);section.tabIndex=-1;section.scrollIntoView({behavior:cityMotionQuery.matches?"auto":"smooth",block:"start"});section.focus({preventScroll:true});return;}
  if(!TEAM_DEFINITIONS.some(team=>team.name===name))return;
  selectCityDistrict(name,false);enterOffice(name);
@@ -912,7 +925,7 @@ window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select
 
 initializeCards();initializeCity();refreshStatus();
 </script>
-<script src="/world-3d.js?v=20261009-buildings"></script>
+<script src="/world-3d.js?v=20261009-council-building"></script>
 <script src="/council-ui.js"></script>
 </body>
 </html>
