@@ -5,6 +5,7 @@ assert.equal(m.account.equity_cents,5000000);
 assert.equal(m.account.balance_cents,5000000);
 for(let i=0;i<600;i++){
  m.step();const a=m.account;
+ for(const review of m.reviews)assert.equal(review.analysis_time,m.asset(review.team_name).bars.at(-1).timestamp);
  assert.equal(a.equity_cents,a.balance_cents+a.unrealized_cents);
  assert.equal(a.balance_cents,START+a.realized_cents-m.positions.reduce((s,p)=>s+p.entry_fee_cents,0));
  assert(a.available_cents>=0);assert(m.positions.length<=4);
