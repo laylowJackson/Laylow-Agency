@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from playwright.sync_api import sync_playwright
 from werkzeug.serving import make_server
 from dashboard import create_app
+from council import MEMBERS
 
 
 def main():
@@ -27,6 +28,7 @@ def main():
         fixture = {
             "generated_at": "2026-10-08T18:00:00+00:00", "mode": "observe",
             "database_available": True,
+            "council": {"members": [dict(member) for member in MEMBERS], "reviews": [], "history": []},
             "summary": {"fresh_workers": 10, "enabled_teams": 10, "running_processes": 13,
                         "total_teams": 10, "fresh": 10, "enabled": 10, "running": 13},
             "teams": [

@@ -106,3 +106,10 @@
 @media(max-width:1050px){#council-room .council-layout{grid-template-columns:minmax(0,1fr) 260px}}
 @media(max-width:800px){#office-dialog,#council-room{width:100%;height:100dvh;max-height:100dvh;margin:0;border-radius:0}#council-room .council-layout{grid-template-columns:1fr}#office-3d,#council-room #council-3d{height:clamp(420px,60dvh,640px)}.council-room-header,#office-dialog .office-header{padding:10px 12px}#office-dialog .office-room-identity{padding:10px}.team-room-badge{font-size:9px}.room-camera-bar{padding:8px;gap:5px}.council-sidebar{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.council-sidebar{grid-template-columns:1fr}.office-room-identity h3{font-size:16px!important}.room-archive{padding:12px}.office-speech{max-width:170px}.room-camera-bar button{font-size:11px}#office-dialog .office-options{font-size:12px}}
+/* Keep the chamber itself in the first view; details belong below the scene. */
+#council-room>.game-mission-bar{margin:8px 22px;padding:8px 12px;min-height:44px}
+#council-room .game-mission-bar small{font-size:8px}#council-room .game-mission-bar strong{margin-top:1px}
+#council-room .council-panel{padding-top:4px}
+#council-room #council-3d{height:clamp(360px,calc(100dvh - 245px),720px)}
+#council-room .council-panel>.muted{margin-top:16px}
+@media(max-width:800px){#council-room>.game-mission-bar{margin:8px 12px}#council-room #council-3d{height:clamp(360px,calc(100dvh - 245px),640px)}}
