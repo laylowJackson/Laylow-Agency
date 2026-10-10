@@ -61,6 +61,10 @@ def create_app(db_path=None):
     def practice_ui():
         return send_file(Path(ROOT_DIR) / "practice-ui.js", mimetype="text/javascript", conditional=False)
 
+    @application.get("/team-offices.js")
+    def team_offices():
+        return send_file(Path(ROOT_DIR) / "team-offices.js", mimetype="text/javascript", conditional=False)
+
     @application.get("/training-engine.js")
     def training_engine():
         return send_file(Path(ROOT_DIR) / "training-engine.js", mimetype="text/javascript", conditional=False)

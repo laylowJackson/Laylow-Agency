@@ -221,3 +221,14 @@ Hidden tabs pause to save battery. Closing the browser stops the lab; running
 while closed or across devices requires a hosted worker. No verified market
 calendar or quote feed is connected yet; night school is always available and
 is synthetic research, not verified trading performance or neural-model training.
+
+### Shared team offices
+Each district now houses its team manager and all configured specialists in one
+room. Select a robot's floating label, roster card or teammate menu to inspect its
+opinion and focus its workstation. Whole room restores the shared office view.
+The ten interiors have separate floor plans, furniture and architectural themes:
+emerald boardroom, aurora loft, glass studio, engineering garage, orbital command
+center, walnut exchange, garden lab, cyber lab, strategy arena and bullion office.
+Physical monitors use the same evidence as the dashboard; results remain team-level
+because specialist earnings are not separately recorded. Without WebGL, the full
+teammate roster and evidence panels remain available. No trade logic was changed.

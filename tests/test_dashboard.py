@@ -46,6 +46,14 @@ class DashboardHttpTests(unittest.TestCase):
             self.assertIn(b"PracticeMarket", response.data)
             self.assertNotIn(b"/api/teams/", response.data)
 
+    def test_shared_office_script_is_available(self):
+        response = self.client.get("/team-offices.js")
+        self.addCleanup(response.close)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "text/javascript")
+        self.assertIn(b"LaylowTeamOffices", response.data)
+        self.assertIn("no-store", response.headers["Cache-Control"])
+
     def test_training_scripts_are_available_without_broker_controls(self):
         for url in ("/training-engine.js", "/training-ui.js"):
             response = self.client.get(url)
