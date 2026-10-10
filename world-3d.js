@@ -209,6 +209,10 @@ class Scene {
  }
  councilRoom(members){
   this.data=[];this.box(0,-.2,0,14,.2,12,"#28263d");this.box(0,0,-5.5,14,5.5,.16,"#423147");
+  for(let x=-6;x<=6;x+=2)this.box(x,.005,0,.018,.008,11,"#5e566b");
+  for(let z=-5;z<=5;z+=2)this.box(0,.005,z,13,.008,.018,"#5e566b");
+  for(const x of[-6.9,6.9]){this.box(x,0,-2,.14,5.5,7,"#352d43");this.box(x,4.95,-2,.03,.045,7,"#70e2e8",1);for(let z=-5;z<=1;z+=2)this.box(x,0,z,.2,4.9,.11,"#a18558");}
+  this.ring(0,4.3,0,3.1,"#e2bc74",.065,1);this.ring(0,4.34,0,2.8,"#70e2e8",.018,.6);
   for(const x of[-6,-3,0,3,6]){this.box(x,0,-5.35,.06,5.1,.06,"#b99463");this.box(x,4.3,-5,.3,.08,.5,"#50413b");this.sphere(x,4.15,-4.9,.10,"#ffe4a0",1);}
   this.box(0,.22,-5.33,13.5,.03,.03,"#c9a679",.8);this.box(0,5.0,-5.33,13.5,.03,.03,"#c9a679",.8);
   this.box(0,2,-5.16,4.8,1.6,.08,"#15203a");this.box(0,2.03,-5.10,4.6,.035,.025,"#bd9457",.8);
@@ -259,6 +263,7 @@ class Scene {
    this.screen(this.composite,null,scene);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,b.texture);gl.uniform1i(gl.getUniformLocation(this.composite,"halo"),1);gl.uniform1f(gl.getUniformLocation(this.composite,"city"),this.kind==="city"?1:0);gl.drawArrays(gl.TRIANGLES,0,6);gl.activeTexture(gl.TEXTURE0);
   }
   canvas.dataset.ready="true";canvas.dataset.bloom=String(this.bloomAvailable);if(this.kind==="city")placeLabels();
+  if(this.kind==="council")for(const button of byId("council-seat-labels")?.children||[]){const a=Number(button.dataset.councilSeat)*Math.PI/3,p=this.project(Math.sin(a)*3.8,2.95,Math.cos(a)*3.8);button.hidden=!p||p.x<25||p.x>canvas.clientWidth-25||p.y<55||p.y>canvas.clientHeight-25;if(p){button.style.left=p.x+"px";button.style.top=p.y+"px";}}
  }
  // Ray-box intersection follows the actual camera and chooses the nearest tower.
  hitBuilding(clientX,clientY){
@@ -346,7 +351,8 @@ function start(){
 }
 window.Laylow3D={
  council(members){try{if(!councilScene)councilScene=new Scene(byId("council-3d"),"council");const key=JSON.stringify(members.map(m=>m.color));if(key!==councilKey){councilKey=key;councilScene.councilRoom(members);}byId("council-render-note").textContent="Six seats · drag or arrow keys to orbit · read all opinions below.";}catch(error){byId("council-render-note").textContent="3D chamber unavailable; opinions and decisions remain accessible below.";}},
- resetCouncil(){if(councilScene){councilScene.yaw=.25;councilScene.pitch=.49;councilScene.distance=12.8;councilScene.draw();}},
+ resetCouncil(){if(councilScene){councilScene.yaw=.25;councilScene.pitch=.49;councilScene.distance=12.8;councilScene.target=[0,1.6,0];councilScene.draw();}},
+ focusCouncilSeat(index){if(councilScene&&Number.isInteger(index)&&index>=0&&index<6){const a=index*Math.PI/3;councilScene.yaw=a+.18;councilScene.pitch=.26;councilScene.distance=9.5;councilScene.target=[Math.sin(a)*1.5,1.6,Math.cos(a)*1.5];councilScene.draw();}},
 
  update(data,connected){snapshot=data;online=connected;for(const [name,node]of labels){if(node.tagName!=="BUTTON"||!node.dataset.team)continue;const team=data.teams?.find(row=>row.name===name)||{};
   node.children[1].textContent=connected?team.controls?.profit_brake?.status==="PROFIT_BRAKE_HIT"?"PROFIT BRAKE HIT":team.health==="fresh"?team.worker_state:"Not recently observed":"Last snapshot";
