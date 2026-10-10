@@ -191,7 +191,7 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 @media(max-width:700px){.practice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.practice-grid strong{font-size:20px}.practice-actions button{font-size:12px}}
 
 </style>
-<link rel="stylesheet" href="./council.css?v=20261010-rooms-learning">
+<link rel="stylesheet" href="./council.css?v=20261010-game-academy">
 </head>
 <body>
 <a class="skip-link" href="#bots-title">Skip to bots</a>
@@ -942,7 +942,7 @@ function renderOffice(){
  $("office-health").textContent=!connected?"Last snapshot":text(team.worker_state,"Not observed");
  $("office-data-time").textContent="Recorded bar: "+formatTime(analysis.bar_time);
  const bars=Array.isArray(analysis.bars)?analysis.bars:[];
- $("office-quote").textContent=bars.length?number(bars[bars.length-1].close)+(officeTeam.endsWith("!")?" points":" USD"):"No recorded price";
+ $("office-quote").textContent=bars.length?Number(bars[bars.length-1].close).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+(officeTeam.endsWith("!")?" points":" USD"):"No recorded price";
  officeChart(analysis);
  const selected=votes.find(row=>row.name===officeDesk);
  $("office-signal").textContent=selected?(connected&&cityAnalysisRecent(analysis)?"":"Recorded ")+officeDesk+" · "+text(selected.direction):analysis.direction?(connected&&cityAnalysisRecent(analysis)?"Consensus ":"Recorded ")+text(analysis.direction):"Awaiting analysis";
@@ -975,9 +975,11 @@ window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select
 
 initializeCards();initializeCity();refreshStatus();
 </script>
-<script src="./world-3d.js?v=20261010-rooms-learning"></script>
-<script src="./council-ui.js?v=20261010-rooms-learning"></script>
-<script src="./practice-engine.js?v=20261010-rooms-learning"></script>
-<script src="./practice-ui.js?v=20261010-rooms-learning"></script>
+<script src="./world-3d.js?v=20261010-game-academy"></script>
+<script src="./council-ui.js?v=20261010-game-academy"></script>
+<script src="./practice-engine.js?v=20261010-game-academy"></script>
+<script src="./practice-ui.js?v=20261010-game-academy"></script>
+<script src="./training-engine.js?v=20261010-game-academy"></script>
+<script src="./training-ui.js?v=20261010-game-academy"></script>
 </body>
 </html>

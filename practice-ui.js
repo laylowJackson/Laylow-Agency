@@ -47,7 +47,7 @@ if(requested)start();else if(startedFromSave&&enabled){active=true;$("practice-d
 let last={},opener=null,signature="";const room=$("vault-room");
 function enter(){if(room.open)return;opener=document.activeElement;room.showModal();$("vault-close").focus();history.replaceState(null,"",location.pathname+location.search+"#vault");update(last);}
 function leave(){if(room.open)room.close();}
-$("vault-close").addEventListener("click",leave);room.addEventListener("close",()=>{history.replaceState(null,"",location.pathname+location.search+"#world");if(opener?.isConnected)opener.focus({preventScroll:true});});
+$("vault-close").addEventListener("click",leave);room.addEventListener("close",()=>{if(document.querySelector("dialog[open]"))return;history.replaceState(null,"",location.pathname+location.search+"#world");if(opener?.isConnected)opener.focus({preventScroll:true});});
 function update(data){
  last=data||{};const payroll=last.payroll||{},available=payroll.available===true,workers=payroll.workers||[],sum=key=>workers.reduce((n,w)=>n+(Number.isFinite(w[key])?w[key]:0),0),wins=sum("wins"),losses=sum("losses"),closed=sum("closed_trades"),flat=Math.max(0,closed-wins-losses);
  for(const [id,value]of[["vault-wins",wins],["vault-losses",losses],["vault-flat",flat]])$(id).textContent=available?String(value):"—";
