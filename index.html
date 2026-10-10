@@ -191,7 +191,7 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 @media(max-width:700px){.practice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.practice-grid strong{font-size:20px}.practice-actions button{font-size:12px}}
 
 </style>
-<link rel="stylesheet" href="/council.css">
+<link rel="stylesheet" href="/council.css?v=20261009-room">
 </head>
 <body>
 <a class="skip-link" href="#bots-title">Skip to bots</a>
@@ -262,9 +262,10 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 <section id="council" class="panel council-panel" aria-labelledby="council-title">
 <div class="section-head"><div><div class="world-kicker">SIX PERSPECTIVES / ONE DECISION</div><h2 id="council-title">The Council</h2></div><a href="#world">Return to city ↑</a></div>
 <p class="muted">Different personalities, different risk opinions. Explicit rules on the same source bars; the existing AI review may veto or reduce their decision.</p>
-<div class="council-options"><label for="council-team">Proposal district</label><select id="council-team"></select><button id="council-reset" type="button">Reset chamber view</button></div>
-<div class="council-layout"><div><div class="council-stage"><canvas id="council-3d" tabindex="0" aria-label="Six robot seats around a council table. Drag or arrow keys to orbit."></canvas><div class="council-sign">THE COUNCIL</div></div><p id="council-render-note" class="city-source">Preparing chamber</p></div>
+<div class="council-options"><label for="council-team">Proposal district</label><select id="council-team"></select><button id="council-reset" type="button">Reset chamber view</button><button id="council-enter" type="button">Enter Council room ↗</button></div>
+<div class="council-layout"><div><div class="council-stage"><canvas id="council-3d" tabindex="0" aria-label="Six robot seats around a council table. Drag or arrow keys to orbit."></canvas><div class="council-sign">THE COUNCIL</div><div id="council-seat-labels" aria-label="Council seats in the room"></div></div><p id="council-render-note" class="city-source">Preparing chamber</p></div>
 <div class="council-verdict"><span class="world-kicker" id="council-context">CURRENT EVIDENCE REVIEW</span><strong id="council-action" role="status">Waiting for backend</strong><p id="council-reason">No observed opinions.</p><p id="council-evidence" class="city-source"></p><p id="council-authority" class="city-source">Four of six must support proceeding. Hard locks cannot be outvoted.</p><p id="council-last" class="city-source"></p></div></div>
+<div class="council-seat-inspector"><div id="council-seats" aria-label="Choose a council member"></div><h3 id="council-seat-name">Choose a member</h3><p id="council-seat-personality"></p><strong id="council-seat-vote"></strong><p id="council-seat-reason"></p></div>
 <div id="council-members" class="council-members" aria-label="Council opinions"></div><h3 class="small-heading">Recorded deliberations</h3><ol id="council-history" class="council-history"></ol>
 </section>
 <section class="panel payroll-panel" aria-labelledby="payroll-title">
@@ -273,6 +274,7 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
  <div class="payroll-layout"><div class="table-scroll"><table><thead><tr><th>Team</th><th>Closed trades</th><th>Wins</th><th>Net after fees</th><th>Entry status</th></tr></thead><tbody id="payroll-rows"></tbody></table></div><div><h3 class="small-heading">Recorded daily results</h3><svg id="payroll-chart" viewBox="0 0 480 220" role="img" aria-label="Recorded daily net results, up to 30 days"></svg><p id="payroll-chart-note" class="city-source">No recorded earnings available.</p></div></div>
  <p id="payroll-basis" class="city-source"></p>
 </section>
+<dialog id="council-room" aria-labelledby="council-room-title"><div class="council-room-header"><div><span class="world-kicker">LAYLOW HEADQUARTERS / INTERIOR</span><h2 id="council-room-title">Council room</h2></div><button id="council-room-close" type="button">Return to city ×</button></div><div id="council-room-content"></div></dialog>
 <dialog id="office-dialog" aria-labelledby="office-title">
  <div class="office-header"><div><div class="world-kicker" id="office-context">VIRTUAL WORKSTATION / RECORDED DATA</div><h2 id="office-title">Bot office</h2></div><button id="office-close" type="button" aria-label="Close office">Return to city ×</button></div>
  <div class="office-options"><label for="office-worker">Worker desk</label><select id="office-worker"></select><span id="office-health" class="pill muted">Not observed</span><span id="office-data-time" class="city-source"></span></div>
@@ -772,6 +774,7 @@ function bindCityBuilding(node,name){
  node.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();openCityBuilding(name);}});
 }
 function openCityBuilding(name){
+ if(name==="THE COUNCIL"&&window.LaylowCouncil?.enter){window.LaylowCouncil.enter();return;}
  const destination=name==="THE COUNCIL"?"council-title":name==="THE VAULT"?"payroll-title":name==="BIG MANAGER"?"big-title":null;
  if(destination){const section=$(destination);section.tabIndex=-1;section.scrollIntoView({behavior:cityMotionQuery.matches?"auto":"smooth",block:"start"});section.focus({preventScroll:true});return;}
  if(!TEAM_DEFINITIONS.some(team=>team.name===name))return;
@@ -961,8 +964,8 @@ window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select
 
 initializeCards();initializeCity();refreshStatus();
 </script>
-<script src="/world-3d.js?v=20261009-practice"></script>
-<script src="/council-ui.js"></script>
+<script src="/world-3d.js?v=20261009-room"></script>
+<script src="/council-ui.js?v=20261009-room"></script>
 <script src="/practice-engine.js?v=20261009-practice"></script>
 <script src="/practice-ui.js?v=20261009-practice"></script>
 </body>

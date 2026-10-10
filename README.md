@@ -166,6 +166,13 @@ Run the accounting, Council and risk-control checks with
 scripts remain available without granting broker controls.
 
 ## Council
+Click the Council building, its floating entrance sign, or Council in the top
+navigation to enter the full Council room. Six named seats let you focus on an
+individual robot and read its current risk opinion. Drag the room or use arrow
+keys to orbit, and use Reset chamber view to return to the full table. Return to
+city or Escape exits the room. A direct `#council-room` link enters the interior.
+Opinions and seat controls remain available when WebGL is unavailable.
+
 Six deterministic personalities debate the same evidence: Anchor protects capital, Proof requires broad support, Flux favors momentum, Rebel challenges extended or disputed entries, Steward reduces volatility exposure, and Sentinel enforces entry controls. Four of six must support proceeding. Hard gates cannot be outvoted; risk reduction halves the existing budget. These are explicit rule policies, not fine-tuned language models or profitability forecasts.
 
 Current dashboard reviews are read-only. Worker deliberations separately record all opinions, source fingerprint, proposal ID, timestamp and policy version. Existing AI can veto or reduce but cannot reverse or increase council risk. Stock paper submissions verify fresh recorded approval, source identity and risk terms before broker requests and again before the intent write. Existing risk checks remain mandatory. Futures remain watch-only.
