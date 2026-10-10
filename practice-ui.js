@@ -41,3 +41,28 @@ const requested=new URLSearchParams(location.search).get("practice")==="1";
 let enabled=true;try{enabled=storage?.getItem(key+"-enabled")!=="0";}catch{}
 if(requested)start();else if(startedFromSave&&enabled){active=true;$("practice-details").hidden=false;publish();}else{$("practice-save-note").textContent=saveNote;if(startedFromSave)$("practice-toggle").textContent="Resume saved practice";}
 })();
+
+// The Vault is available for practice and recorded ledgers; it never invents results.
+(()=>{"use strict";const $=id=>document.getElementById(id),cash=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(n/100),node=(tag,cls,text)=>{const e=document.createElement(tag);e.className=cls||"";e.textContent=text??"";return e;};
+let last={},opener=null,signature="";const room=$("vault-room");
+function enter(){if(room.open)return;opener=document.activeElement;room.showModal();$("vault-close").focus();history.replaceState(null,"",location.pathname+location.search+"#vault");update(last);}
+function leave(){if(room.open)room.close();}
+$("vault-close").addEventListener("click",leave);room.addEventListener("close",()=>{history.replaceState(null,"",location.pathname+location.search+"#world");if(opener?.isConnected)opener.focus({preventScroll:true});});
+function update(data){
+ last=data||{};const payroll=last.payroll||{},available=payroll.available===true,workers=payroll.workers||[],sum=key=>workers.reduce((n,w)=>n+(Number.isFinite(w[key])?w[key]:0),0),wins=sum("wins"),losses=sum("losses"),closed=sum("closed_trades"),flat=Math.max(0,closed-wins-losses);
+ for(const [id,value]of[["vault-wins",wins],["vault-losses",losses],["vault-flat",flat]])$(id).textContent=available?String(value):"—";
+ $("vault-ratio").textContent=!available||!closed?"—":losses?(wins/losses).toFixed(2)+" : 1":wins?"No losses":"—";
+ $("vault-win-rate").textContent=available&&wins+losses?(100*wins/(wins+losses)).toFixed(1)+"%":"—";$("vault-net").textContent=available&&Number.isFinite(payroll.total_net_cents)?cash(payroll.total_net_cents):"—";
+ $("vault-source").textContent=last.practice?"FAKE-MONEY PRACTICE · full saved session ledger · net after simulated fees":available?"RECORDED LEDGER · "+(payroll.day||"today")+" · "+(payroll.basis||"closed trades only"):"No closed-trade ledger connected. Figures remain blank until results are recorded.";
+ $("vault-feed").textContent=last.practice?"MARKET FEED: SIMULATED · Live broker/data feed not connected. These results use generated prices.":"Recorded dashboard snapshot · live quote connection is not verified.";
+ $("vault-ratio-note").textContent="Win/loss ratio = winning trades ÷ losing trades. Win rate excludes break-even trades. Open positions are excluded. "+(available?closed+" closed trades counted.":"No data available.");
+ const learning=last.learning||[],reviews=last.trade_reviews||[],key=JSON.stringify([learning,reviews]);if(key===signature)return;signature=key;
+ $("vault-teams").replaceChildren();for(const team of learning){const card=node("article","vault-team");card.append(node("h3","",team.team_name),node("p","",team.reviewed+" outcomes reviewed · "+team.wins+" wins / "+team.losses+" losses"),node("p","",team.summary),node("p","","Current planned risk cap: "+cash(team.planned_risk_cents)+" · extra specialist votes: "+team.extra_agreement));$("vault-teams").append(card);}
+ if(!learning.length)$("vault-teams").append(node("p","muted",last.practice?"Teams are waiting for their first closed trade.":"Learning reviews are available for practice trades. A connected backend must supply its own verified trade reviews."));
+ const focused=document.activeElement.closest?.(".vault-review")?.dataset.tradeId,opened=new Set(Array.from($("vault-reviews").querySelectorAll("details[open]")).map(d=>d.dataset.tradeId));$("vault-reviews").replaceChildren();
+ for(const review of reviews){const item=node("details","vault-review"),summary=node("summary","",review.team_name+" · "+review.result+" · "+cash(review.net_cents)+" · "+review.exit_rule);item.dataset.tradeId=String(review.trade_id);item.open=opened.has(String(review.trade_id));item.append(summary,node("p","",review.observed),node("p","lesson","Lesson: "+review.lesson),node("p","basis",review.evidence),node("p","basis",review.basis));$("vault-reviews").append(item);}
+ if(!reviews.length)$("vault-reviews").append(node("p","muted","No trade reviews yet. Finish a fake trade to see the price movement, exit rule, costs and lesson."));
+ if(focused){const summary=Array.from($("vault-reviews").children).find(d=>d.dataset.tradeId===focused)?.querySelector("summary");summary?.focus({preventScroll:true});}
+}
+window.LaylowVault={enter,leave,update};update(window.LaylowWorld.snapshot());if(location.hash==="#vault")enter();window.addEventListener("hashchange",()=>{if(location.hash==="#vault")enter();else if(room.open)leave();});
+})();
