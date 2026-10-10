@@ -238,7 +238,7 @@ class Scene {
  }
  trainingDisplay(data){
   const t=data?.teams?.find(t=>t.name===this.symbol)||data?.teams?.[0];if(!t)return;
-  if(this.kind==='office')this.display('academy-desk',-3.95,1.24,-2.575,1.73,1.16,'NIGHT SCHOOL / '+t.name,[t.experiments+' DRILLS',t.status,t.trades+' held-out trades'],[], '#70e2e8');
+  if(this.kind==='office')this.display('academy-desk',-5.9,2.5,-6.20,2.5,1,'NIGHT SCHOOL / '+t.name,[t.experiments+' DRILLS',t.status,t.trades+' held-out trades'],[],this.theme?.accent||'#70e2e8');
   if(this.kind==='council')this.display('academy-wall',5.65,3.6,-6,2.6,1.15,'ACADEMY / RESEARCH',[data.experiments+' EXPERIMENTS',data.scenario,'Synthetic · baseline protected'],[],'#70e2e8');
   this.draw();
  }
@@ -252,49 +252,10 @@ class Scene {
  }
 
  office(symbol){
-  this.symbol=symbol;this.data=[];this.officeBarKey=null;this.yaw=.3;this.pitch=.28;this.distance=9;this.target=[0,1.6,-.25];
-  const color=bridge.districts.find(row=>row.name===symbol)?.color||"#b488ff";
-  this.box(0,-.22,0,12,.22,10,"#192536");this.box(0,0,-4.5,12,5.8,.16,"#172337");
-  for(let x=-5.5;x<6;x+=1)this.box(x,.008,0,.012,.008,9,"#344759");
-  for(let z=-4;z<5;z++)this.box(0,.008,z,11.8,.008,.012,"#344759");
-  for(const x of[-5.9,5.9]){this.box(x,0,-1,.14,5.8,7,"#202a3c");this.box(x*.99,.2,-1,.02,.035,7,color,1);}
-  // Panoramic glazing, structural mullions and a miniature nighttime skyline.
-  this.box(0,.8,-4.38,11.4,4.45,.06,"#071324");
-  for(let i=0;i<23;i++){const x=-5.3+i*.47,h=.7+(i*7%11)*.19;this.box(x,.8,-4.31,.33,h,.02,"#223d58");for(let row=0;row<h/.22;row++)for(let col=0;col<2;col++)this.box(x-.085+col*.17,.93+row*.22,-4.285,.045,.07,.014,(row+i)%4===0?color:"#b1d3e5",.6);}
-  for(const x of[-5.55,-2.8,0,2.8,5.55])this.box(x,.8,-4.22,.07,4.5,.1,"#718398");
-  this.box(0,1,-4.14,11.4,.12,.38,"#35475b");this.box(0,5.23,-4.16,11.4,.05,.06,color,1);
-  // Floating ceiling beams leave an open roof so orbiting never hides the desk.
-  for(const x of[-3.9,3.9]){this.box(x,5.35,-1,.16,.12,6.4,"#526174");this.box(x,5.33,-1,.09,.02,6.3,"#cee5ed",.7);}
-  this.box(0,.018,.45,6.7,.025,4.1,"#0e182a");
-  this.box(0,1.1,-.25,6.3,.18,2,"#54657c");this.box(0,1.28,-.25,6.25,.055,1.97,"#152235");this.box(0,1.12,.75,6.3,.055,.025,color,1);
-  for(const x of[-2.55,2.55]){this.box(x,0,-.25,.12,1.1,1.75,"#8a9daf");this.box(x,.03,-.25,.75,.07,1.9,"#2d3c50");}
-  for(const x of[-1.95,0,1.95]){this.cylinder(x,1.335,-.6,.25,.035,"#73859d");this.box(x,1.37,-.6,.08,.28,.08,"#73859d");this.box(x,1.64,-.6,1.82,1.18,.12,"#010810");this.box(x,1.69,-.526,1.69,1.07,.02,"#102b40");this.box(x,2.85,-.59,.2,.04,.07,color,1);}
-  // Chair, headphones, console keys, coffee, speakers and an illuminated PC.
-  this.cylinder(0,.04,1.75,.54,.08,"#536381");this.cylinder(0,.12,1.75,.08,.44,"#8fa1bc");
-  this.box(0,.56,1.75,1.2,.18,.88,"#17273b");this.box(0,.72,2.2,1.16,1.15,.14,"#25374d");this.box(0,.87,2.28,.85,.65,.02,color,.4);
-  for(const x of[-.63,.63])this.box(x,.82,1.75,.1,.09,.78,"#62778b");
-  this.robot(0,.73,1.36,color,1.08,true,Math.PI);
-  this.box(0,1.34,.4,1.25,.04,.46,"#7e90a9");for(let row=0;row<3;row++)for(let i=0;i<13;i++)this.box(-.55+i*.09,1.38,.24+row*.12,.06,.01,.07,(row+i)%4===0?color:"#142438",.25);
-  this.box(1.1,1.34,.4,.45,.008,.5,"#243850");this.sphere(1.1,1.39,.4,.1,"#99afc6");
-  this.cylinder(2.65,1.34,.3,.14,.32,"#b9c2d0");this.cylinder(2.65,1.67,.3,.12,.008,"#30282c");
-  for(const x of[-2.9,2.9]){this.box(x,1.34,-.5,.26,.5,.28,"#0b1426");this.sphere(x,1.58,-.346,.09,"#405268");}
-  this.box(3.6,0,-.15,.72,1.6,1.05,"#1e2b40");for(const y of[.38,.78,1.18]){this.sphere(3.6,y,.395,.17,"#223b59");this.ring(3.6,y,.395,.16,color,.02,.7);this.box(3.6,y,.39,.21,.023,.025,color,1);}
-  // Server alcove: decorative hardware only, not a claim of connected workers.
-  for(const x of[-4.9,-3.95]){this.box(x,.12,-2.9,.8,3.15,.7,"#111c2d");for(let j=0;j<9;j++){this.box(x,.3+j*.32,-2.53,.65,.21,.03,"#344358");for(let k=0;k<4;k++)this.box(x-.24+k*.12,.36+j*.32,-2.5,.035,.024,.012,k===0?color:"#62758b",.7);}}
-  for(const [x,z] of[[4.65,-3.5],[-4.85,1]]){this.cylinder(x,.03,z,.36,.65,"#4a5a70",.44);for(let i=0;i<7;i++){const a=i*Math.PI*2/7;this.box(x,.6,z,.03,.55,.03,"#32605f");this.sphere(x+Math.sin(a)*.27,1.2+i*.08,z+Math.cos(a)*.27,.22,"#2e7269");}}
-  this.gameInterior('office',color);
-  this.officeBase=this.data.slice();this.upload();this.draw();
+  window.LaylowTeamOffices.build(this,symbol,bridge);
  }
  officeBars(bars){
-  if(!this.officeBase)return;
-  const team=snapshot?.teams?.find(t=>t.name===this.symbol)||{},worker=snapshot?.payroll?.workers?.find(w=>w.team_name===this.symbol)||{};
-  const analysis=team.analysis||{},voteText=(analysis.votes||[]).slice(0,3).map(v=>v.name+" · "+v.direction),price=Number(bars.at(-1)?.close);
-  const source=snapshot?.practice?"FAKE-MONEY PRACTICE":online?"RECORDED WORKER DATA":"LAST SNAPSHOT";
-  this.display("market",0,1.7,-.51,1.69,1.07,this.symbol+" / MARKET",[Number.isFinite(price)?price.toFixed(2):"NO SOURCE PRICE",source,"Close history"],bars,"#70e2e8");
-  this.display("signals",-1.95,1.7,-.51,1.69,1.07,"SIGNAL SCANNER",[analysis.direction||"WAITING",...voteText],[],"#c6a2ff");
-  const net=worker.net_cents;
-  this.display("results",1.95,1.7,-.51,1.69,1.07,"PERFORMANCE",[Number.isFinite(net)?(net>=0?"+":"−")+"$"+(Math.abs(net)/100).toFixed(2):"NOT RECORDED",Number.isFinite(worker.closed_trades)?worker.closed_trades+" closed trades":"Awaiting closed trades",source],[],"#ffd18e");
-  this.draw();
+  if(this.crew)window.LaylowTeamOffices.update(this,snapshot,online,bars);
  }
  councilRoom(members){
   this.data=[];this.councilDataKey=null;
@@ -370,7 +331,7 @@ class Scene {
   }
   canvas.dataset.ready="true";canvas.dataset.bloom=String(this.bloomAvailable);if(this.kind==="city")placeLabels();
   if(this.kind==="office"){const buttons=Array.from(byId("office-screen-labels")?.children||[]);buttons.forEach((button,i)=>{button.hidden=false;button.style.left=canvas.clientWidth*(i+1)/4+"px";button.style.top=canvas.clientHeight-14+"px";});}
-  if(this.kind==="office"){const bubble=byId("office-speech"),p=this.project(0,2.85,1.36);if(bubble){bubble.hidden=!p||p.x<80||p.x>canvas.clientWidth-80||p.y<80||p.y>canvas.clientHeight-20;if(p){bubble.style.left=p.x+"px";bubble.style.top=p.y+"px";}}}
+  if(this.kind==="office"&&this.crew)window.LaylowTeamOffices.labels(this);
   if(this.kind==="council"){
    const occupied=[],buttons=Array.from(byId("council-seat-labels")?.children||[]).sort((a,b)=>Number(b.getAttribute("aria-pressed")==="true")-Number(a.getAttribute("aria-pressed")==="true"));
    for(const button of buttons){const a=Number(button.dataset.councilSeat)*Math.PI/3,p=this.project(Math.sin(a)*3.8,2.8,Math.cos(a)*3.8);button.hidden=!p||p.x<10||p.x>canvas.clientWidth-10||p.y<45||p.y>canvas.clientHeight-35;if(button.hidden)continue;
@@ -467,6 +428,7 @@ function start(){
 window.Laylow3D={
  council(members,bars=[],review=null){try{if(!councilScene)councilScene=new Scene(byId("council-3d"),"council");const key=JSON.stringify(members.map(m=>m.color));if(key!==councilKey){councilKey=key;councilScene.councilRoom(members);}councilScene.councilData(members,bars,review);councilScene.trainingDisplay(window.LaylowTraining?.snapshot());byId("council-render-note").textContent="Drag to orbit · select a member to inspect their opinion · green support, amber wait, red veto.";}catch(error){byId("council-render-note").textContent="3D chamber unavailable; opinions and decisions remain accessible below.";}},
  roomCamera(kind,view){const scene=kind==="council"?councilScene:office;if(!scene)return;
+  if(kind==='office'&&office){if(view==='wide'){office.yaw=.2;office.pitch=.48;office.distance=17;office.target=[0,1.3,-.3];office.canvas.dataset.camera=view;office.draw();return;}if(view==='desk'||view==='screens'){window.LaylowTeamOffices.focus(office,byId('office-worker').value,view);return;}}
   const presets=kind==="council"?{wide:[.25,.38,13.5,[0,1.6,0]],table:[.15,.74,10.5,[0,1,0]],wall:[0,.12,10.4,[0,2.5,-2.5]]}:{wide:[.3,.28,9,[0,1.6,-.25]],desk:[-.48,.17,5.8,[0,1.7,.25]],screens:[0,.12,4.2,[0,2,-.6]]};
   if(view==="closer"||view==="further")scene.distance=Math.max(4,Math.min(18,scene.distance+(view==="closer"?-1:1)));
   else {const p=presets[view];if(!p)return;[scene.yaw,scene.pitch,scene.distance,scene.target]=p;}
@@ -487,9 +449,11 @@ window.Laylow3D={
  const analysis=data.teams?.find(row=>row.name===bridge.selected())?.analysis||{};
  city?.marketBackdrop(Array.isArray(analysis.bars)?analysis.bars:[],bridge.selected()+"/"+(analysis.bar_time||"empty"));
  if(office&&byId("office-dialog").open){const analysis=data.teams?.find(row=>row.name===office.symbol)?.analysis||{};office.officeBars(Array.isArray(analysis.bars)?analysis.bars:[]);}},
- enter(name){try{if(!office)office=new Scene(byId("office-3d"),"office");office.office(name);office.trainingDisplay(window.LaylowTraining?.snapshot());office.officeBars(snapshot?.teams?.find(row=>row.name===name)?.analysis?.bars||[]);byId("office-render-note").textContent="Drag to explore · select a terminal to inspect its records · arrow keys rotate";}catch(error){byId("office-render-note").textContent="3D office unavailable; recorded workstation panels remain available.";}},
+ enter(name){try{if(!office)office=new Scene(byId("office-3d"),"office");office.office(name);office.trainingDisplay(window.LaylowTraining?.snapshot());office.officeBars(snapshot?.teams?.find(row=>row.name===name)?.analysis?.bars||[]);byId("office-theme-name").textContent=office.theme.name;byId("office-layout-note").textContent=office.crew.length+" teammates in one room · individual desks, shared research and team ledger";byId("office-dialog").style.setProperty("--office-accent",office.theme.accent);byId("office-render-note").textContent="Everyone shares this office · select a robot or roster card to inspect their work · drag or arrow keys to explore";}catch(error){byId("office-render-note").textContent="3D office unavailable; recorded workstation panels remain available.";}},
  training(data){this.trainingSnapshot=data;office?.trainingDisplay(data);councilScene?.trainingDisplay(data);},
  roomEffects(kind,on){const scene=kind==='council'?councilScene:office;if(scene){scene.effects=on;scene.draw();scheduleRoomEffects();}},
+ focusOfficeWorker(name){if(office&&office.crew)window.LaylowTeamOffices.focus(office,name);},
+ officeSelection(){office?.draw();},
  select(){this.update(snapshot||{},online);}
 };
 let ambientFrame=null,ambientLast=0;

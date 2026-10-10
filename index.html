@@ -191,7 +191,7 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 @media(max-width:700px){.practice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.practice-grid strong{font-size:20px}.practice-actions button{font-size:12px}}
 
 </style>
-<link rel="stylesheet" href="./council.css?v=20261010-game-academy">
+<link rel="stylesheet" href="./council.css?v=20261010-team-offices">
 </head>
 <body>
 <a class="skip-link" href="#bots-title">Skip to bots</a>
@@ -280,8 +280,10 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 <dialog id="office-dialog" aria-labelledby="office-title">
  <div class="office-header"><div><div class="world-kicker" id="office-context">VIRTUAL WORKSTATION / RECORDED DATA</div><h2 id="office-title">Bot office</h2></div><button id="office-close" type="button" aria-label="Close office">Return to city ×</button></div>
  <p id="office-feed" class="market-feed-notice">Market feed: simulated in practice. Live broker/data feed not connected.</p>
- <div class="office-options"><label for="office-worker">Worker desk</label><select id="office-worker"></select><span id="office-health" class="pill muted">Not observed</span><span id="office-data-time" class="city-source"></span></div>
- <div class="office-stage"><canvas id="office-3d" tabindex="0" aria-label="3D robot workstation. Drag or use arrow keys to look around."></canvas><div class="room-hud"><span>LAYLOW / PERSONAL TRADING FLOOR</span><span>3D WORKSTATION</span></div><div id="office-speech" class="office-speech"><strong id="office-speech-name">TEAM MANAGER</strong><span id="office-speech-text">Waiting for source evidence.</span></div><div id="office-screen-labels" aria-label="Interactive desk terminals"><button type="button" data-screen-x="-1.95" data-office-terminal="signal">Signal scanner ↗</button><button type="button" data-screen-x="0" data-office-terminal="market">Market terminal ↗</button><button type="button" data-screen-x="1.95" data-office-terminal="performance">Performance ↗</button></div></div>
+ <div class="office-options"><label for="office-worker">Inspect teammate</label><select id="office-worker"></select><span id="office-health" class="pill muted">Not observed</span><span id="office-data-time" class="city-source"></span></div>
+ <div class="office-room-identity"><div><span class="world-kicker">DISTRICT INTERIOR</span><h3 id="office-theme-name">Shared team office</h3><p id="office-layout-note">Every specialist has a desk in this room.</p></div><span class="team-room-badge">ONE TEAM / ONE OFFICE</span></div>
+ <div class="office-stage"><canvas id="office-3d" tabindex="0" aria-label="Shared 3D team office. All specialist robots and their manager work in this room. Select a teammate or use the roster below."></canvas><div class="room-hud"><span>LAYLOW / SHARED TEAM OFFICE</span><span>3D WORKSTATION</span></div><div id="office-speech" class="office-speech"><strong id="office-speech-name">TEAM MANAGER</strong><span id="office-speech-text">Waiting for source evidence.</span></div><div id="office-crew" aria-label="Teammates in the room"></div><div id="office-screen-labels" aria-label="Interactive desk terminals"><button type="button" data-screen-x="-1.95" data-office-terminal="signal">Signal scanner ↗</button><button type="button" data-screen-x="0" data-office-terminal="market">Market terminal ↗</button><button type="button" data-screen-x="1.95" data-office-terminal="performance">Performance ↗</button></div></div>
+ <div id="office-roster" class="office-roster" role="group" aria-label="Select a teammate"></div>
  <div class="room-camera-bar" role="group" aria-label="Bot office camera"><span>VIEW</span><button type="button" data-room="office" data-room-camera="wide">Whole room</button><button type="button" data-room="office" data-room-camera="desk">Robot desk</button><button type="button" data-room="office" data-room-camera="screens">Monitors</button><button type="button" data-room="office" data-room-camera="closer" aria-label="Zoom into bot office">+</button><button type="button" data-room="office" data-room-camera="further" aria-label="Zoom out of bot office">−</button></div><p id="office-render-note" class="city-source"></p>
  <div class="office-terminal-nav" role="group" aria-label="Inspect office terminals"><button type="button" data-office-terminal="market">01 / Market & chart</button><button type="button" data-office-terminal="signal">02 / Signal scanner</button><button type="button" data-office-terminal="performance">03 / Performance</button></div>
  <div class="office-monitors">
@@ -914,7 +916,7 @@ function enterOffice(symbol,desk="Team Manager"){
  for(const name of["Team Manager",...def.bots]){const option=element("option","",name);option.value=name;$("office-worker").append(option);}
  $("office-worker").value=desk;
  if(!$("office-dialog").open)$("office-dialog").showModal();
- renderOffice();window.Laylow3D?.enter(symbol);$("office-close").focus();
+ renderOffice();window.Laylow3D?.enter(symbol);if(desk!=="Team Manager")window.Laylow3D?.focusOfficeWorker(desk);$("office-close").focus();
 }
 function officeChart(analysis){
  const svg=$("office-chart"),bars=(Array.isArray(analysis.bars)?analysis.bars:[]).filter(row=>typeof row.close==="number"&&Number.isFinite(row.close)&&row.close>0);
@@ -934,11 +936,19 @@ function renderOffice(){
  if($("office-context"))$("office-context").textContent="VIRTUAL WORKSTATION / RECORDED DATA";
  const snapshot=citySnapshot||{},def=TEAM_DEFINITIONS.find(row=>row.name===officeTeam);if(!def)return;
  const team=(snapshot.teams||[]).find(row=>row.name===officeTeam)||{},analysis=team.analysis||{},votes=Array.isArray(analysis.votes)?analysis.votes:[],payroll=snapshot.payroll||{};
- $("office-title").textContent=officeTeam+" · "+officeDesk+" office";
+ $("office-title").textContent=officeTeam+" · Team office";
+ const roomTheme=window.LaylowTeamOffices?.themes[officeTeam];if(roomTheme){$("office-theme-name").textContent=roomTheme.name;$("office-layout-note").textContent=(def.bots.length+1)+" teammates in one room · individual desks, shared research and team ledger";$("office-dialog").style.setProperty("--office-accent",roomTheme.accent);}
  $("office-feed").textContent=snapshot.practice?"MARKET FEED: SIMULATED · Generated candles. Live broker/data feed not connected.":"Recorded worker snapshot · live quote connection is not verified. Check the source and timestamp below.";
  $("office-speech-name").textContent=officeTeam+" / "+officeDesk;
  const speechVote=votes.find(v=>v.name===officeDesk),speechManager=(snapshot.managers||[]).find(m=>m.team_name===officeTeam);
  $("office-speech-text").textContent=officeDesk==="Team Manager"?(speechManager?.summary||"I am waiting for recorded team evidence."):(speechVote?(speechVote.direction+" — "+speechVote.reason):"I need source evidence before taking a position.");
+ // Preserve roster nodes and keyboard focus while snapshot opinions refresh.
+ const rosterNames=["Team Manager",...def.bots];
+ for(const id of ["office-roster","office-crew"]){const host=$(id);if(host.dataset.team!==officeTeam){host.dataset.team=officeTeam;host.replaceChildren();for(const name of rosterNames){const button=element("button",id==="office-crew"?"crew-bubble":"roster-member");button.type="button";button.dataset.officeWorker=name;button.append(element("strong","",name),element("span","crew-status"),element("span","crew-reason"));button.addEventListener("click",()=>selectOfficeWorker(name));host.append(button);}}
+  for(const button of host.children){const name=button.dataset.officeWorker,vote=votes.find(v=>v.name===name),picked=name===officeDesk;button.setAttribute("aria-pressed",String(picked));button.setAttribute("aria-label","Inspect "+name+" in "+officeTeam+" team office");button.querySelector(".crew-status").textContent=name==="Team Manager"?(team.worker_state||"Waiting"):(vote?.direction||"Waiting");button.querySelector(".crew-reason").textContent=name==="Team Manager"?(speechManager?.summary||"Awaiting team evidence"):(vote?.reason||"Awaiting source evidence");button.title=button.querySelector(".crew-reason").textContent;}
+ }
+ window.Laylow3D?.officeSelection?.();
+
  $("office-health").textContent=!connected?"Last snapshot":text(team.worker_state,"Not observed");
  $("office-data-time").textContent="Recorded bar: "+formatTime(analysis.bar_time);
  const bars=Array.isArray(analysis.bars)?analysis.bars:[];
@@ -969,17 +979,19 @@ function renderOffice(){
 $("city-enter-office").addEventListener("click",()=>enterOffice(citySelected));
 $("office-close").addEventListener("click",()=>$("office-dialog").close());
 $("office-dialog").addEventListener("close",()=>{if(officeOpener?.isConnected&&(document.activeElement===document.body||$("office-dialog").contains(document.activeElement)))officeOpener.focus({preventScroll:true});});
-$("office-worker").addEventListener("change",()=>{officeDesk=$("office-worker").value;renderOffice();});
+function selectOfficeWorker(name){officeDesk=name;$("office-worker").value=name;renderOffice();window.Laylow3D?.focusOfficeWorker(name);}
+$("office-worker").addEventListener("change",()=>selectOfficeWorker($("office-worker").value));
 $("office-controls").addEventListener("click",()=>{const name=officeTeam;$("office-dialog").close();selectCityDistrict(name,false);cards.get(name).card.scrollIntoView({behavior:cityMotionQuery.matches?"auto":"smooth",block:"start"});});
 window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select:selectCityDistrict,enter:enterOffice,open:openCityBuilding,selected:()=>citySelected,snapshot:()=>citySnapshot,connected:()=>connected,resumeBackend:()=>{refreshStatus();},practiceSnapshot:payload=>{lastReceivedAt=Date.now();renderSnapshot(validatePayload(payload));}};
 
 initializeCards();initializeCity();refreshStatus();
 </script>
-<script src="./world-3d.js?v=20261010-game-academy"></script>
-<script src="./council-ui.js?v=20261010-game-academy"></script>
-<script src="./practice-engine.js?v=20261010-game-academy"></script>
-<script src="./practice-ui.js?v=20261010-game-academy"></script>
-<script src="./training-engine.js?v=20261010-game-academy"></script>
-<script src="./training-ui.js?v=20261010-game-academy"></script>
+<script src="./team-offices.js?v=20261010-team-offices"></script>
+<script src="./world-3d.js?v=20261010-team-offices"></script>
+<script src="./council-ui.js?v=20261010-team-offices"></script>
+<script src="./practice-engine.js?v=20261010-team-offices"></script>
+<script src="./practice-ui.js?v=20261010-team-offices"></script>
+<script src="./training-engine.js?v=20261010-team-offices"></script>
+<script src="./training-ui.js?v=20261010-team-offices"></script>
 </body>
 </html>
