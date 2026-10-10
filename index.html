@@ -195,7 +195,7 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 </head>
 <body>
 <a class="skip-link" href="#bots-title">Skip to bots</a>
-<main id="workspace" data-stale="false"><p class="alert">PUBLIC VIEWER · Explore the city, offices and council. Trading workers and market data are not connected; this page cannot place orders.</p>
+<main id="workspace" data-stale="false"><p class="alert">LOCAL WORKSPACE · Worker status comes from the Python backend. Browser practice prices are synthetic. Broker execution uses the central risk engine; LIVE is locked.</p>
 <header><div class="brand"><svg class="brand-crown" viewBox="0 0 36 26" aria-hidden="true"><path d="M3 8l8 7 7-12 7 12 8-7-4 15H7Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="3" r="2" fill="currentColor"/></svg>laylow<span>.</span><small>Agency</small></div><nav class="world-navigation" aria-label="Dashboard sections"><a href="#world">◈ WORLD</a><a href="#council">◎ COUNCIL</a><a href="#bots-title">▥ TEAMS</a><a href="#big-title">◉ MANAGERS</a><a href="#event-title">↗ ACTIVITY</a></nav><div class="header-actions"><span class="mode" id="mode">Python status dashboard</span><button id="refresh" type="button">Refresh status</button></div></header>
 <section class="intro" aria-labelledby="page-title">
 <div><div class="eyebrow">Your agency · Night shift</div><h1 id="page-title">Welcome to Laylow City.</h1><p>Explore your team districts, specialist bots, and manager hierarchy.</p></div>
@@ -525,7 +525,7 @@ async function refreshStatus(){
   $("refresh").disabled=true;$("refresh").setAttribute("aria-busy","true");
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
   try{
-    const response=await fetch("./status.json",{cache:"no-store",credentials:"same-origin",signal:controller.signal});
+    const response=await fetch("/api/status",{cache:"no-store",credentials:"same-origin",signal:controller.signal});
     if(!response.ok)throw new Error("Status request failed.");
     const payload=validatePayload(await response.json());if(!window.LaylowPractice?.active()){lastReceivedAt=Date.now();renderSnapshot(payload);}
   }catch(error){if(!window.LaylowPractice?.active())reportFailure();}

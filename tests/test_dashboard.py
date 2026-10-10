@@ -22,6 +22,8 @@ class DashboardHttpTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Welcome to Laylow City.", response.data)
         self.assertIn(b"/api/status", response.data)
+        self.assertIn(b'fetch("/api/status",', response.data)
+        self.assertNotIn(b'fetch("./status.json",', response.data)
         self.assertNotIn(b"Math.random", response.data)
         self.assertIn("no-store", response.headers["Cache-Control"])
         self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
