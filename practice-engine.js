@@ -96,7 +96,7 @@ class PracticeMarket {
   const members=MEMBERS.map((m,i)=>({...m,vote:i===5&&locked?"VETO":choices[i][0]?"SUPPORT":"WAIT",reason:choices[i][1]}));
   const favorable=members.filter(m=>m.vote==="SUPPORT").length,approved=signal&&favorable>=4&&!members.some(m=>m.vote==="VETO");
   const reason=this.riskLocked?"Account loss brake reached":this.teamNet(asset.name)>=30000?"$300 simulated team profit brake reached":this.positions.length>=4?"Four open positions already":!budget?"Insufficient practice collateral or risk budget":approved?"Four of six support; practice risk checks pass":"Waiting for four of six opinions and a directional signal";
-  return {team_name:asset.name,action:approved?"ENTER":"SKIP",direction:analysis.direction,favorable_votes:favorable,members,reason,watch_only:false,proposal_id:"practice-"+this.minute+"-"+asset.name,analysis_time:new Date().toISOString(),generated_at:new Date().toISOString(),sizing};
+  return {team_name:asset.name,action:approved?"ENTER":"SKIP",direction:analysis.direction,favorable_votes:favorable,members,reason,watch_only:false,proposal_id:"practice-"+this.minute+"-"+asset.name,analysis_time:asset.bars.at(-1).timestamp,generated_at:new Date().toISOString(),sizing};
  }
  evaluate(){this.reviews=this.assets.map(asset=>{asset.analysis=this.analyze(asset);return this.council(asset,asset.analysis);});}
  open(asset,review){
