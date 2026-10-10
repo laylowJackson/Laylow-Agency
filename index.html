@@ -192,7 +192,7 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 @media(max-width:700px){.practice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.practice-grid strong{font-size:20px}.practice-actions button{font-size:12px}}
 
 </style>
-<link rel="stylesheet" href="/council.css?v=20261010-trade-walls">
+<link rel="stylesheet" href="/council.css?v=20261010-immersive-rooms">
 </head>
 <body>
 <a class="skip-link" href="#bots-title">Skip to bots</a>
@@ -260,23 +260,25 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
   <div class="world-footer"><span id="city-world-status">Awaiting backend · city status not observed</span><span>32 specialists · 10 team managers · 1 Big Manager</span></div>
 </section>
 
-<section id="council" class="panel council-panel" aria-labelledby="council-title">
-<div class="section-head"><div><div class="world-kicker">SIX PERSPECTIVES / ONE DECISION</div><h2 id="council-title">The Council</h2></div><a href="#world">Return to city ↑</a></div>
-<p class="muted">Different personalities, different risk opinions. Explicit rules on the same source bars; the existing AI review may veto or reduce their decision.</p>
-<p class="market-feed-notice" id="council-feed">Live market data not connected · practice uses generated candles.</p>
-<div class="council-options"><label for="council-team">Proposal district</label><select id="council-team"></select><button id="council-reset" type="button">Reset chamber view</button><button id="council-enter" type="button">Enter Council room ↗</button></div>
-<div class="council-layout"><div><div class="council-stage"><canvas id="council-3d" tabindex="0" aria-label="Six robot seats around a council table. Drag or arrow keys to orbit."></canvas><div class="council-sign">THE COUNCIL <span>STRATEGY CHAMBER</span></div><div class="room-hud"><span id="council-room-district">AAPL / EVIDENCE REVIEW</span><span id="council-room-tally">Awaiting votes</span></div><div id="council-seat-labels" aria-label="Council seats in the room"></div></div><div class="room-camera-bar" role="group" aria-label="Council room camera"><span>VIEW</span><button type="button" data-room="council" data-room-camera="wide">Whole room</button><button type="button" data-room="council" data-room-camera="table">Round table</button><button type="button" data-room="council" data-room-camera="wall">Evidence wall</button><button type="button" data-room="council" data-room-camera="closer" aria-label="Zoom into Council room">+</button><button type="button" data-room="council" data-room-camera="further" aria-label="Zoom out of Council room">−</button></div><p id="council-render-note" class="city-source">Preparing chamber</p></div>
-<aside class="council-sidebar"><div class="council-verdict"><span class="world-kicker" id="council-context">CURRENT EVIDENCE REVIEW</span><strong id="council-action" role="status">Waiting for backend</strong><p id="council-reason">No observed opinions.</p><p id="council-evidence" class="city-source"></p><p id="council-authority" class="city-source">Four of six must support proceeding. Hard locks cannot be outvoted.</p><p id="council-last" class="city-source"></p></div>
-<div class="council-seat-inspector"><span class="world-kicker">MEMBER SPOTLIGHT</span><div id="council-seats" aria-label="Choose a council member"></div><h3 id="council-seat-name">Choose a member</h3><p id="council-seat-personality"></p><strong id="council-seat-vote"></strong><p id="council-seat-reason"></p></div></aside></div>
-<div id="council-members" class="council-members" aria-label="Council opinions"></div><h3 class="small-heading">Recorded deliberations</h3><ol id="council-history" class="council-history"></ol>
-</section>
+
 <section class="panel payroll-panel" aria-labelledby="payroll-title">
  <div class="section-head"><div><div class="world-kicker">RECORDED RESULTS</div><h2 id="payroll-title">Payroll · Today</h2></div><span id="payroll-source" class="muted">No closed-trade export</span></div>
  <div class="payroll-metrics"><div><span>Today's net</span><strong id="payroll-today">—</strong></div><div><span>Recorded total</span><strong id="payroll-total">—</strong></div><div><span>Closed trades today</span><strong id="payroll-trades">—</strong></div></div>
  <div class="payroll-layout"><div class="table-scroll"><table><thead><tr><th>Team</th><th>Closed trades</th><th>Wins</th><th>Net after fees</th><th>Entry status</th></tr></thead><tbody id="payroll-rows"></tbody></table></div><div><h3 class="small-heading">Recorded daily results</h3><svg id="payroll-chart" viewBox="0 0 480 220" role="img" aria-label="Recorded daily net results, up to 30 days"></svg><p id="payroll-chart-note" class="city-source">No recorded earnings available.</p></div></div>
  <p id="payroll-basis" class="city-source"></p>
 </section>
-<dialog id="council-room" aria-labelledby="council-room-title"><div class="council-room-header"><div><span class="world-kicker">LAYLOW HEADQUARTERS / INTERIOR</span><h2 id="council-room-title">Council room</h2></div><button id="council-room-close" type="button">Return to city ×</button></div><div id="council-room-content"></div></dialog>
+<dialog id="council-room" aria-labelledby="council-room-title"><div class="council-room-header"><div><span class="world-kicker">LAYLOW HEADQUARTERS / INTERIOR</span><h2 id="council-room-title">Council room</h2></div><button id="council-room-close" type="button">Return to city ×</button></div><div id="council-room-content">
+<section id="council" class="panel council-panel" aria-labelledby="council-title">
+<div class="section-head"><div><div class="world-kicker">SIX PERSPECTIVES / ONE DECISION</div><h2 id="council-title">The Council</h2></div><a href="#world">Return to city ↑</a></div>
+<p class="muted">Different personalities, different risk opinions. Explicit rules on the same source bars; the existing AI review may veto or reduce their decision.</p>
+<p class="market-feed-notice" id="council-feed">Live market data not connected · practice uses generated candles.</p>
+<div class="council-options"><label for="council-team">Proposal district</label><select id="council-team"></select><button id="council-reset" type="button">Reset chamber view</button></div>
+<div class="council-layout"><div><div class="council-stage"><canvas id="council-3d" tabindex="0" aria-label="Six robot seats around a council table. Drag or arrow keys to orbit."></canvas><div class="council-sign">THE COUNCIL <span>STRATEGY CHAMBER</span></div><div class="room-hud"><span id="council-room-district">AAPL / EVIDENCE REVIEW</span><span id="council-room-tally">Awaiting votes</span></div><div id="council-seat-labels" aria-label="Council seats in the room"></div></div><div class="room-camera-bar" role="group" aria-label="Council room camera"><span>VIEW</span><button type="button" data-room="council" data-room-camera="wide">Whole room</button><button type="button" data-room="council" data-room-camera="table">Round table</button><button type="button" data-room="council" data-room-camera="wall">Evidence wall</button><button type="button" data-room="council" data-room-camera="closer" aria-label="Zoom into Council room">+</button><button type="button" data-room="council" data-room-camera="further" aria-label="Zoom out of Council room">−</button></div><p id="council-render-note" class="city-source">Preparing chamber</p></div>
+<aside class="council-sidebar"><div class="council-verdict"><span class="world-kicker" id="council-context">CURRENT EVIDENCE REVIEW</span><strong id="council-action" role="status">Waiting for backend</strong><p id="council-reason">No observed opinions.</p><p id="council-evidence" class="city-source"></p><p id="council-authority" class="city-source">Four of six must support proceeding. Hard locks cannot be outvoted.</p><p id="council-last" class="city-source"></p></div>
+<div class="council-seat-inspector"><span class="world-kicker">MEMBER SPOTLIGHT</span><div id="council-seats" aria-label="Choose a council member"></div><h3 id="council-seat-name">Choose a member</h3><p id="council-seat-personality"></p><strong id="council-seat-vote"></strong><p id="council-seat-reason"></p></div></aside></div>
+<details class="room-archive"><summary>All six opinions & recorded deliberations</summary><div id="council-members" class="council-members" aria-label="Council opinions"></div><h3 class="small-heading">Recorded deliberations</h3><ol id="council-history" class="council-history"></ol></details>
+</section>
+</div></dialog>
 <dialog id="vault-room" aria-labelledby="vault-title"><div class="office-header"><div><span class="world-kicker">LAYLOW / THE VAULT</span><h2 id="vault-title">Results & team learning</h2></div><button type="button" id="vault-close">Return to city ×</button></div><p id="vault-source"></p><p class="market-feed-notice" id="vault-feed">Live market data is not connected.</p><div class="vault-hero"><div class="vault-emblem"><strong>THE VAULT<small>EVERY OUTCOME COUNTS</small></strong></div><div class="vault-stats"><div class="vault-stat"><span>Win / loss ratio</span><strong id="vault-ratio">—</strong></div><div class="vault-stat"><span>Win rate</span><strong id="vault-win-rate">—</strong></div><div class="vault-stat"><span>Closed-trade net</span><strong id="vault-net">—</strong></div><div class="vault-stat"><span>Winning trades</span><strong id="vault-wins">—</strong></div><div class="vault-stat"><span>Losing trades</span><strong id="vault-losses">—</strong></div><div class="vault-stat"><span>Break-even trades</span><strong id="vault-flat">—</strong></div></div></div><p id="vault-ratio-note"></p><h3>Team learning desk</h3><p class="city-source">Practice teams review both wins and losses. After five decisive outcomes, the last twelve trades may reduce planned risk or require stronger specialist agreement. Wins can restore baseline rules; they never raise risk above $250. This is bounded rule adaptation, not a promise of better returns.</p><div id="vault-teams" class="vault-teams"></div><h3>Why did the trade win or lose?</h3><div id="vault-reviews"></div></dialog>
 <dialog id="office-dialog" aria-labelledby="office-title">
  <div class="office-header"><div><div class="world-kicker" id="office-context">VIRTUAL WORKSTATION / RECORDED DATA</div><h2 id="office-title">Bot office</h2></div><button id="office-close" type="button" aria-label="Close office">Return to city ×</button></div>
@@ -996,12 +998,12 @@ window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select
 
 initializeCards();initializeCity();refreshStatus();
 </script>
-<script src="/team-offices.js?v=20261010-trade-walls"></script>
-<script src="/world-3d.js?v=20261010-trade-walls"></script>
-<script src="/council-ui.js?v=20261010-trade-walls"></script>
-<script src="/practice-engine.js?v=20261010-trade-walls"></script>
-<script src="/practice-ui.js?v=20261010-trade-walls"></script>
-<script src="/training-engine.js?v=20261010-trade-walls"></script>
-<script src="/training-ui.js?v=20261010-trade-walls"></script>
+<script src="/team-offices.js?v=20261010-immersive-rooms"></script>
+<script src="/world-3d.js?v=20261010-immersive-rooms"></script>
+<script src="/council-ui.js?v=20261010-immersive-rooms"></script>
+<script src="/practice-engine.js?v=20261010-immersive-rooms"></script>
+<script src="/practice-ui.js?v=20261010-immersive-rooms"></script>
+<script src="/training-engine.js?v=20261010-immersive-rooms"></script>
+<script src="/training-ui.js?v=20261010-immersive-rooms"></script>
 </body>
 </html>

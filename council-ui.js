@@ -1,7 +1,7 @@
 (()=>{"use strict";
 const $=id=>document.getElementById(id),node=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls||"";n.textContent=text??"";return n;},stamp=value=>value?new Date(value).toLocaleString():"not recorded";
 let selected="AAPL",last={},seat=0,opinions=[],opener=null;
-const chamber=$("council-room"),section=$("council"),home=document.createComment("Council preview location");section.before(home);
+const chamber=$("council-room"),section=$("council");
 function selectSeat(index){seat=index;renderSeat();window.Laylow3D?.focusCouncilSeat?.(index);}
 function renderSeat(){
  const m=opinions[seat];for(const button of document.querySelectorAll("[data-council-seat]")){const member=opinions[Number(button.dataset.councilSeat)];button.setAttribute("aria-pressed",String(Number(button.dataset.councilSeat)===seat));if(member){button.style.setProperty("--member-color",member.color);button.title=member.name+": "+(member.vote||"NOT OBSERVED")+" · "+(member.reason||"Awaiting evidence");if(button.parentElement.id==="council-seat-labels"){if(!button.firstElementChild)button.replaceChildren(node("strong"),node("span","bubble-opinion"));button.firstElementChild.textContent=member.name+" · "+(member.vote||"WAITING");button.lastElementChild.textContent=member.reason||"I need source evidence before giving an opinion.";}}}
@@ -10,12 +10,12 @@ function renderSeat(){
  $("council-seat-vote").textContent=m?.vote||"NOT OBSERVED";$("council-seat-reason").textContent=m?.reason||"Awaiting source evidence.";
 }
 function enter(){
- if(chamber.open)return;opener=document.activeElement;$("council-room-content").append(section);chamber.showModal();document.body.classList.add("council-room-open");
+ if(chamber.open)return;opener=document.activeElement;chamber.showModal();chamber.scrollTop=0;document.body.classList.add("council-room-open");
  history.replaceState(null,"",location.pathname+location.search+"#council-room");$("council-room-close").focus();window.Laylow3D?.resetCouncil?.();
 }
 function leave(){if(chamber.open)chamber.close();}
-chamber.addEventListener("close",()=>{if(chamber.open)return;home.after(section);document.body.classList.remove("council-room-open");if(!document.querySelector("dialog[open]")){history.replaceState(null,"",location.pathname+location.search+"#world");$("world").scrollIntoView({block:"start"});if(opener?.isConnected&&(document.activeElement===document.body||chamber.contains(document.activeElement)))opener.focus({preventScroll:true});}});
-$("council-room-close").addEventListener("click",leave);$("council-enter").addEventListener("click",enter);
+chamber.addEventListener("close",()=>{if(chamber.open)return;document.body.classList.remove("council-room-open");if(!document.querySelector("dialog[open]")){history.replaceState(null,"",location.pathname+location.search+"#world");$("world").scrollIntoView({block:"start"});if(opener?.isConnected&&(document.activeElement===document.body||chamber.contains(document.activeElement)))opener.focus({preventScroll:true});}});
+$("council-room-close").addEventListener("click",leave);
 section.querySelector('a[href="#world"]').addEventListener("click",event=>{if(chamber.open){event.preventDefault();leave();}});
 for(const link of document.querySelectorAll('a[href="#council"]'))link.addEventListener("click",event=>{event.preventDefault();enter();});
 for(const [i,m]of (window.LaylowWorld.snapshot()?.council?.members||[]).entries()){
@@ -46,6 +46,6 @@ window.LaylowCouncil={update:render,enter,leave,selectSeat};
 select.addEventListener("change",()=>{selected=select.value;render(last,window.LaylowWorld.connected());});
 $("council-reset").addEventListener("click",()=>window.Laylow3D?.resetCouncil?.());
 render(window.LaylowWorld.snapshot(),window.LaylowWorld.connected());
-if(location.hash==="#council-room")enter();
-window.addEventListener("hashchange",()=>{if(location.hash==="#council-room")enter();else if(chamber.open)leave();});
+if(["#council-room","#council"].includes(location.hash))enter();
+window.addEventListener("hashchange",()=>{if(["#council-room","#council"].includes(location.hash))enter();else if(chamber.open)leave();});
 })();

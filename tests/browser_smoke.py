@@ -153,6 +153,18 @@ def main():
                               "LAYLOW_OFFICE_PREVIEW_"+office_label+"_END",flush=True)
                         page.keyboard.press("Escape")
                         assert not page.locator("#office-dialog").is_visible()
+                        assert page.locator("#workspace > #council").count() == 0
+                        assert not page.locator("#council").is_visible()
+                        page.locator('nav a[href="#council"]').click()
+                        assert page.locator("#council-room").is_visible()
+                        assert page.locator("#council-room #council").count() == 1
+                        assert page.locator("#council-seats button").count() == 6
+                        page.locator("#council-seats button").nth(2).click()
+                        assert page.locator("#council-seats button").nth(2).get_attribute("aria-pressed") == "true"
+                        page.keyboard.press("Escape")
+                        assert not page.locator("#council-room").is_visible()
+                        assert not page.locator("#council").is_visible()
+                        assert page.locator("#workspace > #council").count() == 0
                         page.locator("#city-open-team").click()
                         assert page.locator(".bot.city-selected").get_attribute("aria-label") == "AAPL Python worker"
                         preview = page.locator("#world").screenshot(type="jpeg",quality=76,animations="disabled")

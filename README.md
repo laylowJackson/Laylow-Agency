@@ -330,3 +330,14 @@ they do not change its balance or trades. Recorded mode uses imported closed-tra
 results and keeps order intents separate. Missing fill details remain blank, and
 markers outside the chart's price/time window are omitted. Net results exclude
 open positions. The public site still uses generated market prices, not live quotes.
+
+
+The Council is now a dedicated interior: click its city building or the Council
+navigation link to enter directly. It stays inside the room when closed, so there
+is no Council preview to scroll through below the map. Both `#council` and
+`#council-room` links open it. Escape or Return to city takes you back to the map.
+
+Interiors include layered foundations, inset floor paths, acoustic wall panels,
+recessed lighting, furnished lounges, ergonomic desks and detailed headset robots.
+The ten district themes remain distinct, and every team still shares one office.
+Council opinion cards and recorded deliberations expand from the room archive.
