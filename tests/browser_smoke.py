@@ -104,6 +104,9 @@ def main():
                         page.locator('.city-tower[data-team="QQQ"]').focus()
                         page.keyboard.press("Enter")
                         assert page.locator("#city-team-title").inner_text() == "QQQ"
+                        assert page.locator("#office-dialog").is_visible(), "Building keyboard entry did not open its office"
+                        page.keyboard.press("Escape")
+                        assert not page.locator("#office-dialog").is_visible()
                         page.locator('#city-dock button[data-team="AAPL"]').click()
                         page.locator("#city-view").click()
                         page.wait_for_function("document.getElementById('city-3d').dataset.ready==='true'")
