@@ -61,6 +61,14 @@ def create_app(db_path=None):
     def practice_ui():
         return send_file(Path(ROOT_DIR) / "practice-ui.js", mimetype="text/javascript", conditional=False)
 
+    @application.get("/training-engine.js")
+    def training_engine():
+        return send_file(Path(ROOT_DIR) / "training-engine.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/training-ui.js")
+    def training_ui():
+        return send_file(Path(ROOT_DIR) / "training-ui.js", mimetype="text/javascript", conditional=False)
+
     @application.post("/api/teams/<team_name>/profit-brake")
     def profit_brake(team_name):
         return change_control(team_name,"profit")

@@ -14,7 +14,7 @@ function enter(){
  history.replaceState(null,"",location.pathname+location.search+"#council-room");$("council-room-close").focus();window.Laylow3D?.resetCouncil?.();
 }
 function leave(){if(chamber.open)chamber.close();}
-chamber.addEventListener("close",()=>{if(chamber.open)return;home.after(section);document.body.classList.remove("council-room-open");history.replaceState(null,"",location.pathname+location.search+"#world");if(!document.querySelector("dialog[open]")){$("world").scrollIntoView({block:"start"});if(opener?.isConnected&&(document.activeElement===document.body||chamber.contains(document.activeElement)))opener.focus({preventScroll:true});}});
+chamber.addEventListener("close",()=>{if(chamber.open)return;home.after(section);document.body.classList.remove("council-room-open");if(!document.querySelector("dialog[open]")){history.replaceState(null,"",location.pathname+location.search+"#world");$("world").scrollIntoView({block:"start"});if(opener?.isConnected&&(document.activeElement===document.body||chamber.contains(document.activeElement)))opener.focus({preventScroll:true});}});
 $("council-room-close").addEventListener("click",leave);$("council-enter").addEventListener("click",enter);
 section.querySelector('a[href="#world"]').addEventListener("click",event=>{if(chamber.open){event.preventDefault();leave();}});
 for(const link of document.querySelectorAll('a[href="#council"]'))link.addEventListener("click",event=>{event.preventDefault();enter();});

@@ -200,3 +200,24 @@ execution or claim that an external AI model has been trained.
 Live market data is **not connected** in the public practice app. Prices and fills
 remain synthetic until a broker/data provider is configured. Rooms and Vault show
 this status explicitly. Do not interpret practice timestamps as current quotes.
+
+### Game rooms and independent night school
+Open a building to enter its command suite. Camera presets, terminal hotspots,
+speech bubbles, Clear room view and optional Room effects are available in offices
+and the Council. Every room links to the Strategy training lab (`#training`).
+
+The research lab runs a drill for all ten teams every four seconds while this
+page is open and visible. It works even when the separate $50,000 practice
+account is finished or stopped by profit/risk brakes. It rotates synthetic trend,
+chop and shock regimes and chooses among three bounded trend/momentum variants
+using earlier candles. Later held-out candles compare the chosen variant against
+baseline after synthetic costs. Candidates need six rounds, ten trades, repeated
+validation wins, positive net results and controlled drawdown before review.
+Research never changes live orders or the saved practice-account ledger.
+Hypothetical stop budgets: $125 stocks/micros; $1,500 full-size contracts.
+
+Research progress is saved separately in browser storage and can be exported.
+Hidden tabs pause to save battery. Closing the browser stops the lab; running
+while closed or across devices requires a hosted worker. No verified market
+calendar or quote feed is connected yet; night school is always available and
+is synthetic research, not verified trading performance or neural-model training.

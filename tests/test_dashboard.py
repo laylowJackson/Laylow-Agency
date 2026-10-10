@@ -20,7 +20,7 @@ class DashboardHttpTests(unittest.TestCase):
         response = self.client.get("/")
         self.addCleanup(response.close)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Bots in view.", response.data)
+        self.assertIn(b"Welcome to Laylow City.", response.data)
         self.assertIn(b"/api/status", response.data)
         self.assertNotIn(b"Math.random", response.data)
         self.assertIn("no-store", response.headers["Cache-Control"])
@@ -44,6 +44,16 @@ class DashboardHttpTests(unittest.TestCase):
             self.assertEqual(response.mimetype, "text/javascript")
             self.assertIn("no-store", response.headers["Cache-Control"])
             self.assertIn(b"PracticeMarket", response.data)
+            self.assertNotIn(b"/api/teams/", response.data)
+
+    def test_training_scripts_are_available_without_broker_controls(self):
+        for url in ("/training-engine.js", "/training-ui.js"):
+            response = self.client.get(url)
+            self.addCleanup(response.close)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.mimetype, "text/javascript")
+            self.assertIn("no-store", response.headers["Cache-Control"])
+            self.assertIn(b"TrainingLab", response.data)
             self.assertNotIn(b"/api/teams/", response.data)
 
     def test_status_passes_real_observation_payload_to_client(self):
