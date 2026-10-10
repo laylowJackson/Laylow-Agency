@@ -352,3 +352,8 @@ The GitHub Pages viewer disables broker key entry. For secure setup, download th
 Saving credentials does not change analysis/execution modes, verify account connectivity or submit orders. PRACTICE and shadow defaults remain in place. LIVE stays hard locked in code. Risk limits are shown read-only; brokers and AI managers cannot bypass the central risk engine. Futures backend teams remain watch-only.
 
 A Codex follow-up in this chat checks for useful bug fixes and improvements every other Saturday at 10 AM America/Chicago. It requires the Codex automation to run with project access; the website itself does not schedule or perform code updates.
+
+
+### Refined room interiors
+
+Team offices now have cutaway window bays, rounded desks and upholstered chairs, secondary evidence monitors, textile lounges, plants and district-specific furnishings. Warm and cool lighting, subtle contact shading and restrained room bloom improve depth without covering the robots or trade wall. The Council has a walnut table, inward-facing club chairs, brass inlays, lounge tables and wall sconces. Display preferences still control speech bubbles and motion; market data, the practice ledger and execution controls are unchanged.
