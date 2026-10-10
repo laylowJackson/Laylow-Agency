@@ -20,31 +20,62 @@ function plant(s,x,z,color){
  for(let i=0;i<7;i++){const a=i*2.4,h=.72+i*.105,xx=x+Math.sin(a)*.19,zz=z+Math.cos(a)*.19;s.box(xx,.48,zz,.018,h-.4,.018,'#486c4b');s.ellipsoid(xx,h,zz,.12,.27,.10,i%2?color:'#538d75');}
 }
 function flagshipInterior(s,t){
- const a=t.accent,warm=['boardroom','exchange','bullion','garden'].includes(t.feature),oak=warm?'#94755d':'#5a788c';
- s.roundedBox(0,-.45,0,16.8,.34,14.8,'#142237',.45);
- s.roundedBox(0,-.10,0,16.5,.10,14.5,warm?'#94755d':'#435c72',.40);
- s.box(0,0,-6.6,16.5,6.5,.18,t.wall);
- // Framed command wall and soft architectural perimeter illumination.
- s.roundedBox(0,1.13,-6.30,14.4,4.38,.14,'#071323',.09);
- s.box(0,1.13,-6.20,14.4,.045,.025,a,.45);s.box(0,5.5,-6.20,14.4,.045,.025,a,.45);
- s.display('room-sign',0,5.77,-6.23,6.4,.45,t.name.toUpperCase(),[s.symbol+' / LAYLOW AGENCY'],[],a);
- for(const x of[-7.9,7.9]){
-  s.box(x,.06,-3.7,.08,3.9,5.1,'#213c54');
-  for(let z=-5.8;z<-1.2;z+=1.2){s.box(x*.997,.06,z,.08,3.9,.07,oak);s.box(x*.995,3.95,z,.10,.12,1.15,oak);}
-  // Window bay skyline on the exterior face, visible through the open front.
-  for(let j=0;j<12;j++){const z=-5.9+j*.39,h=.55+(j*7%7)*.25;s.box(x*1.03,.2,z,.20,h,.27,'#274359');for(let r=0;r<4;r++)s.box(x*.985,.35+r*.24,z,.02,.055,.075,'#a5d9e3',.28);}
-  s.roundedBox(x,.04,2.8,.16,.30,7.0,t.wall,.06);s.box(x,.35,2.8,.10,.018,6.8,a,.3);
+ const a=t.accent,warm=['boardroom','exchange','bullion','garden'].includes(t.feature),oak=warm?'#aa8259':'#7696a7',tech=['orbital','cyber','arena','garage'].includes(t.feature);
+ s.roundedBox(0,-.56,0,17.2,.39,15.2,'#0b152b',.50);s.roundedBox(0,-.17,0,16.9,.15,14.9,'#324359',.45);
+ s.roundedBox(0,-.02,0,16.5,.02,14.5,warm?'#a08566':tech?'#27364e':'#789298',.40);
+ // Perimeter marble or alloy tiles, a luminous reveal, and a clear circulation route.
+ for(const x of[-7.4,7.4])for(let z=-6.4;z<6.7;z+=.78){s.box(x,.006,z,1.2,.018,.73,warm?'#bcaa8c':tech?'#40576c':'#a6bfc0');s.box(x,.026,z,.018,.01,.70,a,.24);}
+ for(const z of[-7.2,7.2]){s.box(0,-.055,z,15.8,.024,.03,a,.65);s.box(0,.01,z,15.8,.04,.12,t.metal);}
+ for(const x of[-8.12,8.12])s.box(x,-.055,0,.03,.024,14.3,a,.65);
+ s.box(0,0,-6.6,16.5,6.65,.22,t.wall);
+ // Deep command-wall surround, architectural fins and a floating illuminated lintel.
+ s.roundedBox(0,.91,-6.32,14.8,4.82,.20,'#091322',.13);s.roundedBox(0,1.05,-6.25,14.5,4.55,.08,t.metal,.08);
+ s.roundedBox(0,1.13,-6.21,14.35,4.38,.025,'#050d1b',.055);
+ for(const y of[1.13,5.50])s.box(0,y,-6.195,14.38,.032,.018,a,.75);
+ s.box(0,5.68,-6.32,15.7,.20,.5,t.metal);s.box(0,5.67,-6.05,15.4,.02,.025,'#fff0cf',.6);
+ s.display('room-sign',0,5.98,-6.21,7.8,.52,t.name.toUpperCase(),[s.symbol+' / LAYLOW AGENCY'],[],a);
+ for(const x of[-7.65,7.65]){s.box(x,.10,-6.35,.26,5.4,.35,t.metal);for(let y=.4;y<5.4;y+=.32)s.box(x,y,-6.13,.29,.08,.035,a,.20);}
+ // Panoramic city bays are procedural scenery; trading evidence stays on the trade wall.
+ for(const x of[-7.98,7.98]){
+  s.box(x,0,-3.5,.17,.62,5.7,t.wall);s.box(x,4.86,-3.5,.22,.20,5.7,oak);
+  s.skylineWindow('skyline-'+x,x*.991,.64,-3.5,5.65,4.2,x<0?Math.PI/2:-Math.PI/2,a);
+  for(let z=-6.3;z<-.5;z+=1.42){s.box(x*.979,.60,z,.075,4.3,.10,t.metal);s.box(x*.970,.70,z,.025,3.9,.028,'#b8d9dd',.18);}
+  s.box(x*.968,.59,-3.5,.28,.08,5.75,oak);s.box(x*.975,4.85,-3.5,.09,.045,5.7,a,.4);
+  s.roundedBox(x,.04,3.25,.16,.42,7.3,t.wall,.06);s.box(x,.47,3.25,.11,.025,7.2,a,.35);
  }
- // Inset carpet islands define each worker's territory.
- for(const q of s.crew)transformed(s,q,()=>{s.roundedBox(0,.006,.15,3.48,.025,3.3,warm?'#284f55':'#243748',.25);s.box(0,.033,1.73,2.65,.008,.025,q.color,.23);});
- // A furnished lounge, a coffee corner, and planters complete the office.
- for(const x of[-6.25,-4.85]){s.roundedBox(x,.14,5.10,1.35,.30,1.30,'#34526b',.18);s.roundedBox(x,.44,5.10,1.22,.20,1.12,warm?'#84aaa0':'#7795b1',.18);s.roundedBox(x,.64,5.58,1.26,.50,.20,warm?'#5c847a':'#587796',.10);}
- s.roundedBox(-5.55,.32,3.75,2.4,.075,.93,oak,.25);for(const x of[-6.35,-4.75])s.box(x,.03,3.75,.055,.29,.55,'#a2b8c1');s.cylinder(-5.55,.4,3.75,.10,.15,'#e7ddd0');
- s.roundedBox(6.25,.04,4.95,2.3,.86,1.2,oak,.08);s.roundedBox(6.25,.90,4.95,2.4,.07,1.3,'#bbd0d0',.10);s.roundedBox(6.8,.98,4.95,.45,.60,.5,'#203447',.06);s.cylinder(6.8,.98,5.22,.08,.15,'#efddc3');
- for(const x of[-6.8,6.8])plant(s,x,2.55,'#65a88d');
- for(const x of[-7.0,7.0]){s.box(x,.06,-5.8,.1,5.5,.12,oak);s.box(x,5.56,-3.9,.10,.12,3.7,oak);s.box(x,5.53,-3.9,.06,.02,3.5,'#ffdda8',.25);}
- // A small illuminated district emblem; no invented trading numbers.
- s.cylinder(5.95,.03,-4.9,.40,.55,oak);s.cylinder(5.95,.58,-4.9,.45,.04,'#cad9df');s.ellipsoid(5.95,.92,-4.9,.19,.25,.19,a,.35);
+ // Layered workstation pods. Every robot remains in the same shared office.
+ for(const q of s.crew)transformed(s,q,()=>{
+  s.roundedBox(0,.007,.15,3.50,.022,3.3,warm?'#365b58':'#22384b',.28);
+  for(const x of[-1.70,1.70])s.box(x,.038,.15,.020,.01,3.02,q.color,.35);
+  s.box(0,.038,1.76,2.85,.010,.025,q.color,.5);
+ });
+ // Different district architecture, not just different colors.
+ if(tech){
+  for(const x of[-6.9,6.9]){s.box(x,.04,-.5,.28,4.4,.28,'#233750');s.box(x*.98,.25,-.36,.035,4.1,.03,a,.65);s.rod([x,4.4,-.5],[x*.67,5.6,-1.5],.10,t.metal);s.rod([x*.67,5.6,-1.5],[x*.20,5.6,-1.5],.055,a,.6);}
+  for(let i=0;i<3;i++){const z=3.9+i*.52;s.box(0,.007,z,2.15,.015,.34,'#374f67');s.box(0,.025,z,1.9,.008,.03,a,.5);}
+ }else if(t.feature==='studio'||t.feature==='aurora'){
+  for(const x of[-6.8,6.8]){s.rod([x,.03,-.5],[x,4.6,-.5],.09,'#c4dedb');s.rod([x,4.6,-.5],[x*.73,5.4,-1.5],.07,'#bedbd9');s.rod([x*.73,5.4,-1.5],[x*.4,5.4,-1.5],.035,a,.6);}
+  for(let x=-6;x<7;x+=1.3)s.box(x,.004,5.95,1.24,.01,1.8,'#91abae');
+ }else{
+  for(const x of[-6.85,6.85]){s.box(x,.025,-.3,.30,4.6,.30,'#81664b');s.box(x,4.55,-1.9,.39,.18,3.6,oak);s.box(x,4.52,-1.9,.10,.024,3.4,'#ffe1ac',.6);}
+  for(let j=0;j<10;j++)s.box(-6.15+j*.36,.04,-.9,.12,2.5,.15,'#a18a65');
+ }
+ // Club lounge: stitched cushions, brass side tables, warm reading lights and a rug.
+ s.roundedBox(-5.55,.02,4.85,3.45,.02,3.15,warm?'#33585e':'#344265',.26);
+ for(const x of[-6.25,-4.85]){s.roundedBox(x,.14,5.3,1.30,.30,1.25,'#253b53',.18);s.roundedBox(x,.44,5.3,1.20,.20,1.10,warm?'#87b3a5':'#9ba8d1',.18);s.roundedBox(x,.64,5.8,1.24,.57,.20,warm?'#557d75':'#6578a1',.10);s.roundedBox(x-.42,.66,5.15,.25,.15,.8,'#869eaa',.06);s.roundedBox(x+.42,.66,5.15,.25,.15,.8,'#869eaa',.06);}
+ s.roundedBox(-5.55,.36,3.80,2.4,.075,.93,oak,.25);for(const x of[-6.35,-4.75])s.box(x,.03,3.8,.055,.33,.55,t.metal);
+ s.box(-5.8,.44,3.8,.46,.04,.32,'#25394f');s.cylinder(-5.25,.44,3.8,.10,.15,'#e7ddd0');
+ s.rod([-7.05,.04,5.7],[-7.05,2.8,5.7],.028,oak);s.cylinder(-7.05,2.78,5.7,.27,.30,'#f6d5b0',.20,.55,20);
+ // Espresso bar with ribbed front, individually modeled cups, backsplash and shelves.
+ s.roundedBox(6.25,.04,5.25,2.5,.87,1.15,oak,.09);s.roundedBox(6.25,.91,5.25,2.6,.065,1.25,'#d5e1db',.10);
+ for(let x=5.13;x<7.45;x+=.19)s.box(x,.12,5.84,.055,.70,.035,t.metal);
+ s.roundedBox(6.95,.985,5.25,.50,.62,.48,'#1a2c3e',.06);s.box(6.95,1.18,5.51,.35,.20,.015,'#0e1521');s.box(6.95,1.22,5.53,.20,.05,.015,a,.5);
+ for(let x=5.40;x<6.4;x+=.3)s.cylinder(x,.985,5.25,.065,.13,'#f4e8d0');
+ for(const x of[-6.8,6.8])plant(s,x,2.45,'#65a88d');
+ // An architectural light sculpture above the team's central feature.
+ if(t.feature==='aurora'||t.feature==='orbital'){for(let i=0;i<18;i++){const aa=i*Math.PI/9;s.ellipsoid(Math.cos(aa)*1.5,4.45+Math.sin(aa*2)*.25,Math.sin(aa)*.8,.05,.05,.05,a,.7);}}
+ if(t.feature==='bullion'){for(let i=0;i<8;i++){const x=-2.3+i*.65;s.box(x,.025,5.4,.035,.009,1.4,a,.25);}}
+ if(t.feature==='garden'){for(const x of[-7.1,7.1])for(let z=-5.7;z<-.7;z+=.6){s.rod([x,4.6,z],[x*.90,4.9,z+.3],.035,'#84a783');s.ellipsoid(x*.92,4.75,z,.15,.09,.28,'#71a777');}}
 }
 function desk(s,p,t){transformed(s,p,()=>{
  s.roundedBox(0,.025,0,3.1,.03,2.8,'#101d2d',.22);for(const x of[-1.43,1.43])s.box(x,.06,0,.014,.005,2.45,'#526276');s.roundedBox(0,.96,-.25,2.85,.12,1.45,t.metal,.17);s.roundedBox(0,1.08,-.25,2.80,.035,1.40,'#233344',.15);s.box(0,1.01,.41,2.48,.04,.025,p.color,.9);

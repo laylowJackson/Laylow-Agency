@@ -359,3 +359,72 @@ A Codex follow-up in this chat checks for useful bug fixes and improvements ever
 Rooms open directly into a large playable cutaway view. Each team shares a furnished district office with colored workstation islands, rounded dual-monitor desks, expressive headset robots, a lounge and a coffee counter. Ten district themes retain their distinct centerpieces, including the Tesla engineering prototype, orbital command pedestal, garden and gold display. Heads face the visitor in the wide office view; desk and monitor cameras remain available.
 
 The Council has a teal-felt brass table, wood-grain floor, skyline windows, personal tablets, a central miniature agency and a sculptural chandelier. Select seats to see their opinions; on small screens only the selected member's full speech appears, with name tags for the other members. Materials use procedural detail and contact shading. Smaller city robot meshes limit rendering cost. The same evidence model still drives the physical trade walls and readable ledger. No market-data, broker or account behavior changes are introduced by the design.
+
+
+### Screenshot Lab and Trade Review Wall — AI connection deferred
+
+Open **Screenshot Lab** in navigation, or enter any team office, open its Trade
+Wall and choose **Review screenshot** on a recorded trade. A dedicated review
+room opens immediately. No image yet displays **NO SCREENSHOT REVIEW SAVED**.
+Upload an entry chart plus optional context and additional images (PNG/JPG/WEBP,
+8 MB and 30 million pixels each). Choose a chart tab, then use the annotation
+tools to draw price levels, zones, arrows, labels, or the entry cutoff. Enter
+supported values and observations, prepare the visual review and save it. Saved
+cards reopen reviews. Export annotated PNG, structured JSON, or a compact card.
+
+AI is deliberately disconnected. Preparation does not detect candles, prices,
+patterns or outcomes. Unknown extraction fields remain null and confidence is
+zero; all manual marks are visual estimates. Original extraction and editable
+corrections are separate. A verified checkbox means user verification only.
+An outcome requires supporting evidence. No money P&L is inferred from pixels.
+Extraction (`screenshot_analysis.extraction_layer`) and explicit strategy rule
+evaluation (`strategy_layer`) are separate. Only observations identified by the
+user as pre-entry can satisfy entry rules. Tags alone do not prove a strategy.
+Future provider integration belongs exclusively in the backend extraction layer;
+no API key or model call is present in this module.
+
+Public GitHub Pages stores review records, original image blobs and editable
+annotations privately in IndexedDB on this browser/device. Export copies before
+clearing browser data. Saving does not upload images to GitHub. The local Flask
+app instead receives and validates images, strips EXIF, saves originals and
+annotated outputs under ignored `screenshot_reviews/originals` and `annotated`
+directories, and persists records in the `screenshot_reviews` SQLite table.
+Writes require the local CSRF token and same origin. The existing localhost-only
+server restriction remains. No hosted AI/server storage or cross-device sync is
+available on Pages.
+
+Links include trade ID, source, execution mode and team. Practice links include
+the session base time so reset ID reuse cannot attach an old review to a new
+trade. Reviews are attached as independent records; they never edit fills,
+broker order history, risk decisions or account balances. Past journal trades
+can supply an external ID plus record source. Review status is a user workflow
+label, not an execution approval. Replacing screenshots starts a new review to
+preserve the earlier raw extraction. Original screenshots can always be reopened;
+annotated exports are rendered from saved marks.
+
+### Watch training and compare evidence
+
+**Training** opens completed synthetic drill replay, with a team selector,
+play/pause and candle scrubber. Entry/exit markers and trade-by-trade reasons are
+revealed as playback progresses. Earlier candles select among four candidate
+rules (including selective trend confirmation); later held-out candles compare
+the selected rule with baseline. The latest drill and cumulative comparable
+scorecard survive reload. Old saved research totals are preserved, and the new
+comparison starts counting from its installation. These are simplified
+close-based synthetic experiments with fees/slippage, not OHLC backtests of
+screenshots or validated live-market results. Training runs while this page is
+open and visible; a hosted worker is required for unattended training.
+
+The Vault now also shows average win/loss, profit factor and average closed net
+result. Recorded mode may contain only a partial imported ledger, labeled as
+such. A 1.4:1 win/loss count ratio alone does not establish strategy quality.
+Candidate comparisons do not guarantee improvement, promote live strategies,
+raise risk or rewrite recorded results. Practice remains fake money and LIVE
+remains hard locked.
+
+Added frontend: `screenshot-lab.js`, `screenshot-lab.css`, `training-theater.js`.
+Added backend: `screenshot_analysis.py`, `screenshot_reviews.py`.
+Updated: `index.html`, `dashboard.py`, `requirements.txt`, `.gitignore`,
+`package_build.py`, `training-engine.js`, `training-ui.js`, `world-3d.js`,
+`team-offices.js`, tests and this README. Office/Council graphics now include
+cached soft shadows, panoramic skyline windows and more detailed architecture.

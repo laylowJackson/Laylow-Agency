@@ -64,7 +64,7 @@ def main():
             route.fulfill(status=200,content_type="application/json",body='{"saved":true}')
         try:
             with sync_playwright() as playwright:
-                browser = playwright.chromium.launch(args=["--enable-unsafe-swiftshader"])
+                browser = playwright.chromium.launch(executable_path=os.getenv("LAYLOW_TEST_CHROME") or None, args=["--enable-unsafe-swiftshader"])
                 try:
                     for width, height in ((1440, 1000), (390, 844)):
                         fixture.pop("payroll",None)
@@ -211,6 +211,37 @@ def main():
                             button.click()
                         page.wait_for_function("!document.querySelector('.bot:has(#earnings-AAPL) [data-control=headline]').disabled")
                         assert posted[-1][1]=={"locked":expected} and posted[-1][2]=="fixture-csrf"
+                        # Local backend review flow: actual multipart upload and SQLite persistence.
+                        from io import BytesIO
+                        from PIL import Image
+                        image_bytes=BytesIO()
+                        Image.new("RGB",(720,420),"#17253a").save(image_bytes,"PNG")
+                        page.evaluate("window.LaylowScreenshotLab.ready")
+                        page.locator('nav a[href="#screenshot-lab"]').click()
+                        page.wait_for_function("document.getElementById('screenshot-room').open")
+                        page.locator('#lab-file').set_input_files(dict(name="chart.png",mimeType="image/png",buffer=image_bytes.getvalue()))
+                        page.wait_for_function("!document.getElementById('lab-canvas').hidden")
+                        assert "local backend" in page.locator('#lab-storage').inner_text()
+                        page.locator('#lab-instrument').fill("MNQ")
+                        page.locator('#lab-direction').select_option("LONG")
+                        for control,value in (("entry","100"),("stop","95"),("target","110")):
+                            page.locator('#lab-'+control).fill(value)
+                        page.locator('#lab-analyze').click()
+                        page.wait_for_function("document.getElementById('lab-save-state').textContent.includes('prepared')")
+                        page.locator('#lab-save').click()
+                        page.wait_for_function("document.getElementById('lab-save-state').textContent.startsWith('Saved')")
+                        result=json.loads(page.locator('#lab-json').text_content())
+                        assert result['raw_extraction']['entry']['value'] is None
+                        assert result['raw_extraction']['confidence']==0
+                        assert result['corrected_values']['entry_value']==100
+                        page.locator('#lab-entry').fill("101")
+                        page.locator('#lab-save').click()
+                        page.wait_for_function("document.getElementById('lab-json').textContent.includes('\"entry_value\": 101')")
+                        page.locator('.lab-review-card').first.click()
+                        page.wait_for_function("document.getElementById('lab-entry').value==='101'")
+                        assert "AI not connected" in page.locator('#screenshot-room').inner_text()
+                        assert page.locator('#screenshot-room').evaluate("e=>e.scrollWidth<=e.clientWidth+1")
+                        page.keyboard.press("Escape")
                         page.unroute("**/api/status")
                         page.route("**/api/status", lambda route: route.abort())
                         page.locator("#refresh").click()

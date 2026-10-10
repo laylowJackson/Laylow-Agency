@@ -18,7 +18,7 @@ def create_app(db_path=None, settings_path=None):
     database = database_path(db_path)
     application.config["DATABASE_PATH"] = database
     application.config["CONTROL_CSRF"] = secrets.token_urlsafe(32)
-    application.config["MAX_CONTENT_LENGTH"] = 4096
+    application.config["MAX_CONTENT_LENGTH"] = 9 * 1024 * 1024
     application.config["BROKER_SETTINGS_PATH"] = Path(settings_path or Path(ROOT_DIR) / ".env.local")
     try:
         ensure_system_tables(db_path=database)
@@ -29,6 +29,11 @@ def create_app(db_path=None, settings_path=None):
     def local_host_only():
         if urlsplit(request.host_url).hostname not in {"127.0.0.1", "localhost", "::1"}:
             return jsonify({"error": "local_host_required"}), 403
+
+    @application.before_request
+    def bounded_control_requests():
+        if not request.path.startswith("/api/reviews") and request.content_length and request.content_length > 4096:
+            return jsonify({"error":"request_too_large"}),413
 
     @application.after_request
     def response_headers(response):
@@ -186,6 +191,16 @@ def create_app(db_path=None, settings_path=None):
             return jsonify({"status": "ok", "database": "readable"})
         except (sqlite3.Error, OSError, ValueError):
             return jsonify({"status": "unavailable", "database": "unreadable"}), 503
+
+    from screenshot_reviews import register_review_routes
+    register_review_routes(application, database, Path(database).parent / "screenshot_reviews")
+
+    @application.get("/screenshot-lab.js")
+    @application.get("/training-theater.js")
+    @application.get("/screenshot-lab.css")
+    def review_static():
+        name=request.path.lstrip("/")
+        return send_file(Path(ROOT_DIR)/name,mimetype="text/css" if name.endswith(".css") else "text/javascript")
 
     return application
 

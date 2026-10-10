@@ -11,3 +11,4 @@ data/
 *.lock
 dashboard_snapshot.json
 dist/
+screenshot_reviews/
