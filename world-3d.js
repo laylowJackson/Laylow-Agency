@@ -114,7 +114,7 @@ class Scene {
   for(let i=0;i<3;i++)this.ring(x,y+.2+i*.26,z,.5+i*.24,color,.025,.8);
  }
  city(){
-  this.data=[];this.labels=[];
+  this.data=[];this.labels=[];this.buildings=[];
   // Dark water, a raised island, concentric boulevards and a lit waterfront.
   this.box(0,-1.2,0,170,.12,150,"#07152c");
   this.cylinder(0,-.75,3,24,.72,"#132441",24,0,96);this.cylinder(0,-.03,3,23.5,.15,"#1c2d46",23.5,0,96);
@@ -135,6 +135,7 @@ class Scene {
   this.building(0,-3,15.4,"#ffd079",3.4);this.building(0,-3,17.1,"#ffd079",1.5);
   this.cylinder(0,17.7,-3,.74,1.1,"#6d5530",.18);this.ring(0,18.3,-3,1.5,"#ffe2a3",.055,1);this.beam(0,18.8,-3,"#ffe6a8",12);
   this.labels.push({x:0,y:20.1,z:-3,name:"THE VAULT",special:"vault"});
+  this.buildings.push({name:"THE VAULT",min:[-1.7,.35,-4.7],max:[1.7,19.2,-1.3]});
   let teamIndex=0;
   for(const district of bridge.districts){
    const [x,z]=positions[district.name]||[0,0],h=district.name.endsWith("!")?5.1+(teamIndex%3)*.65:8+(teamIndex%2)*1.1;
@@ -143,11 +144,12 @@ class Scene {
    this.ring(x,h+1.7,z,1.0,district.color,.035,1);this.robot(x,h+1.5,z,district.color,.65);this.beam(x,h+2.7,z,district.color,4.5);
    const def=bridge.definitions.find(row=>row.name===district.name);
    for(let j=0;j<(def?.bots.length||0);j++)this.robot(x-1.3+j*.8,.36,z+2.1,district.color,.4);
-   this.robot(x+2,.35,z,district.color,.55);this.labels.push({x,y:h+3,z,name:district.name});teamIndex++;
+   this.robot(x+2,.35,z,district.color,.55);this.labels.push({x,y:h+3,z,name:district.name});this.buildings.push({name:district.name,min:[x-1.1,.35,z-1.1],max:[x+1.1,h+2.65,z+1.1]});teamIndex++;
   }
   this.cylinder(0,.18,13,3.3,.2,"#313049",3.3);this.ring(0,.4,13,3.3,"#b692ff",.035,.8);
   this.building(0,13,6.1,"#b58cff",3);this.robot(0,7.3,13,"#b58cff",1);this.ring(0,8.3,13,1.9,"#bd9fff",.04,1);
   this.labels.push({x:0,y:10.1,z:13,name:"BIG MANAGER",special:"manager"});
+  this.buildings.push({name:"BIG MANAGER",min:[-1.5,.35,11.5],max:[1.5,9,14.5]});
   // Warm landscaped promenades and subtle geometric reflections in the water.
   for(let i=0;i<32;i++){const a=i*Math.PI*2/32,x=Math.cos(a)*20.3,z=3+Math.sin(a)*20.3;this.cylinder(x,.18,z,.2,.7,"#233e3f",0,0,8);}
   for(let i=0;i<65;i++){const x=-34+(i*17%69),z=28+(i*13%23);this.box(x,-1.06,z,.12+(i%4)*.18,.01,.03,i%3?"#304867":"#817348",.35);}
@@ -239,7 +241,7 @@ class Scene {
   gl.bindFramebuffer(gl.FRAMEBUFFER,this.bloomAvailable?this.targets[0].fbo:null);gl.viewport(0,0,w,h);gl.enable(gl.DEPTH_TEST);gl.useProgram(this.program);gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
   for(let i=0;i<4;i++){gl.enableVertexAttribArray(this.attributes[i]);gl.vertexAttribPointer(this.attributes[i],i===3?1:3,gl.FLOAT,false,40,i*12);}
   const t=this.target,r=this.distance,eye=[t[0]+r*Math.sin(this.yaw)*Math.cos(this.pitch),t[1]+r*Math.sin(this.pitch),t[2]+r*Math.cos(this.yaw)*Math.cos(this.pitch)];
-  this.matrix=cameraMatrix(eye,t,w/h);gl.uniformMatrix4fv(this.camera,false,new Float32Array(this.matrix));gl.uniform1f(this.pulse,byId("world").dataset.motion==="on"&&!document.hidden?.035+.035*Math.sin(performance.now()/900):0);
+  this.eye=eye;this.matrix=cameraMatrix(eye,t,w/h);gl.uniformMatrix4fv(this.camera,false,new Float32Array(this.matrix));gl.uniform1f(this.pulse,byId("world").dataset.motion==="on"&&!document.hidden?.035+.035*Math.sin(performance.now()/900):0);
   gl.clearColor(.012,.018,.04,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.drawArrays(gl.TRIANGLES,0,this.vertices||0);
   if(this.bloomAvailable){
    gl.disable(gl.DEPTH_TEST);const [scene,a,b]=this.targets;
@@ -249,16 +251,41 @@ class Scene {
   }
   canvas.dataset.ready="true";canvas.dataset.bloom=String(this.bloomAvailable);if(this.kind==="city")placeLabels();
  }
+ // Ray-box intersection follows the actual camera and chooses the nearest tower.
+ hitBuilding(clientX,clientY){
+  if(this.kind!=="city"||!this.eye||!this.buildings)return null;
+  const rect=this.canvas.getBoundingClientRect();
+  if(!rect.width||!rect.height||clientX<rect.left||clientX>rect.right||clientY<rect.top||clientY>rect.bottom)return null;
+  const aspect=rect.width/rect.height,q=1/Math.tan(Math.PI/8)*Math.min(1,aspect/1.3);
+  const forward=norm(this.target.map((v,i)=>v-this.eye[i])),right=norm(cross(forward,[0,1,0])),up=cross(right,forward);
+  const nx=(clientX-rect.left)/rect.width*2-1,ny=1-(clientY-rect.top)/rect.height*2;
+  const ray=norm(forward.map((v,i)=>v+right[i]*nx*aspect/q+up[i]*ny/q));
+  let chosen=null,nearest=Infinity;
+  for(const building of this.buildings){
+   let near=0,far=Infinity;
+   for(let axis=0;axis<3;axis++){
+    if(Math.abs(ray[axis])<1e-8){if(this.eye[axis]<building.min[axis]||this.eye[axis]>building.max[axis]){far=-1;break;}continue;}
+    const a=(building.min[axis]-this.eye[axis])/ray[axis],b=(building.max[axis]-this.eye[axis])/ray[axis];
+    near=Math.max(near,Math.min(a,b));far=Math.min(far,Math.max(a,b));
+   }
+   if(far>=near&&near<nearest){chosen=building.name;nearest=near;}
+  }
+  return chosen;
+ }
  installCamera(){
   let drag=null,moved=false,start=null;
-  this.canvas.addEventListener("pointerdown",event=>{drag={x:event.clientX,y:event.clientY};start={...drag};moved=false;this.canvas.setPointerCapture(event.pointerId);});
-  this.canvas.addEventListener("pointermove",event=>{if(!drag)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(event.clientX-start.x)+Math.abs(event.clientY-start.y)>3)moved=true;
-   this.yaw+=dx*.006;this.pitch=Math.max(.12,Math.min(1.3,this.pitch+dy*.004));drag={x:event.clientX,y:event.clientY};this.draw();});
-  this.canvas.addEventListener("pointerup",event=>{drag=null;if(this.kind==="city"&&!moved){const rect=this.canvas.getBoundingClientRect();let chosen=null,distance=55;
-   for(const label of this.labels){if(label.special)continue;const p=this.project(label.x,label.y-2,label.z);if(!p)continue;const dist=Math.hypot(p.x-(event.clientX-rect.left),p.y-(event.clientY-rect.top));if(dist<distance){chosen=label.name;distance=dist;}}
-   if(chosen)bridge.select(chosen,false);
-  }});
-  this.canvas.addEventListener("pointercancel",()=>{drag=null;});
+  this.canvas.addEventListener("pointerdown",event=>{if(event.button!==0||!event.isPrimary)return;drag={x:event.clientX,y:event.clientY};start={...drag};moved=false;this.canvas.setPointerCapture(event.pointerId);});
+  this.canvas.addEventListener("pointermove",event=>{
+   if(!drag){if(this.kind==="city"){const name=this.hitBuilding(event.clientX,event.clientY);this.canvas.style.cursor=name?"pointer":"grab";this.canvas.title=name?"Open "+name:"Drag to explore · click a building to enter";}return;}
+   const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.hypot(event.clientX-start.x,event.clientY-start.y)>6)moved=true;
+   this.yaw+=dx*.006;this.pitch=Math.max(.12,Math.min(1.3,this.pitch+dy*.004));drag={x:event.clientX,y:event.clientY};this.canvas.style.cursor="grabbing";this.draw();
+  });
+  this.canvas.addEventListener("pointerup",event=>{
+   if(!drag)return;drag=null;this.canvas.style.cursor="grab";
+   if(this.kind==="city"&&!moved&&event.button===0){const name=this.hitBuilding(event.clientX,event.clientY);if(name)bridge.open(name);}
+  });
+  this.canvas.addEventListener("pointercancel",()=>{drag=null;moved=true;this.canvas.style.cursor="grab";});
+  this.canvas.addEventListener("keydown",event=>{if(this.kind==="city"&&(event.key==="Enter"||event.key===" ")){event.preventDefault();bridge.open(bridge.selected());}});
   this.canvas.addEventListener("wheel",event=>{if(!event.ctrlKey)return;event.preventDefault();this.distance=Math.max(this.kind==="city"?24:5,Math.min(this.kind==="city"?80:14,this.distance+event.deltaY*.03));this.draw();},{passive:false});
   this.canvas.addEventListener("keydown",event=>{if(!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","+","-"].includes(event.key))return;event.preventDefault();if(event.key==="ArrowLeft")this.yaw-=.12;if(event.key==="ArrowRight")this.yaw+=.12;if(event.key==="ArrowUp")this.pitch=Math.min(1.3,this.pitch+.08);if(event.key==="ArrowDown")this.pitch=Math.max(.12,this.pitch-.08);if(event.key==="+")this.distance=Math.max(this.kind==="city"?24:5,this.distance-3);if(event.key==="-")this.distance=Math.min(this.kind==="city"?80:20,this.distance+3);this.draw();});
  }
@@ -299,7 +326,7 @@ function start(){
    const node=document.createElement("div");node.className="world-3d-label city-hq-label";node.textContent=name+" · "+label;byId("city-3d-labels").append(node);labels.set(name,node);
   }
   city.city();byId("world").dataset.view="3d";byId("city-view").textContent="Use city map";
-  byId("city-render-note").textContent="Background line uses selected team's recorded closes · drag to orbit · arrow keys rotate · select a tower sign to enter";
+  byId("city-render-note").textContent="Background line uses selected team's recorded closes · drag to orbit · arrow keys rotate · click a building to open its office";
  }catch(error){byId("world").dataset.view="map";byId("city-view").disabled=true;byId("city-render-note").textContent="3D rendering unavailable on this device. The interactive city map remains available.";}
  byId("city-view").addEventListener("click",()=>{const three=byId("world").dataset.view!=="3d";byId("world").dataset.view=three?"3d":"map";byId("city-view").textContent=three?"Use city map":"Use 3D city";if(three)city?.draw();});
  byId("city-camera-reset").addEventListener("click",()=>{if(city){city.yaw=.25;city.pitch=.43;city.distance=57;city.target=[0,3,3];city.draw();}});
