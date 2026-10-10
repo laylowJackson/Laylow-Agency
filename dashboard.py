@@ -53,6 +53,14 @@ def create_app(db_path=None):
     def council_styles():
         return send_file(Path(ROOT_DIR)/"council.css",mimetype="text/css",conditional=False)
 
+    @application.get("/practice-engine.js")
+    def practice_engine():
+        return send_file(Path(ROOT_DIR) / "practice-engine.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/practice-ui.js")
+    def practice_ui():
+        return send_file(Path(ROOT_DIR) / "practice-ui.js", mimetype="text/javascript", conditional=False)
+
     @application.post("/api/teams/<team_name>/profit-brake")
     def profit_brake(team_name):
         return change_control(team_name,"profit")

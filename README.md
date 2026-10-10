@@ -138,6 +138,33 @@ checked again inside the order-intent transaction. It never closes existing
 positions, cancels broker orders or sends additional orders. Futures stay watch
 only regardless of any export records. No target amount is preset.
 
+## $50,000 browser practice session
+
+Open `/?practice=1#practice` on the dashboard or public GitHub Pages site to start
+or resume a simulated account with $50,000 in fake dollars. Ten market teams
+evaluate generated candles; six deterministic Council personalities vote on
+entries. The city, bot offices, payroll and account panels show this simulation.
+This mode runs entirely in the browser and does not call a broker, send order
+intents, use live market quotes or call an external AI service.
+
+Pause or advance one simulated market minute, select 1x/5x/20x speed, close a fake
+position, reset the account to $50,000, or export the session as JSON. Local
+browser storage preserves the account; export keeps a copy for your records.
+Leaving practice returns to the normal viewer. Different devices have separate
+accounts. Updates pause when the tab is hidden.
+
+Simulation assumptions include adverse one-tick slippage, $1 per stock fill or
+$2 per futures contract fill, at most four positions, a $250 planned entry risk
+budget, a $1,000 account loss brake and a $300 per-team realized profit brake.
+Prices, fills and collateral requirements are fictional. Gaps can exceed the
+planned stop risk. Completed trades include both entry and exit fees; open
+positions reserve collateral and are marked to the generated candle close.
+These results do not establish actual market performance.
+
+Run the accounting, Council and risk-control checks with
+`node tests/test_practice_engine.cjs`. Python HTTP tests verify both practice
+scripts remain available without granting broker controls.
+
 ## Council
 Six deterministic personalities debate the same evidence: Anchor protects capital, Proof requires broad support, Flux favors momentum, Rebel challenges extended or disputed entries, Steward reduces volatility exposure, and Sentinel enforces entry controls. Four of six must support proceeding. Hard gates cannot be outvoted; risk reduction halves the existing budget. These are explicit rule policies, not fine-tuned language models or profitability forecasts.
 

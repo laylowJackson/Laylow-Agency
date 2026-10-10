@@ -36,6 +36,16 @@ class DashboardHttpTests(unittest.TestCase):
         self.assertFalse(any(team["health"] == "fresh" for team in payload["teams"]))
         self.assertIn("no-store", response.headers["Cache-Control"])
 
+    def test_practice_scripts_are_available_without_broker_controls(self):
+        for url in ("/practice-engine.js", "/practice-ui.js"):
+            response = self.client.get(url)
+            self.addCleanup(response.close)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.mimetype, "text/javascript")
+            self.assertIn("no-store", response.headers["Cache-Control"])
+            self.assertIn(b"PracticeMarket", response.data)
+            self.assertNotIn(b"/api/teams/", response.data)
+
     def test_status_passes_real_observation_payload_to_client(self):
         payload = {"generated_at": "2026-10-08T12:00:00+00:00", "mode": "observe",
                    "database_available": True, "summary": {}, "teams": [{"name": "AAPL", "notes": "<script>text</script>"}],
