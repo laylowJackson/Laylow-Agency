@@ -150,6 +150,15 @@ class Scene {
   this.building(0,13,6.1,"#b58cff",3);this.robot(0,7.3,13,"#b58cff",1);this.ring(0,8.3,13,1.9,"#bd9fff",.04,1);
   this.labels.push({x:0,y:10.1,z:13,name:"BIG MANAGER",special:"manager"});
   this.buildings.push({name:"BIG MANAGER",min:[-1.5,.35,11.5],max:[1.5,9,14.5]});
+  // Six-seat Council headquarters on the front waterfront promenade.
+  this.cylinder(0,.18,21,3.2,.2,"#26334d",3.2);this.ring(0,.42,21,3.1,"#70e2e8",.05,1);
+  this.building(0,21,4.4,"#70e2e8",4.2);this.building(0,21,5.2,"#70e2e8",2.5,false);
+  this.cylinder(0,5.85,21,2.05,.25,"#293c54",2.05);this.ring(0,6.15,21,2.1,"#ffe0a2",.055,1);
+  const councilColors=["#70e2e8","#ac7bff","#ffd278","#ff657e","#44edac","#4acaff"];
+  councilColors.forEach((color,index)=>{const a=index*Math.PI/3;this.robot(Math.cos(a)*1.55,6.15,21+Math.sin(a)*1.55,color,.45);});
+  this.box(0,.55,23.13,1.05,1.2,.04,"#ffe0a2",.8);this.box(0,.6,23.17,.77,1.08,.03,"#07172a");
+  this.labels.push({x:0,y:8,z:21,name:"THE COUNCIL",special:"council"});
+  this.buildings.push({name:"THE COUNCIL",min:[-2.1,.35,18.9],max:[2.1,7.3,23.1]});
   // Warm landscaped promenades and subtle geometric reflections in the water.
   for(let i=0;i<32;i++){const a=i*Math.PI*2/32,x=Math.cos(a)*20.3,z=3+Math.sin(a)*20.3;this.cylinder(x,.18,z,.2,.7,"#233e3f",0,0,8);}
   for(let i=0;i<65;i++){const x=-34+(i*17%69),z=28+(i*13%23);this.box(x,-1.06,z,.12+(i%4)*.18,.01,.03,i%3?"#304867":"#817348",.35);}
@@ -325,6 +334,9 @@ function start(){
   for(const [name,label] of[["THE VAULT","Recorded activity"],["BIG MANAGER","Team reports"]]){
    const node=document.createElement("div");node.className="world-3d-label city-hq-label";node.textContent=name+" · "+label;byId("city-3d-labels").append(node);labels.set(name,node);
   }
+  const councilEntrance=document.createElement("button");councilEntrance.type="button";councilEntrance.className="world-3d-label city-hq-label city-council-label";
+  councilEntrance.textContent="THE COUNCIL · Enter chamber";councilEntrance.setAttribute("aria-label","Open The Council chamber");
+  councilEntrance.addEventListener("click",()=>bridge.open("THE COUNCIL"));byId("city-3d-labels").append(councilEntrance);labels.set("THE COUNCIL",councilEntrance);
   city.city();byId("world").dataset.view="3d";byId("city-view").textContent="Use city map";
   byId("city-render-note").textContent="Background line uses selected team's recorded closes · drag to orbit · arrow keys rotate · click a building to open its office";
  }catch(error){byId("world").dataset.view="map";byId("city-view").disabled=true;byId("city-render-note").textContent="3D rendering unavailable on this device. The interactive city map remains available.";}
@@ -336,7 +348,7 @@ window.Laylow3D={
  council(members){try{if(!councilScene)councilScene=new Scene(byId("council-3d"),"council");const key=JSON.stringify(members.map(m=>m.color));if(key!==councilKey){councilKey=key;councilScene.councilRoom(members);}byId("council-render-note").textContent="Six seats · drag or arrow keys to orbit · read all opinions below.";}catch(error){byId("council-render-note").textContent="3D chamber unavailable; opinions and decisions remain accessible below.";}},
  resetCouncil(){if(councilScene){councilScene.yaw=.25;councilScene.pitch=.49;councilScene.distance=12.8;councilScene.draw();}},
 
- update(data,connected){snapshot=data;online=connected;for(const [name,node]of labels){if(node.tagName!=="BUTTON")continue;const team=data.teams?.find(row=>row.name===name)||{};
+ update(data,connected){snapshot=data;online=connected;for(const [name,node]of labels){if(node.tagName!=="BUTTON"||!node.dataset.team)continue;const team=data.teams?.find(row=>row.name===name)||{};
   node.children[1].textContent=connected?team.controls?.profit_brake?.status==="PROFIT_BRAKE_HIT"?"PROFIT BRAKE HIT":team.health==="fresh"?team.worker_state:"Not recently observed":"Last snapshot";
   const worker=data.payroll?.workers?.find(row=>row.team_name===name),amount=worker?.net_cents;
   node.lastChild.textContent=Number.isFinite(amount)?(amount>=0?"+":"−")+"$"+(Math.abs(amount)/100).toFixed(2)+" net today":"Net not recorded";
