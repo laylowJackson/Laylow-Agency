@@ -121,7 +121,10 @@ def main():
                         assert "AAPL" in page.locator("#office-title").inner_text()
                         page.wait_for_function("document.getElementById('office-3d').dataset.ready==='true'")
                         page.locator("#office-worker").select_option("Trend")
-                        assert "Trend" in page.locator("#office-title").inner_text()
+                        assert page.locator("#office-title").inner_text() == "AAPL · Team office"
+                        assert page.locator("#office-worker").input_value() == "Trend"
+                        assert "Trend" in page.locator("#office-speech-name").inner_text()
+                        assert page.locator("#office-roster button[aria-pressed='true']").count() == 1
                         assert "recorded bars" in page.locator("#office-chart-note").inner_text()
                         assert page.locator("#office-chart polyline").count()==3
                         assert "Not recorded" in page.locator("#office-earned").inner_text()
