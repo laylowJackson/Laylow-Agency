@@ -176,3 +176,27 @@ Opinions and seat controls remain available when WebGL is unavailable.
 Six deterministic personalities debate the same evidence: Anchor protects capital, Proof requires broad support, Flux favors momentum, Rebel challenges extended or disputed entries, Steward reduces volatility exposure, and Sentinel enforces entry controls. Four of six must support proceeding. Hard gates cannot be outvoted; risk reduction halves the existing budget. These are explicit rule policies, not fine-tuned language models or profitability forecasts.
 
 Current dashboard reviews are read-only. Worker deliberations separately record all opinions, source fingerprint, proposal ID, timestamp and policy version. Existing AI can veto or reduce but cannot reverse or increase council risk. Stock paper submissions verify fresh recorded approval, source identity and risk terms before broker requests and again before the intent write. Existing risk checks remain mandatory. Futures remain watch-only.
+
+
+### Immersive rooms and outcome reviews
+
+Click a district to enter its bot office, The Council for its chamber, or The Vault
+for results and team learning. Camera buttons provide whole-room, desk/table and
+screen/evidence-wall views. Drag or use arrow keys to orbit. Council speech bubbles
+show current source opinions; the office bubble follows the selected specialist.
+Physical monitors display the same snapshot as the detailed terminals below them.
+
+The Vault calculates wins, losses, break-even counts, win/loss ratio and win rate
+from closed-trade ledger counts. Practice reviews retain entry indicators and explain
+the observed price move, exit rule and fees for each outcome. These are observations,
+not proven causes. Learning is deterministic, bounded practice-rule adaptation:
+after five decisive outcomes in the last twelve trades, a win rate below 40% reduces
+planned risk to 65% and requires an extra specialist vote; below 50% uses 85% risk.
+Winning samples may restore the baseline $250 cap, never exceed it. Losing closes
+use a five-minute cooldown; other closes use three. Learning is derived from saved
+trade records and resets with the $50,000 account. It does not modify real broker
+execution or claim that an external AI model has been trained.
+
+Live market data is **not connected** in the public practice app. Prices and fills
+remain synthetic until a broker/data provider is configured. Rooms and Vault show
+this status explicitly. Do not interpret practice timestamps as current quotes.
