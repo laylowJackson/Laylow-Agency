@@ -46,23 +46,78 @@ function build(s,symbol,bridge){
  for(const x of[-7.85,7.85]){s.box(x,0,-.7,.15,4.5,11.5,t.wall);s.box(x*.99,.1,-.7,.04,.035,11.5,t.accent,.85);}
  s.box(0,1.15,-6.49,14.9,3.75,.055,'#06162a');for(let i=0;i<30;i++){const x=-7+i*.48,h=.6+(i*7%13)*.18;s.box(x,1.15,-6.44,.33,h,.035,'#274763');for(let j=0;j<h/.25;j++)s.box(x,1.25+j*.25,-6.4,.08,.08,.012,j%4?t.accent:'#cfebf1',.45);}
  for(const x of[-7,-3.5,0,3.5,7])s.box(x,1.15,-6.31,.08,3.8,.12,t.metal);
- s.box(0,5.04,-6.2,14.5,.06,.06,t.accent,1);
+
  for(const x of[-6,6]){s.box(x,4.6,-.6,.11,.12,10,t.metal);s.box(x,4.57,-.6,.04,.025,9.9,t.accent,.8);}
- s.display('team-sign',0,3.6,-6.24,5.8,1.15,symbol+' / '+t.name.toUpperCase(),['SHARED TEAM OFFICE',def.bots.length+' SPECIALISTS + TEAM MANAGER','Select a robot to inspect its desk'],[],t.accent);
+ s.box(0,1.15,-6.28,14.3,4.3,.14,'#020a15');s.box(0,1.15,-6.16,14.35,.055,.04,t.accent,.9);s.box(0,5.45,-6.16,14.35,.055,.04,t.accent,.9);
  const coords=[[0,-4.1,0],...t.desks];s.crew=['Team Manager',...def.bots].map((name,i)=>({name,x:coords[i][0],z:coords[i][1],angle:coords[i][2],color:i===0?t.accent:['#75e8cc','#a7b7ff','#ffd18b','#f997bf'][i-1]}));
  for(const p of s.crew)desk(s,p,t);feature(s,t);
  if(!['garden','cyber','bullion'].includes(t.feature))for(const x of[-6.6,6.6])plant(s,x,4.5,'#397d79');
- s.box(-5.9,2.45,-6.26,2.6,1.1,.09,'#061223');s.display('academy-desk',-5.9,2.5,-6.20,2.5,1,'NIGHT SCHOOL',['SYNTHETIC RESEARCH','Separate from account'],[],t.accent);
- s.box(5.8,2.45,-6.26,2.6,1.1,.09,'#061223');s.display('team-results',5.8,2.5,-6.20,2.5,1,'TEAM RESULTS',['Awaiting recorded ledger'],[],t.accent);
  s.officeBase=s.data.slice();s.upload();s.draw();return t;
 }
 function update(s,snapshot,online,bars){const team=snapshot?.teams?.find(t=>t.name===s.symbol)||{},analysis=team.analysis||{},worker=snapshot?.payroll?.workers?.find(w=>w.team_name===s.symbol)||{},manager=snapshot?.managers?.find(m=>m.team_name===s.symbol),source=snapshot?.practice?'SYNTHETIC PRACTICE':online?'RECORDED DATA':'SOURCE NOT CONNECTED';
  for(const [i,p]of s.crew.entries()){const vote=analysis.votes?.find(v=>v.name===p.name);screen(s,'crew-'+i,p,p.name.toUpperCase(),[i===0?(team.worker_state||'WAITING'):(vote?.direction||'WAITING'),i===0?'Team coordination':vote?.reason||'Awaiting source evidence',source],bars,p.color);}
- s.display('team-results',5.8,2.5,-6.20,2.5,1,'TEAM LEDGER',[Number.isFinite(worker.net_cents)?'$'+(worker.net_cents/100).toFixed(2):'NOT RECORDED',Number.isFinite(worker.closed_trades)?worker.closed_trades+' closed trades':'No closed-trade evidence',source],[],s.theme.accent);s.draw();}
+ renderWall(s.symbol,snapshot,s);s.draw();}
 function focus(s,name,view='desk'){const p=s.crew.find(p=>p.name===name)||s.crew[0];if(!p)return;if(view==='screens'){s.yaw=p.angle;s.pitch=.23;s.distance=4.5;s.target=point(p,0,1.8,-.45);}else{s.yaw=p.angle+Math.PI+.4;s.pitch=.45;s.distance=6.4;s.target=[p.x,1.45,p.z+.3];}s.canvas.dataset.camera=view;s.draw();}
 function labels(s){const picked=document.getElementById('office-worker').value,selected=s.crew.find(p=>p.name===picked)||s.crew[0],occupied=[];
  const bubble=document.getElementById('office-speech'),sp=selected&&s.project(...point(selected,0,2.6,.92));if(bubble&&sp){bubble.hidden=sp.x<10||sp.x>s.canvas.clientWidth-10||sp.y<65||sp.y>s.canvas.clientHeight-45;bubble.style.left=Math.max(100,Math.min(s.canvas.clientWidth-100,sp.x))+'px';bubble.style.top=Math.max(125,sp.y)+'px';if(!bubble.hidden){const x=parseFloat(bubble.style.left),y=parseFloat(bubble.style.top),w=bubble.offsetWidth,h=bubble.offsetHeight;occupied.push({l:x-w/2,r:x+w/2,t:y-h,b:y});}}
  for(const button of document.querySelectorAll('#office-crew [data-office-worker]')){const p=s.crew.find(p=>p.name===button.dataset.officeWorker),v=p&&s.project(...point(p,0,2.57,.92));button.hidden=!v||p.name===picked||v.x<8||v.x>s.canvas.clientWidth-8||v.y<70||v.y>s.canvas.clientHeight-55;if(button.hidden)continue;const w=button.offsetWidth,h=button.offsetHeight,x=Math.max(w/2+8,Math.min(s.canvas.clientWidth-w/2-8,v.x));let y=v.y;let rect={l:x-w/2,r:x+w/2,t:y-h,b:y};if(occupied.some(o=>rect.l<o.r&&rect.r>o.l&&rect.t<o.b&&rect.b>o.t)){y+=h+12;rect={l:x-w/2,r:x+w/2,t:y-h,b:y};}button.style.left=x+'px';button.style.top=Math.min(s.canvas.clientHeight-65,y)+'px';occupied.push(rect);}
 }
+
+// Shared trade wall: one evidence model feeds both the physical screen and readable ledger.
+const wallCash=v=>Number.isFinite(v)?new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(v/100):'—';
+const wallPrice=v=>Number.isFinite(v)?v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+const wallTime=v=>Number.isFinite(Date.parse(v))?new Date(v).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'—';
+function wallModel(symbol,snapshot,session){
+ const team=snapshot?.teams?.find(t=>t.name===symbol)||{},practice=snapshot?.practice===true;
+ const rows=practice&&session?session.trades:snapshot?.payroll?.recent;
+ const closed=(Array.isArray(rows)?rows:[]).filter(t=>t.team_name===symbol).slice().sort((a,b)=>(Date.parse(b.closed_at)||0)-(Date.parse(a.closed_at)||0));
+ const positions=practice&&session?(session.positions||[]).filter(t=>t.team_name===symbol):[];
+ const orders=(snapshot?.recent_orders||[]).filter(t=>t.team_name===symbol);
+ const bars=(team.analysis?.bars||[]).filter(b=>Number.isFinite(b.close)&&b.close>0&&Number.isFinite(Date.parse(b.timestamp))).slice(-60);
+ const worker=snapshot?.payroll?.workers?.find(w=>w.team_name===symbol)||{};
+ return {symbol,practice,bars,closed,positions,orders,worker,source:practice?'SIMULATED MARKET · FAKE MONEY':'RECORDED SNAPSHOT · LIVE FEED UNVERIFIED',asOf:bars.at(-1)?.timestamp||snapshot?.generated_at};
+}
+function wallPaint(canvas,m,accent){
+ const c=canvas.getContext('2d');if(!c)return;canvas.width=1920;canvas.height=640;
+ const text=(value,x,y,size=24,color='#b6c6dc')=>{c.font=`${size>=30?'600':'400'} ${size}px system-ui`;c.fillStyle=color;c.fillText(String(value),x,y, x<1200?1130:660);};
+ const line=(x,y,xx,yy,color,width=1)=>{c.beginPath();c.strokeStyle=color;c.lineWidth=width;c.moveTo(x,y);c.lineTo(xx,yy);c.stroke();};
+ c.fillStyle='#061120';c.fillRect(0,0,1920,640);const glow=c.createLinearGradient(0,0,1920,640);glow.addColorStop(0,accent+'22');glow.addColorStop(1,'#061120');c.fillStyle=glow;c.fillRect(0,0,1920,640);
+ c.fillStyle=accent;c.fillRect(0,0,1920,6);text(m.symbol+' / TRADE WALL',34,54,32,'#f1f6ff');text(m.source,34,89,22,accent);text(wallPrice(m.bars.at(-1)?.close),34,144,40,'#f1f6ff');text('AS OF '+wallTime(m.asOf),330,140,22);
+ line(1200,30,1200,610,'#28445a');text('TEAM LEDGER',1240,54,30,'#f1f6ff');text(wallCash(m.worker.net_cents)+' net · '+(m.worker.closed_trades??'—')+' closed',1240,100,26,accent);
+ text(m.positions.length?m.positions.length+' SIMULATED OPEN POSITION':m.practice?'NO OPEN POSITION':'OPEN POSITION DATA UNAVAILABLE',1240,148,22);
+ text('SIDE / QTY',1240,198,20);text('ENTRY → EXIT',1460,198,20);text('NET',1770,198,20);
+ for(const [i,t] of [...m.positions.map(p=>({...p,wallOpen:true})),...m.closed].slice(0,5).entries()){const y=246+i*68;line(1240,y-30,1875,y-30,'#23384e');text((t.direction||'CLOSED')+' / '+(t.qty??'—'),1240,y,22);text(wallPrice(t.entry_price)+' → '+wallPrice(t.exit_price),1460,y,21);text(t.wallOpen?'OPEN':wallCash(t.net_cents),1770,y,23,t.net_cents<0?'#ff7e97':'#75edba');text(wallTime(t.closed_at||t.opened_at)+' · '+(t.reason||t.source||(t.wallOpen?'Monitoring simulated exit rules':'Recorded outcome')),1240,y+25,18);}
+ if(!m.closed.length&&!m.positions.length){text('WAITING FOR CLOSED TRADES',1240,260,24);text('Completed wins and losses appear here.',1240,298,22);text('Order intents are listed separately below.',1240,332,22);}
+ const bars=m.bars,L=40,R=1118,T=185,B=530;
+ if(bars.length>1){const values=bars.flatMap(b=>[b.low,b.high,b.close]).filter(Number.isFinite);const lo=Math.min(...values),hi=Math.max(...values),spread=Math.max(hi-lo,hi*.0005,.01),floor=lo-spread*.15,ceiling=hi+spread*.15;
+ const y=p=>B-(p-floor)/(ceiling-floor)*(B-T),x=i=>L+(i+.5)*(R-L)/bars.length;
+ for(let j=0;j<5;j++){const yy=T+j*(B-T)/4;line(L,yy,R,yy,'#20384d');text(wallPrice(ceiling-j*(ceiling-floor)/4),R+7,yy+7,17);}
+ const w=Math.max(3,(R-L)/bars.length*.6);
+ bars.forEach((b,i)=>{const col=b.close>=(b.open??b.close)?'#75edba':'#ff7e97';if([b.open,b.high,b.low].every(Number.isFinite)){line(x(i),y(b.high),x(i),y(b.low),col,2);c.fillStyle=col;c.fillRect(x(i)-w/2,Math.min(y(b.open),y(b.close)),w,Math.max(2,Math.abs(y(b.open)-y(b.close))));}else if(i)line(x(i-1),y(bars[i-1].close),x(i),y(b.close),accent,3);});
+ // Exact fill prices, timestamped only inside this chart's displayed history.
+ const start=Date.parse(bars[0].timestamp),end=Date.parse(bars.at(-1).timestamp);
+ for(const t of [...m.closed,...m.positions])for(const [kind,stamp,price,col]of [['E',t.opened_at,t.entry_price,'#ffd579'],['X',t.closed_at,t.exit_price,'#a49bff']]){const time=Date.parse(stamp);if(!Number.isFinite(time)||!Number.isFinite(price)||time<start||time>end||price<floor||price>ceiling)continue;let i=0;for(let j=1;j<bars.length;j++)if(Math.abs(Date.parse(bars[j].timestamp)-time)<Math.abs(Date.parse(bars[i].timestamp)-time))i=j;c.fillStyle=col;c.beginPath();c.arc(x(i),y(price),7,0,Math.PI*2);c.fill();text(kind,x(i)-7,y(price)-13,19,col);}
+ text(wallTime(bars[0].timestamp),L,566,21);text(wallTime(bars.at(-1).timestamp),1020,566,21);
+ }else text('Waiting for timestamped price history',40,330,30);
+ text('CANDLES  ·  E = ENTRY FILL  ·  X = EXIT FILL  ·  LAST 60 BARS',40,615,21,accent);text('NO ORDERS CAN BE PLACED FROM THIS WALL',1240,615,20);
+}
+let wallSignature='',wallCurrent=null;
+function renderWall(symbol,snapshot,scene){
+ const session=snapshot?.practice?window.LaylowPractice?.export():null,m=wallModel(symbol,snapshot,session),accent=themes[symbol]?.accent||'#70e2e8',signature=JSON.stringify([m,accent]);wallCurrent=m;
+ const canvas=document.getElementById('office-trade-wall-canvas');if(!canvas)return;
+ if(signature!==wallSignature){wallSignature=signature;wallPaint(canvas,m,accent);document.getElementById('office-trade-wall-title').textContent=symbol+' / Trade wall';document.getElementById('office-trade-wall-source').textContent=m.source+' · as of '+wallTime(m.asOf);document.getElementById('office-trade-wall-net').textContent=wallCash(m.worker.net_cents)+' net · '+(m.worker.wins??'—')+' wins / '+(m.worker.losses??'—')+' losses';
+ const body=document.getElementById('office-trade-wall-rows');body.replaceChildren();
+ for(const t of [...m.positions.map(p=>({...p,wallOpen:true})),...m.closed.slice(0,20)]){const tr=document.createElement('tr');for(const value of[t.wallOpen?'OPEN':Number.isFinite(t.net_cents)?t.net_cents>0?'WIN':t.net_cents<0?'LOSS':'FLAT':'CLOSED',t.direction||'—',t.qty??'—',wallPrice(t.entry_price),t.wallOpen?'—':wallPrice(t.exit_price),t.wallOpen?'Unrealized':wallCash(t.net_cents),wallTime(t.closed_at||t.opened_at),t.reason||t.source||(t.wallOpen?'Monitoring simulated exit rules':'Recorded close')]){const td=document.createElement('td');td.textContent=value;tr.append(td);}tr.className=t.wallOpen?'':t.net_cents<0?'bad':'good';body.append(tr);}
+ if(!body.children.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=8;td.textContent='No recorded trades for this team yet. Closed trades and available practice positions will appear here.';tr.append(td);body.append(tr);}
+ const orders=document.getElementById('office-trade-wall-orders');orders.replaceChildren();for(const t of m.orders.slice(0,5)){const p=document.createElement('p');p.textContent=(t.direction||'—')+' · '+(t.status||'Unknown status')+' · quantity '+(t.qty??'—')+' · '+wallTime(t.created_at);orders.append(p);}if(!orders.children.length){const p=document.createElement('p');p.textContent='No recorded order intents for this team.';orders.append(p);}
+ }
+ if(scene){scene.display('trade-wall',0,1.25,-6.18,14,4.15,'',[],[],accent);const item=scene.displays.get('trade-wall');if(item.wallKey!==signature){item.wallKey=signature;const gl=scene.gl;gl.bindTexture(gl.TEXTURE_2D,item.texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,canvas);}scene.canvas.dataset.tradeWall=symbol;}
+ return m;
+}
+function openWall(){const panel=document.getElementById('office-trade-wall-panel');panel.hidden=false;renderWall(document.getElementById('office-roster').dataset.team,window.LaylowWorld.snapshot());window.Laylow3D?.roomCamera('office','wall');document.getElementById('office-3d').scrollIntoView({block:'center',behavior:'auto'});document.getElementById('office-trade-wall-open').setAttribute('aria-expanded','true');}
+document.getElementById('office-trade-wall-open').addEventListener('click',openWall);
+document.querySelector('[data-room="office"][data-room-camera="wall"]').addEventListener('click',openWall);
+window.LaylowTradeWall={model:wallModel,render:renderWall,open:openWall,current:()=>wallCurrent};
+
 window.LaylowTeamOffices={themes,build,update,focus,labels};
 })();

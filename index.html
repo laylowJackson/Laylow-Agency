@@ -111,7 +111,7 @@ header{padding-bottom:17px}.brand{font-style:italic;letter-spacing:-1.6px;text-t
 .bot.city-selected{border-color:var(--district-color,#9876f8);box-shadow:0 0 0 1px #8562c444}
 .bot{scroll-margin-top:25px}.metrics{margin-top:0}.metric-value{color:#dfe6fb}
 @media(max-width:1160px){main{padding:18px}.world-navigation a{padding:9px 10px}.world-stage{grid-template-columns:minmax(0,1fr) 270px}.city-overview{width:165px;padding:11px}.city-inspector{padding:18px 15px}.dock-label{display:none}.world-hint{display:none}}
-@media(max-width:800px){header{gap:12px}.world-navigation{order:3;width:100%;justify-content:space-between}.world-navigation a{font-size:10px;padding:10px 9px;justify-content:center;flex:1}.header-actions{margin-left:auto}.brand small{display:block;margin-left:41px;font-size:8px;letter-spacing:3px}
+@media(max-width:800px){header{gap:12px}.world-navigation{order:3;width:100%;min-width:0;max-width:100%;overflow-x:auto;justify-content:flex-start}.world-navigation a{font-size:10px;padding:10px 9px;justify-content:center;flex:0 0 auto;white-space:nowrap}.header-actions{margin-left:auto}.brand small{display:block;margin-left:41px;font-size:8px;letter-spacing:3px}
 .intro{margin:18px 0}.intro h1{font-size:28px}.connection{font-size:12px}.world-stage{grid-template-columns:1fr}.world-toolbar{padding:15px;gap:10px}.world-toolbar h2{font-size:17px}.world-tools{gap:8px}
 .city-overview{width:165px;left:12px;top:12px;background:#060e1de8}.city-overview dl{gap:7px}.glass-heading{font-size:9px}
 .city-inspector{border-width:1px 0 0;border-color:#344469;padding:18px}.city-inspector .city-bot-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px}.city-bot-list li{flex-wrap:wrap;gap:7px}.city-bot-name{min-width:65px}
@@ -136,7 +136,7 @@ header{padding-bottom:17px}.brand{font-style:italic;letter-spacing:-1.6px;text-t
 .payroll-panel{margin-bottom:24px}.payroll-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:22px 0}
 .payroll-metrics span{font-size:12px;color:var(--muted)}.payroll-metrics strong{display:block;font-size:27px;letter-spacing:-.5px;margin-top:6px}
 .payroll-layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:25px}
-.table-scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}
+.table-scroll{overflow-x:auto;min-width:0;max-width:100%}.payroll-layout>*{min-width:0}table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}
 th{font-weight:550;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
 td,th{padding:11px 12px;border-bottom:1px solid #243651;white-space:nowrap}
 #payroll-chart,#office-chart{display:block;width:100%;height:auto;min-height:120px}.small-heading{font-size:13px;margin:0 0 10px}
@@ -153,7 +153,7 @@ select{font:inherit;min-height:44px;background:#15213a;color:var(--text);border:
 #office-decisions{font-size:11px}.office-bot-open{cursor:pointer}
 .risk-brake-label{font-size:12px;color:var(--muted);margin-top:7px}
 @media(max-width:800px){.city-3d-wrap{height:560px}.city-overview{top:10px}.world-3d-label{font-size:9px;padding:4px 7px}.world-3d-label strong{font-size:10px}.world-3d-label span{font-size:7px}.city-hq-label{font-size:8px}
-.camera-controls{right:8px;bottom:45px}.payroll-metrics{gap:12px}.payroll-metrics strong{font-size:19px}.payroll-metrics span{font-size:10px}.payroll-layout,.office-monitors{grid-template-columns:1fr}
+.camera-controls{right:8px;bottom:45px}.payroll-metrics{gap:12px}.payroll-metrics strong{font-size:19px}.payroll-metrics span{font-size:10px}.payroll-layout,.office-monitors{grid-template-columns:minmax(0,1fr)}
 dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font-size:21px}.office-header button{font-size:10px;padding:8px}.office-options{gap:9px}#office-3d{height:260px}.city-render-note{font-size:10px;padding:9px 12px}}
 
 
@@ -190,8 +190,9 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 #practice-state{color:#9df2df;font-size:12px}#practice-clock,#practice-save-note{font-size:11px;color:#aac4ce}
 @media(max-width:700px){.practice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.practice-grid strong{font-size:20px}.practice-actions button{font-size:12px}}
 
+.controls{grid-template-columns:minmax(0,1fr)}.controls>*{min-width:0}.controls input{min-width:0}.specialists li{overflow-wrap:anywhere}
 </style>
-<link rel="stylesheet" href="./council.css?v=20261010-team-offices">
+<link rel="stylesheet" href="./council.css?v=20261010-trade-walls">
 </head>
 <body>
 <a class="skip-link" href="#bots-title">Skip to bots</a>
@@ -282,9 +283,17 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
  <p id="office-feed" class="market-feed-notice">Market feed: simulated in practice. Live broker/data feed not connected.</p>
  <div class="office-options"><label for="office-worker">Inspect teammate</label><select id="office-worker"></select><span id="office-health" class="pill muted">Not observed</span><span id="office-data-time" class="city-source"></span></div>
  <div class="office-room-identity"><div><span class="world-kicker">DISTRICT INTERIOR</span><h3 id="office-theme-name">Shared team office</h3><p id="office-layout-note">Every specialist has a desk in this room.</p></div><span class="team-room-badge">ONE TEAM / ONE OFFICE</span></div>
- <div class="office-stage"><canvas id="office-3d" tabindex="0" aria-label="Shared 3D team office. All specialist robots and their manager work in this room. Select a teammate or use the roster below."></canvas><div class="room-hud"><span>LAYLOW / SHARED TEAM OFFICE</span><span>3D WORKSTATION</span></div><div id="office-speech" class="office-speech"><strong id="office-speech-name">TEAM MANAGER</strong><span id="office-speech-text">Waiting for source evidence.</span></div><div id="office-crew" aria-label="Teammates in the room"></div><div id="office-screen-labels" aria-label="Interactive desk terminals"><button type="button" data-screen-x="-1.95" data-office-terminal="signal">Signal scanner ↗</button><button type="button" data-screen-x="0" data-office-terminal="market">Market terminal ↗</button><button type="button" data-screen-x="1.95" data-office-terminal="performance">Performance ↗</button></div></div>
+ <div class="office-stage"><canvas id="office-3d" tabindex="0" aria-label="Shared 3D team office. All specialist robots and their manager work in this room. Select a teammate or use the roster below."></canvas><div class="room-hud"><span>LAYLOW / SHARED TEAM OFFICE</span><span>3D WORKSTATION</span></div><button id="office-trade-wall-open" type="button" aria-controls="office-trade-wall-panel" aria-expanded="true">Trade wall ↗</button><div id="office-speech" class="office-speech"><strong id="office-speech-name">TEAM MANAGER</strong><span id="office-speech-text">Waiting for source evidence.</span></div><div id="office-crew" aria-label="Teammates in the room"></div><div id="office-screen-labels" aria-label="Interactive desk terminals"><button type="button" data-screen-x="-1.95" data-office-terminal="signal">Signal scanner ↗</button><button type="button" data-screen-x="0" data-office-terminal="market">Market terminal ↗</button><button type="button" data-screen-x="1.95" data-office-terminal="performance">Performance ↗</button></div></div>
  <div id="office-roster" class="office-roster" role="group" aria-label="Select a teammate"></div>
- <div class="room-camera-bar" role="group" aria-label="Bot office camera"><span>VIEW</span><button type="button" data-room="office" data-room-camera="wide">Whole room</button><button type="button" data-room="office" data-room-camera="desk">Robot desk</button><button type="button" data-room="office" data-room-camera="screens">Monitors</button><button type="button" data-room="office" data-room-camera="closer" aria-label="Zoom into bot office">+</button><button type="button" data-room="office" data-room-camera="further" aria-label="Zoom out of bot office">−</button></div><p id="office-render-note" class="city-source"></p>
+ <div class="room-camera-bar" role="group" aria-label="Bot office camera"><span>VIEW</span><button type="button" data-room="office" data-room-camera="wide">Whole room</button><button type="button" data-room="office" data-room-camera="wall">Trade wall</button><button type="button" data-room="office" data-room-camera="desk">Robot desk</button><button type="button" data-room="office" data-room-camera="screens">Monitors</button><button type="button" data-room="office" data-room-camera="closer" aria-label="Zoom into bot office">+</button><button type="button" data-room="office" data-room-camera="further" aria-label="Zoom out of bot office">−</button></div><p id="office-render-note" class="city-source"></p>
+
+ <section id="office-trade-wall-panel" tabindex="-1" aria-labelledby="office-trade-wall-title">
+  <div class="trade-wall-heading"><div><span class="world-kicker">TEAM COMMAND DISPLAY</span><h3 id="office-trade-wall-title">Trade wall</h3><p id="office-trade-wall-source" class="city-source"></p></div><strong id="office-trade-wall-net"></strong></div>
+  <canvas id="office-trade-wall-canvas" width="1920" height="640" role="img" aria-label="Team candlestick chart with entry and exit markers. Exact trade details appear in the table below."></canvas>
+  <p class="city-source">E = entry fill · X = exit fill. Markers appear only when their recorded time and price are inside the chart window. Missing fill details stay blank. Open positions are excluded from realized net results.</p>
+  <div class="table-scroll" tabindex="0" role="region" aria-label="Scroll team trade details"><table><thead><tr><th scope="col">State</th><th scope="col">Side</th><th scope="col">Quantity</th><th scope="col">Entry</th><th scope="col">Exit</th><th scope="col">Net after fees</th><th scope="col">Time</th><th scope="col">Exit reason / source</th></tr></thead><tbody id="office-trade-wall-rows"></tbody></table></div>
+  <details><summary>Order intents — separate from completed trades</summary><div id="office-trade-wall-orders"></div></details>
+ </section>
  <div class="office-terminal-nav" role="group" aria-label="Inspect office terminals"><button type="button" data-office-terminal="market">01 / Market & chart</button><button type="button" data-office-terminal="signal">02 / Signal scanner</button><button type="button" data-office-terminal="performance">03 / Performance</button></div>
  <div class="office-monitors">
   <section class="monitor" id="office-market-panel" tabindex="-1"><div class="world-kicker">MARKET TERMINAL</div><h3 id="office-quote">No recorded price</h3><svg id="office-chart" viewBox="0 0 540 240" role="img" aria-label="Recorded close prices and indicator lines"></svg><p id="office-chart-note" class="city-source"></p></section>
@@ -947,6 +956,7 @@ function renderOffice(){
  for(const id of ["office-roster","office-crew"]){const host=$(id);if(host.dataset.team!==officeTeam){host.dataset.team=officeTeam;host.replaceChildren();for(const name of rosterNames){const button=element("button",id==="office-crew"?"crew-bubble":"roster-member");button.type="button";button.dataset.officeWorker=name;button.append(element("strong","",name),element("span","crew-status"),element("span","crew-reason"));button.addEventListener("click",()=>selectOfficeWorker(name));host.append(button);}}
   for(const button of host.children){const name=button.dataset.officeWorker,vote=votes.find(v=>v.name===name),picked=name===officeDesk;button.setAttribute("aria-pressed",String(picked));button.setAttribute("aria-label","Inspect "+name+" in "+officeTeam+" team office");button.querySelector(".crew-status").textContent=name==="Team Manager"?(team.worker_state||"Waiting"):(vote?.direction||"Waiting");button.querySelector(".crew-reason").textContent=name==="Team Manager"?(speechManager?.summary||"Awaiting team evidence"):(vote?.reason||"Awaiting source evidence");button.title=button.querySelector(".crew-reason").textContent;}
  }
+ window.LaylowTradeWall?.render(officeTeam,snapshot);
  window.Laylow3D?.officeSelection?.();
 
  $("office-health").textContent=!connected?"Last snapshot":text(team.worker_state,"Not observed");
@@ -986,12 +996,12 @@ window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select
 
 initializeCards();initializeCity();refreshStatus();
 </script>
-<script src="./team-offices.js?v=20261010-team-offices"></script>
-<script src="./world-3d.js?v=20261010-team-offices"></script>
-<script src="./council-ui.js?v=20261010-team-offices"></script>
-<script src="./practice-engine.js?v=20261010-team-offices"></script>
-<script src="./practice-ui.js?v=20261010-team-offices"></script>
-<script src="./training-engine.js?v=20261010-team-offices"></script>
-<script src="./training-ui.js?v=20261010-team-offices"></script>
+<script src="./team-offices.js?v=20261010-trade-walls"></script>
+<script src="./world-3d.js?v=20261010-trade-walls"></script>
+<script src="./council-ui.js?v=20261010-trade-walls"></script>
+<script src="./practice-engine.js?v=20261010-trade-walls"></script>
+<script src="./practice-ui.js?v=20261010-trade-walls"></script>
+<script src="./training-engine.js?v=20261010-trade-walls"></script>
+<script src="./training-ui.js?v=20261010-trade-walls"></script>
 </body>
 </html>
