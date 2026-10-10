@@ -80,10 +80,18 @@ def main():
                         assert page.locator("#mode").inner_text().lower().find("observe") >= 0
                         assert page.locator(".bot-note img").count() == 0, "Notes parsed as HTML"
                         assert not page.evaluate("Boolean(window.__injected)"), "Injected HTML ran"
+                        # Wait for the 3D labels' first animation-frame layout before measuring.
+                        try:
+                            page.wait_for_function(
+                                "document.documentElement.scrollWidth <= window.innerWidth + 1", timeout=10000)
+                        except Exception:
+                            print("Layout diagnostics:", page.evaluate(
+                                "({width:innerWidth,scroll:document.documentElement.scrollWidth,nodes:Array.from(document.querySelectorAll('body *')).filter(e=>e.getBoundingClientRect().right>innerWidth+1&&!e.closest('.table-scroll,.city-dock')).slice(0,50).map(e=>({tag:e.tagName,id:e.id,classes:String(e.className),right:e.getBoundingClientRect().right}))})"), flush=True)
+                            raise
                         assert page.evaluate(
                             "document.documentElement.scrollWidth <= window.innerWidth + 1"
                         ), f"Horizontal overflow at {width}px: " + str(page.evaluate(
-                            "Array.from(document.querySelectorAll('body *')).filter(e=>e.getBoundingClientRect().right>innerWidth+1).slice(-25).map(e=>({tag:e.tagName,id:e.id,classes:String(e.className),right:e.getBoundingClientRect().right}))"))
+                            "Array.from(document.querySelectorAll('body *')).filter(e=>e.getBoundingClientRect().right>innerWidth+1&&!e.closest('.table-scroll,.city-dock')).slice(0,50).map(e=>({tag:e.tagName,id:e.id,classes:String(e.className),right:e.getBoundingClientRect().right}))"))
                         assert page.locator(".specialists li").count() == 32, "Missing specialist vote slots"
                         assert page.locator(".city-tower").count() == 10, "Missing city districts"
                         assert page.locator(".city-specialist").count() == 32, "Missing city robots"
