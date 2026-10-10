@@ -183,6 +183,13 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 
 .city-council-label{pointer-events:auto;--district-color:#70e2e8}.city-world[data-view="3d"] .city-council-label{display:block}
 .city-hq-building{cursor:pointer}.city-hq-building:focus-visible{outline:2px solid #ffdfa0;outline-offset:5px}
+
+.practice-panel{margin:0 0 22px;border-color:#578179;background:linear-gradient(125deg,#122b2b,#101727)}
+.practice-head,.practice-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.practice-actions{justify-content:flex-start;margin:14px 0}
+.practice-panel h2{color:#9df2df}.practice-notice{font-size:13px;color:#c4d9dc;max-width:1000px;margin:10px 0}.practice-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0}.practice-grid span{font-size:11px;color:#a3b6c4}.practice-grid strong{display:block;font-size:23px;font-variant-numeric:tabular-nums;color:#dcf4ed}.practice-panel summary{cursor:pointer;min-height:44px;padding:12px 0}.practice-panel td button{font-size:11px;padding:6px 9px}
+#practice-state{color:#9df2df;font-size:12px}#practice-clock,#practice-save-note{font-size:11px;color:#aac4ce}
+@media(max-width:700px){.practice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.practice-grid strong{font-size:20px}.practice-actions button{font-size:12px}}
+
 </style>
 <link rel="stylesheet" href="./council.css">
 </head>
@@ -195,6 +202,20 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 <div class="connection"><strong id="connection" class="muted" role="status"><i class="dot" aria-hidden="true"></i>Connecting to backend</strong><span id="updated">Waiting for the first status snapshot</span><div class="snapshot-tag" id="snapshot-tag" hidden>Last snapshot · connection lost</div></div>
 </section>
 <p id="error" class="alert" role="alert" hidden></p>
+
+
+<section id="practice" class="panel practice-panel" aria-labelledby="practice-title">
+ <div class="practice-head"><div><span class="world-kicker">SANDBOX / FAKE MONEY</span><h2 id="practice-title">$50,000 practice account</h2></div><span id="practice-state" role="status">Ready to practice</span></div>
+ <p class="practice-notice">Generated market prices and fake fills only. Ten rule-based teams and six council opinions share one practice account. No live quotes, AI API, broker connection or real orders.</p>
+ <div class="practice-actions"><button id="practice-toggle" type="button" class="city-primary">Start $50,000 practice</button><button id="practice-step" type="button">Step 1 market minute</button><label>Speed <select id="practice-speed"><option value="1">1 market min / sec</option><option value="5">5 market min / sec</option><option value="20">20 market min / sec</option></select></label><button id="practice-reset" type="button">Reset to $50,000</button><button id="practice-export" type="button">Export session</button><a href="#world">Go to city ↓</a><button id="practice-exit" type="button">Leave practice</button></div>
+ <div id="practice-details" hidden><div class="practice-grid">
+ <div><span>Starting fake dollars</span><strong id="practice-initial">$50,000.00</strong></div><div><span>Account equity</span><strong id="practice-equity">$50,000.00</strong></div><div><span>Cash balance</span><strong id="practice-cash">$50,000.00</strong></div><div><span>Available after collateral</span><strong id="practice-available">$50,000.00</strong></div>
+ <div><span>Closed-trade net P&amp;L</span><strong id="practice-realized">$0.00</strong></div><div><span>Open-position P&amp;L</span><strong id="practice-unrealized">$0.00</strong></div><div><span>Simulated fees paid</span><strong id="practice-fees">$0.00</strong></div><div><span>Largest equity drawdown</span><strong id="practice-drawdown">$0.00</strong></div></div>
+ <p id="practice-clock"></p><details><summary>Practice rules and fill assumptions</summary><p class="practice-notice">Practice limits: 4 open positions, $250 planned risk per entry, $1,000 account loss brake and $300 closed-profit brake per team. Stops and targets fill at generated candle closes, so losses can exceed planned risk. Fictional collateral: full stock notional; $5,000 per full-size futures contract or $500 per micro contract. $1 per stock fill, $2 per futures contract per fill, plus one tick slippage each side. These assumptions do not represent a broker's margin or fee schedule.</p></details>
+ <details><summary>Open fake positions</summary><div class="table-scroll"><table><thead><tr><th>Team</th><th>Side</th><th>Qty</th><th>Entry</th><th>Generated price</th><th>Open P&amp;L</th><th>Action</th></tr></thead><tbody id="practice-positions"></tbody></table></div></details>
+ <details><summary>Recent closed fake trades</summary><div class="table-scroll"><table><thead><tr><th>Team</th><th>Side</th><th>Qty</th><th>Entry</th><th>Exit</th><th>Fees</th><th>Net P&amp;L</th><th>Exit rule</th></tr></thead><tbody id="practice-trades"></tbody></table></div></details></div>
+ <p id="practice-save-note" role="status"></p>
+</section>
 
 <section id="world" class="city-world" aria-labelledby="world-title">
   <div class="world-toolbar">
@@ -253,7 +274,7 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
  <p id="payroll-basis" class="city-source"></p>
 </section>
 <dialog id="office-dialog" aria-labelledby="office-title">
- <div class="office-header"><div><div class="world-kicker">VIRTUAL WORKSTATION / RECORDED DATA</div><h2 id="office-title">Bot office</h2></div><button id="office-close" type="button" aria-label="Close office">Return to city ×</button></div>
+ <div class="office-header"><div><div class="world-kicker" id="office-context">VIRTUAL WORKSTATION / RECORDED DATA</div><h2 id="office-title">Bot office</h2></div><button id="office-close" type="button" aria-label="Close office">Return to city ×</button></div>
  <div class="office-options"><label for="office-worker">Worker desk</label><select id="office-worker"></select><span id="office-health" class="pill muted">Not observed</span><span id="office-data-time" class="city-source"></span></div>
  <canvas id="office-3d" tabindex="0" aria-label="3D robot workstation. Drag to look around."></canvas><p id="office-render-note" class="city-source"></p>
  <div class="office-monitors">
@@ -444,7 +465,8 @@ function validatePayload(payload){
   return payload;
 }
 function renderSnapshot(payload){
-  csrfToken=typeof payload.csrf_token==="string"?payload.csrf_token:"";connected=!payload.public_viewer;
+  csrfToken=!payload.practice&&typeof payload.csrf_token==="string"?payload.csrf_token:"";connected=!payload.public_viewer||payload.practice===true;
+  for(const row of cards.values())if(row.controls)row.controls.wrapper.hidden=payload.practice===true;
   renderTeams(payload.teams);renderProcesses(payload.processes);renderEvents(payload.events);renderCity(payload);
   $("fresh").textContent=number(payload.summary.fresh_workers)+" / "+TEAM_DEFINITIONS.length;$("enabled").textContent=number(payload.summary.enabled_teams)+" / "+TEAM_DEFINITIONS.length;
   const reports=Array.isArray(payload.managers)?payload.managers:[], big=payload.big_manager||{};
@@ -464,7 +486,15 @@ function renderSnapshot(payload){
   $("updated").textContent="Snapshot "+formatTime(payload.generated_at)+" · received "+localTime.format(new Date(lastReceivedAt));
   $("workspace").dataset.stale="false";$("snapshot-tag").hidden=true;$("error").hidden=true;
   $("connection").className="good";$("connection").replaceChildren(element("i","dot"),document.createTextNode(payload.public_viewer?"Public viewer · backend not connected":"Backend connected"));
-  if(payload.public_viewer){$("connection").className="warn";$("mode").textContent="PUBLIC VIEWER · NO ORDER EXECUTION";$("updated").textContent="City and council preview · no worker service connected";$("city-world-status").textContent="PUBLIC VIEWER · Backend not connected";$("city-observation").textContent="Worker health and results unavailable.";}
+  if(payload.public_viewer&&!payload.practice){$("connection").className="warn";$("mode").textContent="PUBLIC VIEWER · NO ORDER EXECUTION";$("updated").textContent="City and council preview · no worker service connected";$("city-world-status").textContent="PUBLIC VIEWER · Backend not connected";$("city-observation").textContent="Worker health and results unavailable.";}
+  if(payload.practice){
+   $("connection").className="warn";$("connection").replaceChildren(element("i","dot"),document.createTextNode("PRACTICE SIMULATION · FAKE MONEY"));
+   $("mode").textContent="PRACTICE · SYNTHETIC MARKET";$("updated").textContent="Generated quotes · no broker or real orders";
+   $("city-world-status").textContent="PRACTICE · $50,000 FAKE STARTING CASH";$("city-observation").textContent="Browser simulation · generated market prices";
+   $("city-render-note").textContent="Synthetic price chart · simulated bots · click a building to enter";
+   $("ai-summary").textContent="Six rule-based council personalities; no external AI service is used in practice.";
+   for(const row of cards.values())if(row.controls)row.controls.wrapper.hidden=true;
+  }
   $("connection").firstChild.setAttribute("aria-hidden","true");receivedSnapshot=true;
 }
 function reportFailure(){
@@ -481,14 +511,15 @@ function schedule(){
   if(!document.hidden)pollTimer=setTimeout(()=>{pollTimer=null;refreshStatus();},5000);
 }
 async function refreshStatus(){
+  if(window.LaylowPractice?.active()){window.LaylowPractice.refresh();return;}
   if(inFlight)return;if(pollTimer!==null)clearTimeout(pollTimer);pollTimer=null;inFlight=true;
   $("refresh").disabled=true;$("refresh").setAttribute("aria-busy","true");
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
   try{
     const response=await fetch("./status.json",{cache:"no-store",credentials:"same-origin",signal:controller.signal});
     if(!response.ok)throw new Error("Status request failed.");
-    const payload=validatePayload(await response.json());lastReceivedAt=Date.now();renderSnapshot(payload);
-  }catch(error){reportFailure();}
+    const payload=validatePayload(await response.json());if(!window.LaylowPractice?.active()){lastReceivedAt=Date.now();renderSnapshot(payload);}
+  }catch(error){if(!window.LaylowPractice?.active())reportFailure();}
   finally{clearTimeout(timeout);inFlight=false;$("refresh").disabled=false;$("refresh").removeAttribute("aria-busy");schedule();}
 }
 function reportAge(value){
@@ -787,6 +818,7 @@ function renderCityInspector(){
  $("city-analysis-time").textContent=analysis.direction?"Recorded source "+text(analysis.source,"unavailable")+" · bar "+formatTime(analysis.bar_time)+" · "+text(analysis.state,"state unavailable")+(current?"":" · freshness unconfirmed"):"No source bars recorded.";
  const control=team.controls||{};
  $("city-entry-state").textContent=citySelected.endsWith("!")?"Watch only · this futures district cannot send orders.":!connected?"Connection unavailable · controls disabled.":citySnapshot?.mode==="observe"?"Observe mode · analysis only. "+text(control.lock_reason,""):control.entry_locked===true?"Entry locked · "+text(control.lock_reason):"Entry controls · "+text(control.lock_reason,"see team details");
+ if(citySnapshot?.practice){$("city-team-asset").textContent=row.def.asset.replace(" · WATCH ONLY","")+" · PRACTICE";$("city-agreement").textContent=analysis.agreement+"/"+row.def.bots.length+" simulated votes · "+row.def.required+" required";$("city-entry-state").textContent="Sandbox only · "+(team.worker_state==="PROFIT_BRAKE_HIT"?"$300 team profit brake reached":"simulated entries require council approval");}
  $("city-open-team").textContent="Open "+citySelected+" team "+(citySelected.endsWith("!")?"details":"controls")+" ↗";
 }
 function renderCity(snapshot){
@@ -858,10 +890,12 @@ function renderExtended(snapshot){
   for(const value of[def.name,payroll.available?number(worker.closed_trades):"—",payroll.available?number(worker.wins):"—",money(worker.net_cents),!connected&&citySnapshot?"Last snapshot":status])tr.append(element("td","",value));
   tr.children[3].className=worker.net_cents>0?"good":worker.net_cents<0?"bad":"muted";$("payroll-rows").append(tr);
  }
+ if(snapshot.practice){$("payroll-source").textContent="SIMULATED SESSION · FAKE MONEY";for(const tr of $("payroll-rows").children){const team=reports.find(row=>row.name===tr.children[0].textContent);tr.lastChild.textContent="SIM · "+text(team?.worker_state);}}
  renderBarChart(payroll);
  const best=(payroll.daily||[]).reduce((winner,row)=>!winner||row.net_cents>winner.net_cents?row:winner,null);
  $("payroll-chart-note").textContent=best?"Best recorded day: "+best.day+" · "+money(best.net_cents)+" · net of stated fees.":"No recorded earnings available.";
  const vaultLabel=$("city-vault-count");if(vaultLabel&&payroll.available)vaultLabel.textContent=money(payroll.total_net_cents);
+ if(snapshot.practice&&vaultLabel)vaultLabel.textContent=money(snapshot.account.equity_cents);
  if($("office-dialog").open)renderOffice();
 }
 function enterOffice(symbol,desk="Team Manager"){
@@ -888,6 +922,7 @@ function officeChart(analysis){
  $("office-chart-note").textContent=bars.length+" recorded bars · close (green), EMA9 (blue), EMA21 (purple), latest VWAP (gold). EMA lines use the displayed window. "+text(analysis.source,"Source unavailable")+(connected&&cityAnalysisRecent(analysis)?"":" · freshness unconfirmed.");
 }
 function renderOffice(){
+ if($("office-context"))$("office-context").textContent="VIRTUAL WORKSTATION / RECORDED DATA";
  const snapshot=citySnapshot||{},def=TEAM_DEFINITIONS.find(row=>row.name===officeTeam);if(!def)return;
  const team=(snapshot.teams||[]).find(row=>row.name===officeTeam)||{},analysis=team.analysis||{},votes=Array.isArray(analysis.votes)?analysis.votes:[],payroll=snapshot.payroll||{};
  $("office-title").textContent=officeTeam+" · "+officeDesk+" office";
@@ -915,6 +950,7 @@ function renderOffice(){
  const decisions=(snapshot.recent_decisions||[]).filter(row=>row.team_name===officeTeam),orders=(snapshot.recent_orders||[]).filter(row=>row.team_name===officeTeam);
  for(const row of decisions.slice(0,8))$("office-decisions").append(element("li","process",formatTime(row.created_at)+" · "+text(row.direction)+" · "+text(row.action)+" · "+text(row.reason)));
  for(const row of orders.slice(0,8))$("office-decisions").append(element("li","process",formatTime(row.created_at)+" · ORDER INTENT · "+text(row.direction)+" · "+text(row.status)+" · quantity "+number(row.qty)));
+ if(snapshot.practice){if($("office-context"))$("office-context").textContent="VIRTUAL WORKSTATION / FAKE-MONEY PRACTICE";$("office-health").textContent="PRACTICE · "+text(team.worker_state);$("office-data-time").textContent="Generated candle: "+formatTime(bars.at(-1)?.timestamp);$("office-rule").textContent="FAKE MONEY ONLY · simulated council and account limits · no real order execution";$("office-performance-note").textContent=number(worker.closed_trades)+" fake closed trades · "+number(worker.wins)+" wins · "+number(worker.losses)+" losses · simulated net after fees";$("office-chart-note").textContent=bars.length+" generated candles · simulated clock · close, EMA9, EMA21 and VWAP";}
  if(!decisions.length&&!orders.length)$("office-decisions").append(element("li","muted","No recorded decisions or order intents."));
 }
 $("city-enter-office").addEventListener("click",()=>enterOffice(citySelected));
@@ -922,11 +958,13 @@ $("office-close").addEventListener("click",()=>$("office-dialog").close());
 $("office-dialog").addEventListener("close",()=>{if(officeOpener?.isConnected&&(document.activeElement===document.body||$("office-dialog").contains(document.activeElement)))officeOpener.focus({preventScroll:true});});
 $("office-worker").addEventListener("change",()=>{officeDesk=$("office-worker").value;renderOffice();});
 $("office-controls").addEventListener("click",()=>{const name=officeTeam;$("office-dialog").close();selectCityDistrict(name,false);cards.get(name).card.scrollIntoView({behavior:cityMotionQuery.matches?"auto":"smooth",block:"start"});});
-window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select:selectCityDistrict,enter:enterOffice,open:openCityBuilding,selected:()=>citySelected,snapshot:()=>citySnapshot,connected:()=>connected};
+window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select:selectCityDistrict,enter:enterOffice,open:openCityBuilding,selected:()=>citySelected,snapshot:()=>citySnapshot,connected:()=>connected,resumeBackend:()=>{refreshStatus();},practiceSnapshot:payload=>{lastReceivedAt=Date.now();renderSnapshot(validatePayload(payload));}};
 
 initializeCards();initializeCity();refreshStatus();
 </script>
-<script src="./world-3d.js?v=20261009-council-building"></script>
+<script src="./world-3d.js?v=20261009-practice"></script>
 <script src="./council-ui.js"></script>
+<script src="./practice-engine.js?v=20261009-practice"></script>
+<script src="./practice-ui.js?v=20261009-practice"></script>
 </body>
 </html>

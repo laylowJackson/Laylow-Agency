@@ -356,7 +356,7 @@ window.Laylow3D={
   node.dataset.selected=String(bridge.selected()===name);
  }
  const total=data.payroll?.total_net_cents;
- if(labels.has("THE VAULT"))labels.get("THE VAULT").textContent=Number.isFinite(total)?"THE VAULT · "+(total>=0?"+":"−")+"$"+(Math.abs(total)/100).toFixed(2)+" net today":"THE VAULT · Net not recorded";
+ if(labels.has("THE VAULT"))labels.get("THE VAULT").textContent=data.practice?"THE VAULT · Fake equity $"+(data.account.equity_cents/100).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}):Number.isFinite(total)?"THE VAULT · "+(total>=0?"+":"−")+"$"+(Math.abs(total)/100).toFixed(2)+" net today":"THE VAULT · Net not recorded";
  const analysis=data.teams?.find(row=>row.name===bridge.selected())?.analysis||{};
  city?.marketBackdrop(Array.isArray(analysis.bars)?analysis.bars:[],bridge.selected()+"/"+(analysis.bar_time||"empty"));
  if(office&&byId("office-dialog").open){const analysis=data.teams?.find(row=>row.name===office.symbol)?.analysis||{};office.officeBars(Array.isArray(analysis.bars)?analysis.bars:[]);}},
