@@ -1,1 +1,0 @@
-"""Stock team entry points."""

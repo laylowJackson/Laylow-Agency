@@ -168,14 +168,14 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
  .city-world[data-view="3d"] .mobile-pan-hint{display:none}
 }
 </style>
-<link rel="stylesheet" href="/council.css">
+<link rel="stylesheet" href="./council.css">
 </head>
 <body>
 <a class="skip-link" href="#bots-title">Skip to bots</a>
-<main id="workspace" data-stale="false">
+<main id="workspace" data-stale="false"><p class="alert">PUBLIC VIEWER · Explore the city, offices and council. Trading workers and market data are not connected; this page cannot place orders.</p>
 <header><div class="brand"><svg class="brand-crown" viewBox="0 0 36 26" aria-hidden="true"><path d="M3 8l8 7 7-12 7 12 8-7-4 15H7Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="3" r="2" fill="currentColor"/></svg>laylow<span>.</span><small>Agency</small></div><nav class="world-navigation" aria-label="Dashboard sections"><a href="#world">◈ WORLD</a><a href="#council">◎ COUNCIL</a><a href="#bots-title">▥ TEAMS</a><a href="#big-title">◉ MANAGERS</a><a href="#event-title">↗ ACTIVITY</a></nav><div class="header-actions"><span class="mode" id="mode">Python status dashboard</span><button id="refresh" type="button">Refresh status</button></div></header>
 <section class="intro" aria-labelledby="page-title">
-<div><div class="eyebrow">Your agency · Night shift</div><h1 id="page-title">Bots in view.</h1><p>Explore your team districts, specialist bots, and manager hierarchy.</p></div>
+<div><div class="eyebrow">Your agency · Night shift</div><h1 id="page-title">Welcome to Laylow City.</h1><p>Explore your team districts, specialist bots, and manager hierarchy.</p></div>
 <div class="connection"><strong id="connection" class="muted" role="status"><i class="dot" aria-hidden="true"></i>Connecting to backend</strong><span id="updated">Waiting for the first status snapshot</span><div class="snapshot-tag" id="snapshot-tag" hidden>Last snapshot · connection lost</div></div>
 </section>
 <p id="error" class="alert" role="alert" hidden></p>
@@ -423,12 +423,12 @@ function renderEvents(events){
   list.scrollTop=previousTop<3?0:previousTop;
 }
 function validatePayload(payload){
-  if(!payload||typeof payload!=="object"||!Array.isArray(payload.teams)||!Array.isArray(payload.processes)||!Array.isArray(payload.events)||!payload.summary||typeof payload.summary!=="object"||!Number.isFinite(Date.parse(payload.generated_at))||payload.database_available===false)
+  if(!payload||typeof payload!=="object"||!Array.isArray(payload.teams)||!Array.isArray(payload.processes)||!Array.isArray(payload.events)||!payload.summary||typeof payload.summary!=="object"||!Number.isFinite(Date.parse(payload.generated_at))||(payload.database_available===false&&!payload.public_viewer))
     throw new Error("Invalid or unavailable status snapshot.");
   return payload;
 }
 function renderSnapshot(payload){
-  csrfToken=typeof payload.csrf_token==="string"?payload.csrf_token:"";connected=true;
+  csrfToken=typeof payload.csrf_token==="string"?payload.csrf_token:"";connected=!payload.public_viewer;
   renderTeams(payload.teams);renderProcesses(payload.processes);renderEvents(payload.events);renderCity(payload);
   $("fresh").textContent=number(payload.summary.fresh_workers)+" / "+TEAM_DEFINITIONS.length;$("enabled").textContent=number(payload.summary.enabled_teams)+" / "+TEAM_DEFINITIONS.length;
   const reports=Array.isArray(payload.managers)?payload.managers:[], big=payload.big_manager||{};
@@ -447,7 +447,8 @@ function renderSnapshot(payload){
   $("running").textContent=number(payload.summary.running_processes);$("mode").textContent=text(payload.mode,"Python status")+" · futures watch-only";
   $("updated").textContent="Snapshot "+formatTime(payload.generated_at)+" · received "+localTime.format(new Date(lastReceivedAt));
   $("workspace").dataset.stale="false";$("snapshot-tag").hidden=true;$("error").hidden=true;
-  $("connection").className="good";$("connection").replaceChildren(element("i","dot"),document.createTextNode("Backend connected"));
+  $("connection").className="good";$("connection").replaceChildren(element("i","dot"),document.createTextNode(payload.public_viewer?"Public viewer · backend not connected":"Backend connected"));
+  if(payload.public_viewer){$("connection").className="warn";$("mode").textContent="PUBLIC VIEWER · NO ORDER EXECUTION";$("updated").textContent="City and council preview · no worker service connected";$("city-world-status").textContent="PUBLIC VIEWER · Backend not connected";$("city-observation").textContent="Worker health and results unavailable.";}
   $("connection").firstChild.setAttribute("aria-hidden","true");receivedSnapshot=true;
 }
 function reportFailure(){
@@ -468,7 +469,7 @@ async function refreshStatus(){
   $("refresh").disabled=true;$("refresh").setAttribute("aria-busy","true");
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
   try{
-    const response=await fetch("/api/status",{cache:"no-store",credentials:"same-origin",signal:controller.signal});
+    const response=await fetch("./status.json",{cache:"no-store",credentials:"same-origin",signal:controller.signal});
     if(!response.ok)throw new Error("Status request failed.");
     const payload=validatePayload(await response.json());lastReceivedAt=Date.now();renderSnapshot(payload);
   }catch(error){reportFailure();}
@@ -885,7 +886,7 @@ window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select
 
 initializeCards();initializeCity();refreshStatus();
 </script>
-<script src="/world-3d.js"></script>
-<script src="/council-ui.js"></script>
+<script src="./world-3d.js"></script>
+<script src="./council-ui.js"></script>
 </body>
 </html>
