@@ -88,6 +88,17 @@ def create_app(db_path=None):
             return jsonify({"error": "status_unavailable",
                             "message": "The status database cannot be read. Check the runner log."}), 503
 
+    @application.get("/api/execution")
+    def execution_audit():
+        from order_store import execution_status
+        from execution_config import load_execution_settings
+        try:
+            payload = execution_status(database)
+            payload["configuration"] = load_execution_settings()
+            return jsonify(payload)
+        except (ValueError, sqlite3.Error):
+            return jsonify({"live_locked": True, "error": "execution_configuration_or_database_unavailable"}), 503
+
     @application.post("/api/teams/<team_name>/headline-lock")
     def headline_lock(team_name):
         return change_control(team_name, "headline")

@@ -25,7 +25,7 @@ def assess_council(team_name,analysis,controls,ledger,mode="observe",now=None,pr
     now=parse_utc(now) if now is not None else datetime.now(timezone.utc)
     analysis,controls,ledger=analysis or {},controls or {},ledger or {}
     gates=[]
-    if mode not in {"observe","analyze","paper"}: gates.append("Unknown execution mode")
+    if mode not in {"observe","analyze","paper","practice"}: gates.append("Unknown execution mode")
     if not controls.get("enabled"): gates.append("Team disabled")
     if controls.get("entry_locked"): gates.append(controls.get("lock_reason") or "Entry locked")
     if ledger.get("pending_or_uncertain",0): gates.append("Pending or uncertain order requires reconciliation")
@@ -72,13 +72,20 @@ def assess_council(team_name,analysis,controls,ledger,mode="observe",now=None,pr
         input_fingerprint=evidence,direction=analysis.get("direction") if action!="SKIP" else "SKIP",
         action=action,reason=reason,favorable_votes=favorable,quorum=4,hard_gates=gates,members=members,mode=mode,
         watch_only=team_name not in STOCK_TEAM_NAMES,
-        entry_eligible=action!="SKIP" and mode=="paper" and team_name in STOCK_TEAM_NAMES,
+        entry_eligible=action!="SKIP" and mode in {"paper","practice"} and team_name in STOCK_TEAM_NAMES,
         order_terms={k:ind.get(k) for k in ("atr","vwap","stop_distance")})
 
 def record_council(team_name,analysis,controls,ledger,mode,db_path=None,now=None,proposal_id=None):
     report=assess_council(team_name,analysis,controls,ledger,mode,now,proposal_id or uuid.uuid4().hex)
     ensure_system_tables(db_path)
     with connect_db(db_path) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        existing=conn.execute("SELECT payload_json FROM council_deliberations WHERE proposal_id=?",(report["proposal_id"],)).fetchone()
+        if existing:
+            saved=json.loads(existing[0])
+            if any(saved.get(k)!=report.get(k) for k in ("team_name","mode","input_fingerprint")):
+                raise ValueError("Proposal ID already belongs to different evidence")
+            return saved
         conn.execute("INSERT INTO council_deliberations VALUES (?,?,?,?)",
             (report["proposal_id"],team_name,json.dumps(report,allow_nan=False),report["generated_at"]))
     return report
@@ -90,14 +97,19 @@ def review_proposal(team_name,analysis,mode,db_path=None,now=None):
     with connect_db(db_path) as conn:
         exists=conn.execute("SELECT 1 FROM sqlite_master WHERE name='paper_orders' AND type='table'").fetchone()
         pending=conn.execute("SELECT COUNT(*) FROM paper_orders WHERE team_name=? AND status IN ('PENDING','UNCERTAIN')",(team_name,)).fetchone()[0] if exists else 0
-    return record_council(team_name,analysis,controls,{"pending_or_uncertain":pending},mode,db_path,now)
+    identity=json.dumps([team_name,mode,fingerprint(analysis)],separators=(",",":"))
+    proposal_id="proposal-"+hashlib.sha256(identity.encode()).hexdigest()[:32]
+    return record_council(team_name,analysis,controls,{"pending_or_uncertain":pending},mode,db_path,now,proposal_id)
 
-def authorization_error(conn,team_name,decision_id,decision,now=None):
+def authorization_error(conn,team_name,decision_id,decision,now=None,*,execution_mode="PAPER",shadow=False):
     try:
         row=conn.execute("SELECT payload_json FROM council_deliberations WHERE proposal_id=? AND team_name=?",(decision_id,team_name)).fetchone()
         report=json.loads(row[0]) if row else {}
         now=parse_utc(now) if now is not None else datetime.now(timezone.utc)
-        if not 0<=(now-parse_utc(report.get("generated_at"))).total_seconds()<=300 or report.get("policy_version")!=POLICY_VERSION or not report.get("entry_eligible"):
+        permitted = report.get("entry_eligible") and report.get("mode") == execution_mode.lower()
+        if shadow:
+            permitted = report.get("mode") in {"analyze", execution_mode.lower()} and team_name in STOCK_TEAM_NAMES and report.get("action") in {"APPROVE","REDUCE_RISK"}
+        if not 0<=(now-parse_utc(report.get("generated_at"))).total_seconds()<=300 or report.get("policy_version")!=POLICY_VERSION or not permitted:
             return "Council approval missing, expired or watch-only"
         saved=conn.execute("SELECT payload_json FROM team_analysis WHERE team_name=?",(team_name,)).fetchone()
         if not saved or fingerprint(json.loads(saved[0]))!=report.get("input_fingerprint"): return "Council source evidence changed"

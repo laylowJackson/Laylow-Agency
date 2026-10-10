@@ -57,8 +57,11 @@ class CouncilTests(unittest.TestCase):
         with connect_db(self.db) as c:self.assertIn("changed",authorization_error(c,"SPY","proposal-1",d,now=NOW))
     def test_missing_approval_blocks_before_broker_calls(self):
         d=dict(direction="LONG",action="APPROVE",analysis_time=NOW.isoformat(),atr=2,vwap=100,stop_distance=2.5)
-        services=Mock();r=submit_paper_order("SPY","missing",d,100,services,self.db)
-        self.assertIn("Council",r);services.broker.get_clock.assert_not_called();services.broker.submit_order.assert_not_called()
+        from types import SimpleNamespace
+        from tests.test_execution import FakePaperAdapter
+        from broker_adapter import BrokerRouter
+        adapter=FakePaperAdapter();services=SimpleNamespace(router=BrokerRouter([adapter]));r=submit_paper_order("SPY","missing",d,100,services,self.db)
+        self.assertIn("Council",r);adapter.snapshot.assert_not_called();adapter.submit.assert_not_called()
     def test_worker_veto_prevents_ai_request(self):
         services=Mock();services.bars.return_value=[]
         settings=dict(mode="analyze",openai_key="fixture",alpaca_key="fixture",alpaca_secret="fixture",model="fixture",paper_enabled=False)

@@ -32,7 +32,9 @@ def load_settings():
     mode = os.getenv("LAYLOW_MODE", "observe").strip().lower()
     if mode not in VALID_MODES:
         raise ValueError("LAYLOW_MODE must be observe, analyze, or paper")
+    from execution_config import load_execution_settings
     return {
+        **load_execution_settings(),
         "mode": mode,
         "openai_key": os.getenv("OPENAI_API_KEY", "").strip(),
         "alpaca_key": os.getenv("ALPACA_API_KEY", "").strip(),
@@ -50,7 +52,8 @@ def missing_settings(settings):
         ("ALPACA_API_KEY", "alpaca_key"),
         ("ALPACA_SECRET_KEY", "alpaca_secret"),
     ) if not settings.get(key)]
-    if settings["mode"] == "paper" and not settings["paper_enabled"]:
+    if (settings["mode"] == "paper" and settings.get("execution_mode", "PAPER") == "PAPER"
+            and not settings.get("shadow", False) and not settings["paper_enabled"]):
         missing.append("LAYLOW_ALLOW_PAPER_ORDERS=true")
     return missing
 
@@ -148,10 +151,10 @@ class Services:
     def __init__(self, settings):
         from openai import OpenAI
         from alpaca.data.historical import StockHistoricalDataClient
-        from alpaca.trading.client import TradingClient
         self.ai = OpenAI(api_key=settings["openai_key"], timeout=30, max_retries=0)
         self.data = StockHistoricalDataClient(settings["alpaca_key"], settings["alpaca_secret"])
-        self.broker = TradingClient(settings["alpaca_key"], settings["alpaca_secret"], paper=True)
+        from execution_config import build_router
+        self.router = build_router(settings)
         self.model = settings["model"]
 
     def quote(self, symbol):
@@ -160,7 +163,10 @@ class Services:
         quotes = self.data.get_stock_latest_quote(
             StockLatestQuoteRequest(symbol_or_symbols=[symbol], feed=DataFeed.IEX)
         )
-        return validate_quote(quotes[symbol])
+        price = validate_quote(quotes[symbol])
+        if ("PRACTICE", "local-practice") in self.router.adapters:
+            self.router.adapters[("PRACTICE", "local-practice")].set_quote(symbol, price)
+        return price
 
     def bars(self, symbol):
         from alpaca.data.enums import DataFeed
@@ -196,142 +202,23 @@ class Services:
         )
         return parse_decision(response.choices[0].message.content)
 
-    def paper_request(self, symbol, decision, price, qty, client_id):
-        from alpaca.trading.enums import OrderClass, OrderSide, TimeInForce
-        from alpaca.trading.requests import (
-            MarketOrderRequest, StopLossRequest, TakeProfitRequest,
-        )
-        long = decision["direction"] == "LONG"
-        distance = float(decision.get("stop_distance", price * .02))
-        if not math.isfinite(distance) or distance <= 0 or distance >= price:
-            raise ValueError("Invalid bracket stop distance")
-        stop = round(price - distance if long else price + distance, 2)
-        target = round(price + 2*distance if long else price - 2*distance, 2)
-        if stop <= 0 or target <= 0 or (long and not stop < price < target) or (not long and not target < price < stop):
-            raise ValueError("Bracket rounding leaves invalid exits")
-        return MarketOrderRequest(
-            symbol=symbol, qty=qty, side=OrderSide.BUY if long else OrderSide.SELL,
-            time_in_force=TimeInForce.DAY, order_class=OrderClass.BRACKET,
-            client_order_id=client_id,
-            stop_loss=StopLossRequest(stop_price=stop),
-            take_profit=TakeProfitRequest(limit_price=target),
-        )
 
-
-def submit_paper_order(symbol, decision_id, decision, price, services,
-                       db_path=None, enabled_check=None):
-    """Persist intent before submission. An uncertain submit blocks new orders."""
+def execute_proposal(symbol, decision_id, decision, services, db_path=None, *, mode="PRACTICE", shadow=True, enabled_check=None):
+    """Every worker goes through the broker-neutral deterministic gateway."""
     if symbol not in STOCK_TEAM_NAMES:
         return "Futures are watch-only"
-    controls = read_entry_controls(symbol, db_path)
-    if controls["entry_locked"]:
-        return "Entry blocked: " + controls["lock_reason"]
-    if decision.get("direction") not in {"LONG", "SHORT", "SKIP"} or decision.get("action") not in {"APPROVE", "REDUCE_RISK", "SKIP"}:
-        return "Invalid paper decision"
-    distance = decision.get("stop_distance")
-    if not isinstance(distance, (int, float)) or isinstance(distance, bool) or not math.isfinite(distance) or distance <= 0:
-        return "A validated ATR stop distance is required"
-    analysis_time = decision.get("analysis_time")
-    try:
-        from entry_controls import parse_utc
-        age = (utc_now() - parse_utc(analysis_time)).total_seconds()
-        if age < -30 or age > 300:
-            return "Specialist analysis is stale"
-    except (ValueError, TypeError, OverflowError):
-        return "Specialist analysis time is required"
-    from alpaca.trading.enums import QueryOrderStatus
-    from alpaca.trading.requests import GetOrdersRequest
-    if decision["direction"] == "SKIP" or decision["action"] == "SKIP":
-        return "Analysis says skip"
-    with connect_db(db_path) as conn:
-        pending = conn.execute(
-            "SELECT 1 FROM paper_orders WHERE team_name=? AND status IN ('PENDING','UNCERTAIN')",
-            (symbol,),
-        ).fetchone()
-        duplicate = conn.execute(
-            "SELECT 1 FROM paper_orders WHERE decision_id=?", (decision_id,)
-        ).fetchone()
-    if pending or duplicate:
-        return "Order intent already exists; inspect the paper ledger"
-    from council import authorization_error
-    with connect_db(db_path) as council_connection:
-        council_error=authorization_error(council_connection,symbol,decision_id,decision)
-    if council_error: return council_error
-    if not services.broker.get_clock().is_open:
-        return "Market is closed"
-    if any(p.symbol == symbol for p in services.broker.get_all_positions()):
-        return "Existing position blocks another entry"
-    orders = services.broker.get_orders(
-        filter=GetOrdersRequest(status=QueryOrderStatus.OPEN, symbols=[symbol])
-    )
-    if orders:
-        return "Open order blocks another entry"
-    asset = services.broker.get_asset(symbol)
-    if not asset.tradable:
-        return "Asset is not tradable"
-    if decision["direction"] == "SHORT" and not (
-        asset.shortable and getattr(asset, "easy_to_borrow", False)
-    ):
-        return "Asset is not eligible for a short entry"
-    # Re-fetch immediately before submission; do not use a cached AI input quote.
-    price = services.quote(symbol)
-    qty = size_trade(services.broker.get_account(), price,
-                     decision["action"] == "REDUCE_RISK", distance, symbol)
-    vwap, atr = decision.get("vwap"), decision.get("atr")
-    if not all(isinstance(value, (int, float)) and math.isfinite(value) and value > 0
-               for value in (vwap, atr)) or abs(price-vwap) > 2*atr:
-        return "Current quote exceeds the VWAP extension limit"
-    if qty == 0:
-        return "Account limits or order cap block this entry"
-    check = enabled_check or (lambda: team_enabled(symbol, db_path))
-    if not check():
-        return "Team was disabled during analysis"
-    controls = read_entry_controls(symbol, db_path)
-    if controls["entry_locked"]:
-        return "Entry blocked: " + controls["lock_reason"]
-    client_id = "ll-" + uuid.uuid4().hex
-    request = services.paper_request(symbol, decision, price, qty, client_id)
-    with connect_db(db_path) as conn:
-        # BEGIN IMMEDIATE prevents concurrent local intents for the same symbol.
-        conn.execute("BEGIN IMMEDIATE")
-        if conn.execute(
-            "SELECT 1 FROM paper_orders WHERE team_name=? AND status IN ('PENDING','UNCERTAIN')",
-            (symbol,),
-        ).fetchone():
-            return "Another order intent is pending"
-        council_error=authorization_error(conn,symbol,decision_id,decision)
-        if council_error: return council_error
-        # The writer transaction prevents a control edit racing the local intent write.
-        from entry_controls import assess_controls
-        saved_control = conn.execute("SELECT * FROM team_controls WHERE team_name=?", (symbol,)).fetchone()
-        if assess_controls(symbol, dict(saved_control) if saved_control else {},
-                           enabled=team_enabled(symbol, db_path))["entry_locked"]:
-            return "Entry blocked by a saved control"
-        from trading_records import brake_from_connection
-        brake = brake_from_connection(conn,symbol,persist=True)
-        if brake["locked"]:
-            return "Entry blocked: " + brake["status"]
-        conn.execute(
-            "INSERT INTO paper_orders VALUES (?,?,?,?,?,?,?,?)",
-            (client_id, decision_id, symbol, utc_now().isoformat(), None,
-             "PENDING", qty, decision["direction"]),
-        )
-    try:
-        response = services.broker.submit_order(order_data=request)
-    except Exception:
-        with connect_db(db_path) as conn:
-            conn.execute(
-                "UPDATE paper_orders SET status='UNCERTAIN' WHERE client_order_id=?",
-                (client_id,),
-            )
-        # Do not expose exception text which may contain provider request details.
-        return "Paper submission outcome uncertain; reconcile in Alpaca before continuing"
-    with connect_db(db_path) as conn:
-        conn.execute(
-            "UPDATE paper_orders SET broker_order_id=?,status=? WHERE client_order_id=?",
-            (str(response.id), getattr(response.status, "value", str(response.status)), client_id),
-        )
-    return "Paper order submitted; its fill and realized P&L are not yet recorded"
+    from execution_service import ExecutionService
+    service = ExecutionService(services.router, db_path)
+    result = service.execute(symbol, decision_id, decision, mode=mode, shadow=shadow, enabled_check=enabled_check)
+    if result.reasons:
+        return result.status + ": " + "; ".join(result.reasons)
+    return result.status + ": " + result.client_order_id + " (submission is not realized P&L)"
+
+
+def submit_paper_order(symbol, decision_id, decision, price, services, db_path=None, enabled_check=None):
+    """Compatibility entry point; no raw broker access or alternate submission path."""
+    return execute_proposal(symbol, decision_id, decision, services, db_path,
+                            mode="PAPER", shadow=False, enabled_check=enabled_check)
 
 
 class TeamWorker:
@@ -386,8 +273,16 @@ class TeamWorker:
         analysis = evaluate_team(self.symbol, self.services.bars(self.symbol), source="Alpaca IEX minute bars")
         save_analysis(self.symbol, analysis, self.db_path)
         from council import review_proposal
-        council=review_proposal(self.symbol,analysis,settings["mode"],self.db_path,now=utc_now())
+        execution_mode = settings.get("execution_mode", "PRACTICE")
+        shadow = settings.get("shadow", True) or settings["mode"] != "paper"
+        council_mode = "analyze" if shadow else execution_mode.lower()
+        council=review_proposal(self.symbol,analysis,council_mode,self.db_path,now=utc_now())
         decision_id=council["proposal_id"]
+        with connect_db(self.db_path) as conn:
+            prior=conn.execute("SELECT 1 FROM worker_decisions WHERE id=?", (decision_id,)).fetchone()
+        if prior:
+            self.report("ANALYSIS_READY", "This source proposal was already evaluated; reconciliation owns existing orders")
+            return
         if council["action"]=="SKIP":
             self.report("ANALYSIS_READY","Council WAIT: "+council["reason"])
             return
@@ -413,10 +308,10 @@ class TeamWorker:
                 (decision_id, self.symbol, utc_now().isoformat(), settings["mode"],
                  decision["direction"], decision["action"], decision["reason"], price),
             )
-        if settings["mode"] == "paper":
-            result = submit_paper_order(self.symbol, decision_id, decision, price,
-                                       self.services, self.db_path)
-            self.report("PAPER", result)
+        if decision["action"] != "SKIP":
+            result = execute_proposal(self.symbol, decision_id, decision, self.services,
+                                      self.db_path, mode=execution_mode, shadow=shadow)
+            self.report("SHADOW" if shadow else execution_mode, result)
         else:
             self.report("ANALYSIS_READY", decision["direction"] + " / " +
                         decision["action"] + ": " + decision["reason"])

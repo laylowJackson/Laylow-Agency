@@ -25,6 +25,8 @@ def main():
     print("Database: " + str(DB_PATH))
     print("Dashboard: http://" + DASHBOARD_HOST + ":" + str(DASHBOARD_PORT))
     print("Mode: " + settings["mode"])
+    print("Execution: " + settings["execution_mode"] + (" / SHADOW" if settings["shadow"] else " / submission evaluation"))
+    print("LIVE: hard locked in code")
     for label, key in (("OpenAI key", "openai_key"), ("Alpaca key", "alpaca_key"),
                        ("Alpaca secret", "alpaca_secret")):
         print(label + ": " + ("configured" if settings[key] else "blank"))

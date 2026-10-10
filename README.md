@@ -1,4 +1,4 @@
-# Laylow Agency — ten teams and a manager hierarchy
+# Laylow Agency â€” ten teams and a manager hierarchy
 
 Four stock teams (SPY, QQQ, AAPL, TSLA) and six independent futures watch teams (NQ1!, ES1!, MGC1!, MNQ1!, MES1!, GC1!). Each team has specialist rule bots, its own read-only Team Manager, and a report to the Big Manager. The dashboard shows observed state and recorded analysis; it never generates demo market quotes or profits.
 
@@ -17,7 +17,7 @@ Setup copies .env.example to .env only if no .env already exists. Fill in your o
 
 - LAYLOW_MODE=observe: all workers report standby; no external requests.
 - LAYLOW_MODE=analyze: stock minute-bar specialists and an OpenAI review; no orders. Futures read configured local CSV data only.
-- LAYLOW_MODE=paper plus LAYLOW_ALLOW_PAPER_ORDERS=true: stock teams may submit Alpaca paper bracket orders after all entry checks. Futures remain watch-only in every mode.
+- LAYLOW_MODE=paper permits execution evaluation. Actual paper submissions additionally require LAYLOW_EXECUTION_MODE=PAPER, LAYLOW_SHADOW_MODE=false and LAYLOW_ALLOW_PAPER_ORDERS=true. Defaults remain local PRACTICE and shadow only. Futures remain watch-only.
 - LAYLOW_MANAGER_AI=true: optional OpenAI text summary of team reports in analyze/paper mode. Default false. It cannot change deterministic severity, votes, controls, or orders.
 
 Analyze/paper modes can incur OpenAI usage and require suitable Alpaca market-data access. Stock bars/quotes use IEX, whose volume is the IEX feed's volume, not consolidated market volume. No real provider accounts were used in the included tests. No live-money order mode is implemented.
@@ -49,7 +49,7 @@ A fresh non-crossed quote (<=60 seconds old, <=1% spread), open market, tradable
 
 Whole-share sizing uses the ATR stop distance, equity risk budget, buying power, and a notional cap. AAPL/SPY/QQQ risk budget is 0.5% of equity with a $1,000 cap. TSLA uses 0.25% and a $500 cap. REDUCE_RISK halves budget and cap. Account day loss >=5% blocks entries. Brackets attach an ATR stop and a target at twice that distance. Small budgets never force a one-share entry.
 
-A unique local intent is saved before submission. Pending/uncertain outcomes block later entries until manually reconciled with Alpaca. Automated fill/P&L reconciliation is not implemented. A submitted order is never reported as realized profit.
+A deterministic, account-scoped local intent is saved before submission. The central executor tracks broker statuses and partial fills with an append-only history. Pending/uncertain outcomes block entries until reconciliation confirms the order. Closed-trade realized P&L still requires the recorded-trade importer; an entry fill is never reported as realized profit.
 
 ## Futures data
 
@@ -67,7 +67,7 @@ A phone cannot reach a computer's localhost URL. A separate authenticated hostin
 
 ## Reliability and packaging
 
-One supervisor owns thirteen children: ten team processes, manager assessments, dashboard, and snapshot service. It uses bounded restart delays, independent logs, fresh process observations and controlled shutdown. Legacy launchers delegate to the same supervisor. LAYLOW_DATA_DIR selects where records/logs are saved; relative paths resolve against the project. Existing databases are migrated without deleting historical rows or conflating enabled flags with worker health.
+One supervisor owns fourteen children: ten team processes, manager assessments, dashboard, snapshot service, and a read-only reconciliation worker. It uses bounded restart delays, independent logs, fresh process observations and controlled shutdown. Legacy launchers delegate to the same supervisor. LAYLOW_DATA_DIR selects where records/logs are saved; relative paths resolve against the project. Existing databases are migrated without deleting historical rows or conflating enabled flags with worker health.
 
 Run python -m unittest discover -s tests -v after installing requirements. CI checks Windows/Linux Python 3.11/3.12, mocked provider/order boundaries, real credential-free startup/shutdown, and Chromium desktop/phone dashboard behavior. Run python package_build.py for dist/Laylow-Agency-improved.zip. Credentials, databases, logs, virtual environments, legacy sample backtests and fake performance generators are excluded from the runtime download.
 
@@ -232,3 +232,87 @@ center, walnut exchange, garden lab, cyber lab, strategy arena and bullion offic
 Physical monitors use the same evidence as the dashboard; results remain team-level
 because specialist earnings are not separately recorded. Without WebGL, the full
 teammate roster and evidence panels remain available. No trade logic was changed.
+
+
+## Broker-neutral execution and hard LIVE lock
+
+All stock workers submit proposals through `ExecutionService`, `RiskEngine`, and
+`BrokerRouter`. The teams do not import a trading SDK or call a raw broker client.
+The only SDK order builder is in `broker_alpaca.py`. Register a new implementation
+of `BrokerAdapter` and explicit `(mode, symbol)` routes to replace a stock broker;
+ambiguous, missing, unsupported futures and cross-mode routes fail closed.
+No automatic broker failover is allowed for an unresolved order.
+
+Execution modes are independent of the legacy observe/analyze/paper assessment
+workflow:
+
+| Mode | Behavior |
+| --- | --- |
+| PRACTICE | Durable local fake account, starting at $50,000. No external broker. |
+| PAPER | Alpaca stock paper adapter, with the paper endpoint fixed in code. |
+| LIVE | Recognized but always raises `LiveLockedError`; no implementation, credential, endpoint override or `.env` switch unlocks it. |
+
+`LAYLOW_SHADOW_MODE=true` is the default. A successful shadow evaluation records
+quantity, reference entry, stop, target, estimated risk, notional, route, account,
+signal timestamp and policy version but never calls the adapter submit or order
+lookup methods. PAPER shadow evaluation uses **read-only** broker account/quote
+requests. PRACTICE shadow uses local quotes. Shadow and submission IDs are separate;
+each submission is re-evaluated, never executed from a cached shadow plan.
+`LAYLOW_MODE=analyze` always forces shadow regardless of execution configuration.
+
+The central policy checks saved council authorization/evidence, team enablement,
+manual event/earnings/profit locks, account block flags, daily equity loss >=5%,
+maximum four distinct held/pending symbols, duplicate positions/open orders/local
+reservations, unresolved broker outcomes, twenty account attempts and ten team
+attempts per Eastern calendar day, source age <=300 seconds, quote age <=60 seconds,
+snapshot age <=30 seconds, spread <=1%, short eligibility, VWAP extension, rounded
+stop/target geometry and whole-share affordability. These limits are per routed
+broker account, shared across all its teams. A second account has its own limits;
+this is not a consolidated multi-account risk calculation.
+
+Sizing preserves the stock risk budgets and notional caps above, adding a 1%
+adverse entry allowance. The final account and quote are fetched again, policy and
+saved controls rechecked, and the final plan committed before submission. These
+are exact planned terms, **not guaranteed fill prices or maximum realized losses**.
+The conservative allowance is a fixed policy, not a proven slippage model.
+
+`order_intents` holds immutable proposal identity and risk outcomes.
+`order_status_history` records RESERVED -> SUBMITTING -> broker status, including
+partial fill quantities/prices. IDs hash mode, broker, account and stable proposal
+ID. Changed proposal terms under the same ID are rejected. SQLite writer
+transactions reserve buying power and position capacity across worker processes.
+The old `paper_orders` table remains a projection for managers and dashboard
+compatibility; older unresolved intents remain blocked instead of being erased.
+
+The supervised reconciler polls every thirty seconds when PAPER is configured.
+It reads broker orders by client ID and compares local terms/status, open orders
+and account positions, saving discrepancies and an account inventory. It never
+submits, cancels or infers realized P&L. Untracked orders or missing/invalid broker
+responses hold new entries for review. An uncertain submission is never blindly
+retried, even if a lookup later returns not-found. Restarts adopt confirmed matching
+orders without another submit. Keep the SQLite database when restarting or moving
+the service: the broker ID alone cannot recover a lost proposal log.
+
+Inspect `GET /api/execution` on the local backend for plans, risk reasons, history,
+reconciliation and the LIVE lock. It is read-only and retains loopback Host checks;
+there is no public order-submission HTTP route. Team Managers and the Big Manager
+still have read-only reports. AI review can veto/reduce a proposal, but has no raw
+broker tool and cannot override the central policy.
+
+### Try it now without accounts or credentials
+
+Run `python execution_bot.py` for a fully offline synthetic SPY shadow plan.
+Run `python execution_bot.py --submit-practice` to record one fake local fill.
+Repeating the same decision ID recovers that fill, rather than creating another.
+Use `--db path/to/separate-demo.db` to keep this walkthrough separate from your
+worker database. Neither command sends external requests or real orders.
+
+The Python fake account is separate from the browser's saved $50,000 city session.
+The minimal local adapter records entry fills and marks positions; it does not
+emulate exchange exit fills, fees, or strategy improvement. Use the existing
+browser practice simulator for that experience. GitHub Pages cannot run Python:
+the public city remains a synthetic practice viewer until a backend is hosted.
+
+Adapter contract references: [Alpaca Python order API](https://alpaca.markets/sdks/python/api_reference/trading/orders.html)
+and [client order ID lookup](https://docs.alpaca.markets/us/reference/getorderbyclientorderid).
+Tests use local fixtures only; no actual broker account was connected or tested.

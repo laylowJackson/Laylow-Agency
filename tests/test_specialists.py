@@ -136,10 +136,13 @@ class RuntimeFeatureTests(unittest.TestCase):
             read_csv_bars("../../bad",self.temp.name)
 
     def test_unknown_earnings_blocks_before_any_broker_request(self):
-        services=Mock()
+        from types import SimpleNamespace
+        from tests.test_execution import FakePaperAdapter
+        from broker_adapter import BrokerRouter
+        adapter=FakePaperAdapter();services=SimpleNamespace(router=BrokerRouter([adapter]))
         result=submit_paper_order("AAPL","test",dict(direction="LONG",action="APPROVE"),100,services,self.db)
         self.assertIn("Earnings unknown",result)
-        services.broker.get_clock.assert_not_called()
+        adapter.snapshot.assert_not_called()
 
     def test_manager_reports_isolated_and_ai_cannot_change_authority(self):
         for name in TEAM_NAMES:

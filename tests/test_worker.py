@@ -99,21 +99,10 @@ class WorkerTests(unittest.TestCase):
 
     def make_services(self):
         update_control("AAPL", earnings_at=(datetime.now(timezone.utc)+timedelta(days=7)).isoformat(), db_path=self.db)
-        broker = Mock()
-        broker.get_clock.return_value = SimpleNamespace(is_open=True)
-        broker.get_all_positions.return_value = []
-        broker.get_orders.return_value = []
-        broker.get_asset.return_value = SimpleNamespace(tradable=True, shortable=True,
-                                                       easy_to_borrow=True)
-        broker.get_account.return_value = SimpleNamespace(
-            equity=10000, last_equity=10000, buying_power=10000,
-            trading_blocked=False, account_blocked=False)
-        broker.submit_order.return_value = SimpleNamespace(id="fake-order", status="accepted")
-        services = Mock()
-        services.broker = broker
-        services.quote.return_value = 100
-        services.paper_request.return_value = object()
-        return services
+        from tests.test_execution import FakePaperAdapter
+        from broker_adapter import BrokerRouter
+        adapter = FakePaperAdapter()
+        return SimpleNamespace(adapter=adapter, router=BrokerRouter([adapter]))
 
     def council_approve(self, decision_id, decision):
         from council import record_council
@@ -130,7 +119,7 @@ class WorkerTests(unittest.TestCase):
 
     def test_uncertain_submission_blocks_repeated_and_new_intents(self):
         services = self.make_services()
-        services.broker.submit_order.side_effect = TimeoutError("fake timeout")
+        services.adapter.submit.side_effect = TimeoutError("fake timeout")
         decision = dict(direction="LONG", action="APPROVE", reason="test", stop_distance=2, atr=2, vwap=100, analysis_time=datetime.now(timezone.utc).isoformat())
         self.council_approve("decision-1",decision)
         result = submit_paper_order("AAPL", "decision-1", decision, 100,
@@ -138,7 +127,7 @@ class WorkerTests(unittest.TestCase):
         self.assertIn("uncertain", result)
         submit_paper_order("AAPL", "decision-1", decision, 100, services, self.db)
         submit_paper_order("AAPL", "decision-2", decision, 100, services, self.db)
-        self.assertEqual(services.broker.submit_order.call_count, 1)
+        self.assertEqual(services.adapter.submit.call_count, 1)
         with connect_db(self.db) as conn:
             self.assertEqual(conn.execute("SELECT status FROM paper_orders").fetchone()[0],
                              "UNCERTAIN")
@@ -147,12 +136,12 @@ class WorkerTests(unittest.TestCase):
         services = self.make_services()
         decision = dict(direction="LONG", action="SKIP", reason="test", stop_distance=2, atr=2, vwap=100, analysis_time=datetime.now(timezone.utc).isoformat())
         submit_paper_order("AAPL", "decision-1", decision, 100, services, self.db)
-        services.broker.submit_order.assert_not_called()
+        services.adapter.submit.assert_not_called()
         decision["action"] = "APPROVE"
         self.council_approve("decision-2",decision)
         submit_paper_order("AAPL", "decision-2", decision, 100, services, self.db,
                            enabled_check=lambda: False)
-        services.broker.submit_order.assert_not_called()
+        services.adapter.submit.assert_not_called()
 
     def test_profit_brake_blocks_before_broker_queries(self):
         from trading_records import set_profit_brake, import_closed_trades
@@ -166,8 +155,8 @@ class WorkerTests(unittest.TestCase):
             stop_distance=2,atr=2,vwap=100,analysis_time=now.isoformat())
         result = submit_paper_order("AAPL","blocked-profit",decision,100,services,self.db)
         self.assertIn("PROFIT_BRAKE_HIT",result)
-        services.broker.get_clock.assert_not_called()
-        services.broker.submit_order.assert_not_called()
+        services.adapter.snapshot.assert_not_called()
+        services.adapter.submit.assert_not_called()
 
     def test_profit_import_during_request_build_blocks_intent_transaction(self):
         from trading_records import set_profit_brake, import_closed_trades
@@ -180,25 +169,28 @@ class WorkerTests(unittest.TestCase):
             import_closed_trades([dict(trade_id="race-profit",team_name="AAPL",
                 closed_at=stamp.isoformat(),gross_pnl="51",fees="0")],
                 "paper-account", "paper", stamp, self.db, now=stamp)
-            return object()
-        services.paper_request.side_effect = crossing_target
+            return services.adapter.state
+        services.adapter.snapshot.side_effect = crossing_target
         decision = dict(direction="LONG",action="APPROVE",reason="test",
             stop_distance=2,atr=2,vwap=100,analysis_time=now.isoformat())
         self.council_approve("race-profit",decision)
         result = submit_paper_order("AAPL","race-profit",decision,100,services,self.db)
         self.assertIn("PROFIT_BRAKE_HIT",result)
-        services.paper_request.assert_called_once()
-        services.broker.submit_order.assert_not_called()
+        services.adapter.snapshot.assert_called_once()
+        services.adapter.submit.assert_not_called()
         with connect_db(self.db) as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM paper_orders").fetchone()[0],0)
 
     def test_sdk_request_attaches_exit_orders_and_client_id(self):
-        services = Services.__new__(Services)  # no clients or API calls
-        order = services.paper_request("AAPL", dict(direction="LONG"), 100, 2, "test-id")
+        from broker_alpaca import build_bracket
+        from broker_adapter import TradePlan
+        order = build_bracket(TradePlan("test-id","test","AAPL","AAPL","alpaca-paper","fixture",
+            "PAPER","LONG",2,"100","98","104","4","200","fixture","fixture"))
         self.assertEqual(order.stop_loss.stop_price, 98)
         self.assertEqual(order.take_profit.limit_price, 104)
         self.assertEqual(order.client_order_id, "test-id")
         self.assertEqual(order.order_class.value, "bracket")
+
 
 
 if __name__ == "__main__":

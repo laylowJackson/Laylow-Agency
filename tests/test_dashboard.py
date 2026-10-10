@@ -36,6 +36,14 @@ class DashboardHttpTests(unittest.TestCase):
         self.assertFalse(any(team["health"] == "fresh" for team in payload["teams"]))
         self.assertIn("no-store", response.headers["Cache-Control"])
 
+    def test_execution_audit_is_read_only_and_live_locked(self):
+        response = self.client.get("/api/execution")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["live_locked"])
+        self.assertEqual(response.get_json()["intents"], [])
+        self.assertEqual(self.client.post("/api/execution").status_code, 405)
+        self.assertEqual(self.client.get("/api/execution",headers={"Host":"public.example"}).status_code, 403)
+
     def test_practice_scripts_are_available_without_broker_controls(self):
         for url in ("/practice-engine.js", "/practice-ui.js"):
             response = self.client.get(url)
