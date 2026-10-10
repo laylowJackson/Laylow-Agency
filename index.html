@@ -137,7 +137,7 @@ header{padding-bottom:17px}.brand{font-style:italic;letter-spacing:-1.6px;text-t
 .payroll-panel{margin-bottom:24px}.payroll-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:22px 0}
 .payroll-metrics span{font-size:12px;color:var(--muted)}.payroll-metrics strong{display:block;font-size:27px;letter-spacing:-.5px;margin-top:6px}
 .payroll-layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:25px}
-.table-scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}
+.table-scroll{overflow-x:auto;min-width:0;max-width:100%}.payroll-layout>*{min-width:0}table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}
 th{font-weight:550;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
 td,th{padding:11px 12px;border-bottom:1px solid #243651;white-space:nowrap}
 #payroll-chart,#office-chart{display:block;width:100%;height:auto;min-height:120px}.small-heading{font-size:13px;margin:0 0 10px}
@@ -154,7 +154,7 @@ select{font:inherit;min-height:44px;background:#15213a;color:var(--text);border:
 #office-decisions{font-size:11px}.office-bot-open{cursor:pointer}
 .risk-brake-label{font-size:12px;color:var(--muted);margin-top:7px}
 @media(max-width:800px){.city-3d-wrap{height:560px}.city-overview{top:10px}.world-3d-label{font-size:9px;padding:4px 7px}.world-3d-label strong{font-size:10px}.world-3d-label span{font-size:7px}.city-hq-label{font-size:8px}
-.camera-controls{right:8px;bottom:45px}.payroll-metrics{gap:12px}.payroll-metrics strong{font-size:19px}.payroll-metrics span{font-size:10px}.payroll-layout,.office-monitors{grid-template-columns:1fr}
+.camera-controls{right:8px;bottom:45px}.payroll-metrics{gap:12px}.payroll-metrics strong{font-size:19px}.payroll-metrics span{font-size:10px}.payroll-layout,.office-monitors{grid-template-columns:minmax(0,1fr)}
 dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font-size:21px}.office-header button{font-size:10px;padding:8px}.office-options{gap:9px}#office-3d{height:260px}.city-render-note{font-size:10px;padding:9px 12px}}
 
 
