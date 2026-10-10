@@ -167,6 +167,19 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
  .city-world[data-view="3d"] .city-map-caption{position:static;padding:12px 16px}
  .city-world[data-view="3d"] .mobile-pan-hint{display:none}
 }
+
+/* City presentation: compact neon signs leave more of the architecture visible. */
+.city-3d-wrap{background:#070c1b}
+.world-3d-label{min-height:32px;padding:7px 11px;border-radius:7px;background:linear-gradient(135deg,#0b1424f2,#08101ddf);border-color:color-mix(in srgb,var(--district-color,#b99b66) 55%,#26384d);box-shadow:0 6px 18px #0009,0 0 16px color-mix(in srgb,var(--district-color,#b99b66) 13%,transparent);backdrop-filter:blur(10px)}
+.world-3d-label strong{font-size:12px;letter-spacing:.8px}
+.world-3d-label span{display:none}
+.world-3d-label[data-selected=true]{padding:9px 13px;border-color:var(--district-color);box-shadow:0 0 22px color-mix(in srgb,var(--district-color) 24%,transparent)}
+.world-3d-label[data-selected=true] span{display:block;font-size:9px;margin-top:4px}
+.city-hq-label{font-size:10px;letter-spacing:1px;color:#ffdfa6;background:#151321e8;max-width:240px;white-space:normal;text-align:center}
+.city-overview{background:linear-gradient(145deg,#081222e8,#080f1bd9);backdrop-filter:blur(14px);box-shadow:0 12px 35px #0005}
+.camera-controls{background:#0a1225d9;backdrop-filter:blur(12px);border:1px solid #384566;border-radius:10px;padding:5px}
+@media(max-width:800px){.world-3d-label[data-selected=true]{padding:7px 10px}.world-3d-label strong{font-size:11px}}
+
 </style>
 <link rel="stylesheet" href="./council.css">
 </head>
@@ -886,7 +899,7 @@ window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select
 
 initializeCards();initializeCity();refreshStatus();
 </script>
-<script src="./world-3d.js"></script>
+<script src="./world-3d.js?v=20261009-city"></script>
 <script src="./council-ui.js"></script>
 </body>
 </html>
