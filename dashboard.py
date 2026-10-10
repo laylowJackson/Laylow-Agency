@@ -13,12 +13,13 @@ from entry_controls import update_control
 from config import STOCK_TEAM_NAMES
 
 
-def create_app(db_path=None):
+def create_app(db_path=None, settings_path=None):
     application = Flask(__name__, static_folder=None)
     database = database_path(db_path)
     application.config["DATABASE_PATH"] = database
     application.config["CONTROL_CSRF"] = secrets.token_urlsafe(32)
     application.config["MAX_CONTENT_LENGTH"] = 4096
+    application.config["BROKER_SETTINGS_PATH"] = Path(settings_path or Path(ROOT_DIR) / ".env.local")
     try:
         ensure_system_tables(db_path=database)
     except sqlite3.Error:
@@ -72,6 +73,48 @@ def create_app(db_path=None):
     @application.get("/training-ui.js")
     def training_ui():
         return send_file(Path(ROOT_DIR) / "training-ui.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/settings-ui.js")
+    def settings_ui():
+        return send_file(Path(ROOT_DIR) / "settings-ui.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/settings.css")
+    def settings_styles():
+        return send_file(Path(ROOT_DIR) / "settings.css", mimetype="text/css", conditional=False)
+
+    @application.get("/api/settings")
+    def read_settings():
+        from app_settings import credential_status
+        from execution_config import load_execution_settings
+        from dataclasses import asdict
+        from risk_engine import RiskPolicy
+        try:
+            configuration = load_execution_settings()
+        except ValueError:
+            configuration = {"execution_mode": "UNAVAILABLE", "shadow": True}
+        try:
+            credentials = credential_status(application.config["BROKER_SETTINGS_PATH"])
+        except (OSError, ValueError):
+            return jsonify({"error": "settings_unavailable"}), 503
+        return jsonify({"local_setup": True, "csrf_token": application.config["CONTROL_CSRF"],
+                        "credentials": credentials, "configuration": configuration,
+                        "live_locked": True, "risk_policy": {k: str(v) for k, v in asdict(RiskPolicy()).items()}})
+
+    @application.post("/api/settings/broker")
+    def broker_settings():
+        token = request.headers.get("X-Laylow-CSRF", "")
+        origin = request.headers.get("Origin")
+        if not secrets.compare_digest(token.encode("utf-8"), application.config["CONTROL_CSRF"].encode("utf-8")) or (
+            origin is not None and origin != request.host_url.rstrip("/")
+        ):
+            return jsonify({"error": "invalid_control_token_or_origin"}), 403
+        from app_settings import save_credentials
+        try:
+            return jsonify(save_credentials(application.config["BROKER_SETTINGS_PATH"], request.get_json(silent=True)))
+        except ValueError:
+            return jsonify({"error": "invalid_broker_settings"}), 400
+        except OSError:
+            return jsonify({"error": "settings_write_failed"}), 503
 
     @application.post("/api/teams/<team_name>/profit-brake")
     def profit_brake(team_name):

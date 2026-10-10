@@ -20,7 +20,7 @@ from council import MEMBERS
 
 def main():
     with tempfile.TemporaryDirectory() as directory:
-        app = create_app(str(Path(directory) / "status.db"))
+        app = create_app(str(Path(directory) / "status.db"), settings_path=Path(directory) / ".env.local")
         server = make_server("127.0.0.1", 0, app)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -223,6 +223,20 @@ def main():
                         assert "CONNECTION LOST" in page.locator("#city-world-status").inner_text()
                         assert page.locator("#city-consensus").inner_text() == "Last recorded LONG"
                         assert page.locator('.city-tower[data-observed="true"]').count() == 0
+                        assert not errors, errors
+                        page.locator('nav a[href="#settings"]').click()
+                        assert page.locator('#settings-room').is_visible()
+                        page.wait_for_function("!document.getElementById('broker-credentials').disabled")
+                        assert page.locator('#broker-key').is_enabled()
+                        assert 'PRACTICE' in page.locator('#settings-execution').inner_text()
+                        assert not page.locator('#settings-room').evaluate('e=>e.scrollWidth>e.clientWidth+1')
+                        page.locator('#settings-bubbles').uncheck()
+                        assert page.locator('.council-stage').evaluate("e=>e.classList.contains('clear-room')")
+                        page.locator('#settings-scale').select_option('large')
+                        assert page.locator('body').get_attribute('data-panel-text') == 'large'
+                        assert 'ALPACA' not in page.evaluate('JSON.stringify({...localStorage})')
+                        page.keyboard.press('Escape')
+                        page.wait_for_function("location.hash === '#world'")
                         assert not errors, errors
                         page.close()
 

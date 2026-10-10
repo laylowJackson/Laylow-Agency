@@ -15,7 +15,7 @@ FILES = [
     "team_worker.py", "teams/__init__.py", "teams/aapl_team.py", "teams/tsla_team.py",
     "teams/spy_team.py", "teams/qqq_team.py", "teams/orchestrator.py",
     "world-3d.js", "council.py", "council-ui.js", "council.css", "trading_records.py", "import_trade_records.py",
-    "package_build.py", "team_specs.py", "specialist_engine.py", "entry_controls.py",
+    "settings-ui.js", "settings.css", "app_settings.py", "package_build.py", "team_specs.py", "specialist_engine.py", "entry_controls.py",
     "futures_worker.py", "manager_hierarchy.py", "manager_ai.py", "manager_worker.py",
     "teams/nq_team.py", "teams/es_team.py", "teams/mgc_team.py", "teams/mnq_team.py", "teams/mes_team.py", "teams/gc_team.py",
 ]

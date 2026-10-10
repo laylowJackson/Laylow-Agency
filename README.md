@@ -341,3 +341,14 @@ Interiors include layered foundations, inset floor paths, acoustic wall panels,
 recessed lighting, furnished lounges, ergonomic desks and detailed headset robots.
 The ten district themes remain distinct, and every team still shares one office.
 Council opinion cards and recorded deliberations expand from the room archive.
+
+
+### Settings and broker setup
+
+Open **Settings** in the navigation to adjust speech bubbles, room effects, city motion and panel text, open practice controls and the training lab, or export the fake-money session. Display preferences stay on the current device. Practice prices and fills are synthetic until a data provider is connected.
+
+The GitHub Pages viewer disables broker key entry. For secure setup, download the source from this branch, run `SETUP_WINDOWS.bat`, then `START_WINDOWS.bat` and open the loopback dashboard. Settings enables key entry only after the local server responds. The supported adapter is Alpaca stocks in paper mode. Save both credentials into the ignored `.env.local` file, then restart the app. Credentials are never returned by the API or saved in browser storage. This file contains plaintext credentials on your computer, so protect the computer account and never share the file. Removing local credentials clears only their `.env.local` entries; separately configured environment keys must be removed at their source.
+
+Saving credentials does not change analysis/execution modes, verify account connectivity or submit orders. PRACTICE and shadow defaults remain in place. LIVE stays hard locked in code. Risk limits are shown read-only; brokers and AI managers cannot bypass the central risk engine. Futures backend teams remain watch-only.
+
+A Codex follow-up in this chat checks for useful bug fixes and improvements every other Saturday at 10 AM America/Chicago. It requires the Codex automation to run with project access; the website itself does not schedule or perform code updates.
