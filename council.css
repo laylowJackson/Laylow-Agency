@@ -72,3 +72,37 @@
 #office-trade-wall-panel table{width:100%;min-width:760px}#office-trade-wall-panel th,#office-trade-wall-panel td{padding:12px;text-align:left;font-size:12px;border-bottom:1px solid #233548}#office-trade-wall-panel td:last-child{min-width:210px;max-width:400px;white-space:normal;overflow-wrap:anywhere}
 #office-dialog:has(#office-3d[data-camera='wall']) #office-speech,#office-dialog:has(#office-3d[data-camera='wall']) #office-crew{visibility:hidden}
 @media(max-width:800px){#office-trade-wall-panel{padding:12px}.trade-wall-heading h3{font-size:19px}#office-trade-wall-open{right:10px;padding:9px 12px;font-size:12px}.trade-wall-heading strong{font-size:14px}}
+/* Dedicated interiors: the Council exists only inside its room dialog. */
+#office-dialog,#council-room{width:calc(100% - 16px);max-width:1840px;height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);border:1px solid #65849a85;border-radius:18px;background:radial-gradient(ellipse at 80% 0%,#233149,#0b1322 65%);scrollbar-color:#576c82 #0b1322}
+#office-dialog::backdrop,#council-room::backdrop{background:#030914ef;backdrop-filter:blur(8px)}
+#office-dialog .office-header,.council-room-header{padding:12px 22px;background:linear-gradient(100deg,#0d1a2af5,#182237f5);border-bottom:1px solid #7391ad55;box-shadow:0 12px 35px #0004}
+.office-header h2,.council-room-header h2{letter-spacing:-.5px}
+#office-close,#council-room-close{background:#11273a;border-color:#84b1c46b;border-radius:10px}
+#office-dialog .office-room-identity{margin:10px 0;align-items:center;padding:12px 16px;border-left:3px solid var(--office-accent,#70e2e8);background:linear-gradient(90deg,#28445466,#15233433);border-radius:8px}
+#office-dialog .office-room-identity h3{font-size:19px;margin:3px 0}
+#office-dialog .office-room-identity p{margin:3px 0;font-size:12px}
+#office-dialog .office-options{margin:10px 0;gap:10px}
+#office-dialog .market-feed-notice,#council-room .market-feed-notice{margin:10px 0;padding:8px 12px;font-size:12px;background:#182d3b;border-color:#547d9055;border-radius:8px}
+.office-stage,.council-stage{border-radius:15px;box-shadow:0 16px 50px #0005,inset 0 0 0 1px #c8e7ee20}
+.office-stage::after,.council-stage::after{inset:7px;border-color:#c8e7ee30;border-radius:10px}
+#office-3d{height:clamp(500px,68dvh,880px)}
+#council-room #council-3d{height:clamp(480px,67dvh,860px)}
+#council-room .council-layout{grid-template-columns:minmax(0,1fr) 300px;gap:16px}
+#council-room .council-panel>.muted{font-size:12px;margin:0 0 10px;color:#a9bed0}
+.council-options{gap:10px;font-size:12px}
+.council-sign{background:linear-gradient(120deg,#292b31ee,#122b38ee);border-color:#d9bd7e99;box-shadow:0 6px 24px #0006;text-shadow:0 0 15px #ffcb7e55}
+.council-verdict,.council-seat-inspector{background:linear-gradient(140deg,#1c2e40,#101b2c);border:1px solid #7993a04d;box-shadow:0 8px 24px #0003}
+.council-seat-inspector{border-top:3px solid var(--member-color,#70e2e8)}
+#council-seats button{border-radius:8px;border-color:#63778c66;flex:1;font-size:12px}
+.room-camera-bar{padding:10px 12px;background:#091626;border:1px solid #5c80934d;border-radius:10px;gap:7px;box-shadow:0 7px 22px #0002}
+.room-camera-bar button{border-radius:7px;border-color:#566c8455;background:#16273a;min-height:44px}
+.room-camera-bar button[aria-pressed="true"]{background:#2c4f65;color:#ddf9ff;border-color:#9bdde5}
+.office-roster{padding:8px;border:1px solid #7194ac3b;background:#111f2ecc;border-radius:12px}
+.office-speech,#council-seat-labels button{border-radius:12px;background:linear-gradient(145deg,#172b3cf5,#0b1528f5);box-shadow:0 8px 24px #0005;border-color:var(--member-color,var(--office-accent,#70e2e8))}
+.office-speech{color:#e0edf5}.office-speech strong{color:var(--office-accent,#a6eff2)}.office-speech::after{border-top-color:#13253a}
+.room-archive{border:1px solid #58758b66;background:#111e30;border-radius:12px;padding:14px 16px;margin-top:16px}
+.room-archive>summary{cursor:pointer;min-height:44px;display:list-item;align-content:center;font-size:14px;color:#c9e1ec}
+.room-archive[open] .council-members{margin-top:16px}
+@media(max-width:1050px){#council-room .council-layout{grid-template-columns:minmax(0,1fr) 260px}}
+@media(max-width:800px){#office-dialog,#council-room{width:100%;height:100dvh;max-height:100dvh;margin:0;border-radius:0}#council-room .council-layout{grid-template-columns:1fr}#office-3d,#council-room #council-3d{height:clamp(420px,60dvh,640px)}.council-room-header,#office-dialog .office-header{padding:10px 12px}#office-dialog .office-room-identity{padding:10px}.team-room-badge{font-size:9px}.room-camera-bar{padding:8px;gap:5px}.council-sidebar{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.council-sidebar{grid-template-columns:1fr}.office-room-identity h3{font-size:16px!important}.room-archive{padding:12px}.office-speech{max-width:170px}.room-camera-bar button{font-size:11px}#office-dialog .office-options{font-size:12px}}

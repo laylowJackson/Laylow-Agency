@@ -110,6 +110,18 @@ class Scene {
   b(-.38,.93,0,.12,.31,.28,"#242b45");b(.38,.93,0,.12,.31,.28,"#242b45");
   b(-.447,1.00,0,.012,.16,.16,color,.8);b(.447,1.00,0,.012,.16,.16,color,.8);
   b(0,1.43,0,.047,.16,.047,"#647697");this.sphere(x,y+1.62*scale,z,.065*scale,color,1);
+  // Layered armor, articulated joints, visor trim and a headset microphone.
+  b(0,.35,-.23,.38,.35,.1,'#405776');b(0,.44,.32,.35,.018,.018,color,.5);
+  for(const side of[-1,1]){
+   this.sphere(x+side*.4*scale,y+.49*scale,z+.09*scale,.085*scale,'#293e59');
+   b(side*.17,.075,seated?.46:.19,.23,.11,.26,'#b6c7d8');
+   b(side*.17,.08,seated?.595:.325,.19,.045,.018,color,.3);
+   this.sphere(x+side*.448*scale,y+1.10*scale,z,.095*scale,'#516581');
+   b(side*.48,1.075,.025,.026,.045,.12,color,.7);
+  }
+  b(0,1.19,.35,.43,.018,.015,'#7895b3');b(0,.925,.355,.47,.012,.014,'#5d7e9c');
+  b(.36,.91,.22,.035,.03,.32,'#7085a1');this.sphere(x+.34*scale,y+.92*scale,z+.38*scale,.04*scale,color,.6);
+  this.ring(x,y+.84*scale,z,.15*scale,'#566d89',.014*scale,0);
   if(angle){const c=Math.cos(angle),s=Math.sin(angle);for(let i=start;i<this.data.length;i+=10){const xx=this.data[i]-x,zz=this.data[i+2]-z,nx=this.data[i+6],nz=this.data[i+8];this.data[i]=x+xx*c+zz*s;this.data[i+2]=z-xx*s+zz*c;this.data[i+6]=nx*c+nz*s;this.data[i+8]=-nx*s+nz*c;}}
  }
  building(x,z,h,color,width=2.3,detail=true){
@@ -287,7 +299,42 @@ class Scene {
    if(i===5){this.ring(x,2.37,z,.27,"#ffe58f",.025,.8);}
   }
   this.gameInterior('council','#70e2e8');
+  this.chamberArchitecture();
   this.councilBase=this.data.slice();this.upload();this.draw();
+ }
+ chamberArchitecture(){
+  // A dedicated executive chamber, with a cutaway roof for the room camera.
+  this.box(0,-.48,0,16.8,.22,15.8,'#080e20');this.box(0,-.26,0,16.5,.06,15.5,'#7e684d');
+  for(const x of[-8.15,8.15])this.box(x,-.14,0,.04,.06,15.3,'#70e2e8',.4);
+  this.box(0,-.14,7.65,16.3,.06,.04,'#d9b174',.4);
+  for(let i=0;i<3;i++)this.cylinder(0,.12+i*.015,0,4.8-i*.22,.014,i%2?'#334655':'#28394a',4.8-i*.22,0,96);
+  // Radial inlays and concentric brass trim beneath the six council seats.
+  for(const r of[4.7,4.2,3.25])this.ring(0,.18,0,r,'#a78c62',.014,.15);
+  for(let i=0;i<24;i++){const a=i*Math.PI/12;this.box(Math.sin(a)*4.9,.19,Math.cos(a)*4.9,.045,.018,.045,'#70e2e8',.4);}
+  for(const x of[-7.5,7.5])for(const z of[-4.8,-1.5,1.8]){
+   this.box(x,.3,z,.25,4.85,2.55,'#131f32');this.box(x*.98,5.15,z,.2,.15,2.75,'#8e7353');
+   this.box(x*.975,.45,z,.03,4.6,.035,'#ffda9b',.35);
+   for(let j=0;j<8;j++)this.box(x*.98,1+j*.38,z,.05,.045,1.8,'#38495d');
+  }
+  // Tiered suspended fixture; avoid a solid ceiling blocking isometric views.
+  for(const r of[2.35,2.55]){this.ring(0,5.35,0,r,'#665f55',.045,0);this.ring(0,5.33,0,r,'#c6edec',.016,.35);}
+  for(const x of[-6.6,6.6]){this.box(x,5.65,-1.5,.09,.09,8.5,'#9c825b');this.box(x,5.62,-1.5,.04,.015,8.3,'#ffdda9',.35);}
+  // Recessed podiums, executive shelves and low planted lounge corners.
+  for(const x of[-6,6]){
+   this.cylinder(x,.02,4.7,.45,.65,'#475064',.35);this.box(x,.55,4.7,.04,1,.04,'#326868');
+   for(let i=0;i<4;i++){const a=i*Math.PI/2;this.sphere(x+Math.sin(a)*.22,1.32+i*.09,4.7+Math.cos(a)*.22,.23,'#397e72');}
+   for(let y=.7;y<3.3;y+=.8){this.box(x,y,-5.7,2.25,.065,.65,'#766c5a');for(let j=0;j<6;j++)this.box(x-.85+j*.3,y+.07,-5.7,.15,.39,.25,j%2?'#3c6a7e':'#bca276');}
+  }
+  for(const x of[-5,5]){this.box(x,.15,5.4,2,.35,.95,'#283b50');this.box(x,.5,5.8,2,.8,.12,'#566074');this.box(x,.5,5.4,1.8,.12,.82,'#49586d');}
+  // Tablets, notebooks, cups and swivel chairs turn seats into working stations.
+  for(let i=0;i<6;i++){const a=i*Math.PI/3,x=Math.sin(a)*2.3,z=Math.cos(a)*2.3;
+   this.box(x,1.48,z,.5,.025,.32,'#0c1b2e');this.box(x,1.507,z,.4,.006,.24,'#568d9b',.22);
+   this.cylinder(x+.4,1.41,z,.085,.17,'#ced7d7');
+   const sx=Math.sin(a)*3.8,sz=Math.cos(a)*3.8;
+   this.box(sx,.62,sz,1,.07,.82,'#495b71');
+   for(let j=0;j<5;j++){const b=j*Math.PI*2/5;this.sphere(sx+Math.sin(b)*.46,.18,sz+Math.cos(b)*.46,.06,'#142031');}
+  }
+  this.display('council-crest',0,5.58,-6.01,4.4,.65,'THE COUNCIL',['SIX PERSPECTIVES / ONE DECISION'],[],'#f3cf91');
  }
  councilData(members,bars,review){
   if(!this.councilBase)return;const key=JSON.stringify([members.map(m=>m.vote),bars.at(-1)?.timestamp,bars.at(-1)?.close,review?.action,review?.team_name]);if(key===this.councilDataKey)return;this.councilDataKey=key;this.data=this.councilBase.slice();
