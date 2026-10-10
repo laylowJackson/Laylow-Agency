@@ -354,6 +354,8 @@ Saving credentials does not change analysis/execution modes, verify account conn
 A Codex follow-up in this chat checks for useful bug fixes and improvements every other Saturday at 10 AM America/Chicago. It requires the Codex automation to run with project access; the website itself does not schedule or perform code updates.
 
 
-### Refined room interiors
+### Game-style team offices and Council chamber
 
-Team offices now have cutaway window bays, rounded desks and upholstered chairs, secondary evidence monitors, textile lounges, plants and district-specific furnishings. Warm and cool lighting, subtle contact shading and restrained room bloom improve depth without covering the robots or trade wall. The Council has a walnut table, inward-facing club chairs, brass inlays, lounge tables and wall sconces. Display preferences still control speech bubbles and motion; market data, the practice ledger and execution controls are unchanged.
+Rooms open directly into a large playable cutaway view. Each team shares a furnished district office with colored workstation islands, rounded dual-monitor desks, expressive headset robots, a lounge and a coffee counter. Ten district themes retain their distinct centerpieces, including the Tesla engineering prototype, orbital command pedestal, garden and gold display. Heads face the visitor in the wide office view; desk and monitor cameras remain available.
+
+The Council has a teal-felt brass table, wood-grain floor, skyline windows, personal tablets, a central miniature agency and a sculptural chandelier. Select seats to see their opinions; on small screens only the selected member's full speech appears, with name tags for the other members. Materials use procedural detail and contact shading. Smaller city robot meshes limit rendering cost. The same evidence model still drives the physical trade walls and readable ledger. No market-data, broker or account behavior changes are introduced by the design.

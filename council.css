@@ -132,3 +132,37 @@
 .room-camera-bar{background:linear-gradient(100deg,#172838,#101b2d);box-shadow:none}
 @media(min-width:801px){#office-3d{height:clamp(500px,calc(100dvh - 290px),900px)}}
 @media(max-width:800px){#office-dialog .office-room-identity p{max-width:250px;font-size:10px}#office-dialog .office-room-identity h3{font-size:16px}#office-dialog .team-room-badge{display:none}#office-speech{max-width:160px}}
+
+/* Game-first rooms: the scene leads and the evidence desk follows. */
+#office-dialog,#council-room{max-width:1920px;background:#0b1523;border-color:#496078}
+#office-dialog .office-header,.council-room-header{padding:12px 24px;background:#101d2beF;border-color:#405566}
+#office-dialog .office-header h2,.council-room-header h2{font-size:23px;letter-spacing:-.6px}
+#office-dialog>.game-mission-bar,#council-room>.game-mission-bar{padding:7px 14px;margin:8px 0;background:#162537;border-color:#3f586d;min-height:42px}
+#council-room>.game-mission-bar{margin:8px 22px}
+#council-room .council-panel{border:0;padding:0;margin:0;background:transparent}
+#council-room .council-layout{grid-template-columns:1fr;gap:12px;margin:0}
+#council-room .council-sidebar{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:8px 0 20px}
+#office-3d,#council-room #council-3d{height:clamp(560px,calc(100dvh - 165px),980px)}
+.office-stage,.council-stage{border-radius:18px;border-color:#66879968;background:#101d2e}
+.game-room-footer{background:linear-gradient(0deg,#071421cc,transparent);border:0}
+.room-camera-bar{padding:9px 12px;border-radius:12px;background:#182a3b;margin:8px 0}
+.room-camera-bar button{border-radius:20px;min-height:40px;padding:8px 16px;background:#243c50;border-color:#526f86}
+.room-camera-bar button:hover{background:#385a6e}
+.office-roster{margin:6px 0;padding:9px;border:1px solid #52738c4a;background:#122334;border-radius:12px}
+.office-roster button{border-radius:22px;padding:9px 15px}
+.office-speech,.crew-bubble{border-radius:16px!important}
+.room-hud span{border-radius:20px;background:#0b1c2ed9;padding:8px 12px}
+#office-trade-wall-open{border-radius:24px;background:#e1f2f3;color:#16313e;border-color:#fff;padding:10px 16px}
+#office-dialog .office-room-identity{margin-top:18px;border-radius:14px;padding:16px}
+#council-room .council-sign{border-radius:20px;padding:9px 18px;letter-spacing:2px;font-size:13px}
+@media(max-width:800px){
+ #office-3d,#council-room #council-3d{height:clamp(460px,calc(100dvh - 185px),800px)}
+ #office-dialog .office-header,.council-room-header{padding:10px 12px}
+ #office-dialog .office-header h2,.council-room-header h2{font-size:18px}
+ #council-room .council-sidebar{grid-template-columns:1fr}
+ .room-camera-bar button{padding:8px 11px}
+ #council-room>.game-mission-bar{margin:8px 12px}
+ .game-room-footer span:last-child{display:none}
+}
+
+@media(max-width:600px){#office-3d,#council-room #council-3d{height:480px}#office-speech{max-width:155px;font-size:10px;padding:8px 10px}#council-seat-labels button{width:auto;max-width:155px;min-height:36px}#council-seat-labels button .bubble-opinion{display:none}#council-seat-labels button[aria-pressed="true"] .bubble-opinion{display:-webkit-box}.council-stage .room-hud{gap:6px}.room-hud{font-size:8px}}
