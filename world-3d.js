@@ -269,7 +269,9 @@ function placeLabels(){
  if(!city)return;
  const width=city.canvas.clientWidth,height=city.canvas.clientHeight,occupied=[];
  const items=city.labels.slice().sort((a,b)=>Number(b.name===bridge.selected())-Number(a.name===bridge.selected()) || Number(!!b.special)-Number(!!a.special));
- const candidates=[[0,0],[-70,0],[70,0],[0,-45],[0,45],[-70,-45],[70,-45],[-70,45],[70,45]];
+ const candidates=[[0,0],[-70,0],[70,0],[0,-45],[0,45],[-70,-45],[70,-45],[-70,45],[70,45],[-140,0],[140,0],[0,-90],[0,90]];
+ const overview=document.querySelector(".city-overview"),canvasRect=city.canvas.getBoundingClientRect();
+ if(width>600&&overview){const b=overview.getBoundingClientRect();if(b.bottom>canvasRect.top&&b.top<canvasRect.bottom)occupied.push({l:b.left-canvasRect.left-8,r:b.right-canvasRect.left+8,t:b.top-canvasRect.top-8,b:b.bottom-canvasRect.top+8});}
  for(const item of items){
   const node=labels.get(item.name),p=city.project(item.x,item.y,item.z);if(!node)continue;
   if(!p||p.x<20||p.x>width-20||p.y<20||p.y>height-20){node.hidden=true;continue;}
