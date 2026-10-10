@@ -180,6 +180,8 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 .camera-controls{background:#0a1225d9;backdrop-filter:blur(12px);border:1px solid #384566;border-radius:10px;padding:5px}
 @media(max-width:800px){.world-3d-label[data-selected=true]{padding:7px 10px}.world-3d-label strong{font-size:11px}}
 
+
+.city-hq-building{cursor:pointer}.city-hq-building:focus-visible{outline:2px solid #ffdfa0;outline-offset:5px}
 </style>
 <link rel="stylesheet" href="/council.css">
 </head>
@@ -196,12 +198,12 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 <section id="world" class="city-world" aria-labelledby="world-title">
   <div class="world-toolbar">
     <div><span class="world-kicker">LAYLOW / WORLD 01</span><h2 id="world-title">The agency never sleeps.</h2></div>
-    <div class="world-tools"><button id="city-view" type="button">Use city map</button><span class="world-hint">Select a tower to inspect its team</span><button id="city-motion" type="button" aria-pressed="false">Ambient motion</button></div>
+    <div class="world-tools"><button id="city-view" type="button">Use city map</button><span class="world-hint">Click a building to open its office</span><button id="city-motion" type="button" aria-pressed="false">Ambient motion</button></div>
   </div>
   <div class="world-stage">
     <div class="city-viewport">
       <div class="city-3d-wrap">
-        <canvas id="city-3d" tabindex="0" aria-label="3D city. Drag or use arrow keys to orbit. Use the tower signs or team dock to enter offices." aria-describedby="city-render-note"></canvas>
+        <canvas id="city-3d" tabindex="0" aria-label="3D city. Click a building to open its office. Drag or use arrow keys to orbit. Press Enter to open the selected team." aria-describedby="city-render-note"></canvas>
         <div id="city-3d-labels"></div>
         <div class="camera-controls"><button id="city-zoom-in" type="button" aria-label="Zoom in">+</button><button id="city-zoom-out" type="button" aria-label="Zoom out">−</button><button id="city-camera-reset" type="button">Reset camera</button></div>
       </div>
@@ -634,7 +636,8 @@ function initializeCity(){
  }
  const architecture=cityAdd(svg,"g");
  // The Vault shows recorded counts, never invented trading earnings.
- const vault=cityAdd(architecture,"g",{"aria-label":"The Vault, recorded agency activity"});
+ const vault=cityAdd(architecture,"g",{class:"city-hq-building",role:"button",tabindex:0,"aria-label":"Open The Vault payroll"});
+ bindCityBuilding(vault,"THE VAULT");
  cityAdd(vault,"path",{d:"M 769 0 H 811 L 799 276 H 781 Z",fill:"url(#city-gold)",class:"city-ambient"});
  cityAdd(vault,"path",{d:"M 790 0 V 276",stroke:"#ffe9aa","stroke-width":4,filter:"url(#city-glow)",opacity:.85});
  cityBlock(vault,790,574,110,110,20,"#ffd278",false);
@@ -651,7 +654,7 @@ function initializeCity(){
  for(const district of CITY_DISTRICTS){
   const def=TEAM_DEFINITIONS.find(row=>row.name===district.name);
   const group=cityAdd(architecture,"g",{class:"city-tower",role:"button",tabindex:0,"data-team":district.name,"data-observed":false,"data-selected":false,"aria-pressed":false,"aria-label":district.name+" district, not observed"});
-  cityAdd(group,"title",{},district.name+" team. Select to inspect its Python worker and specialist votes.");
+  cityAdd(group,"title",{},district.name+" team. Click or press Enter to open its bot office.");
   cityAdd(group,"ellipse",{cx:district.x,cy:district.y-21,rx:99,ry:40,fill:district.color,"fill-opacity":.09,stroke:district.color,"stroke-width":2,filter:"url(#city-glow)",class:"tower-selection"});
   cityBlock(group,district.x,district.y,78,78,13,district.color,false);
   cityBlock(group,district.x,district.y-13,51,51,district.h,district.color);
@@ -673,9 +676,9 @@ function initializeCity(){
   cityAdd(manager.robot,"title",{},district.name+" Team Manager, awaiting report");
   cityText(group,district.x+69,district.y-1,"TM",7,district.color,{"text-anchor":"middle"});
   cityNodes.set(district.name,{group,halo,roofBot,specialists,manager,panel,district,def});
-  group.addEventListener("click",()=>selectCityDistrict(district.name,true));
+  group.addEventListener("click",()=>openCityBuilding(district.name));
   group.addEventListener("keydown",event=>{
-   if(event.key==="Enter"||event.key===" "){event.preventDefault();selectCityDistrict(district.name,true);}
+   if(event.key==="Enter"||event.key===" "){event.preventDefault();openCityBuilding(district.name);}
   });
   const button=element("button","",""+district.name),state=element("span","dock-state");
   button.type="button";button.dataset.team=district.name;button.style.setProperty("--district-color",district.color);button.setAttribute("aria-pressed","false");
@@ -683,7 +686,8 @@ function initializeCity(){
   button.addEventListener("click",()=>selectCityDistrict(district.name,true));
   cityDock.set(district.name,{button,state});
  }
- const big=cityAdd(architecture,"g",{class:"city-big-manager","aria-label":"Big Manager district"});
+ const big=cityAdd(architecture,"g",{class:"city-big-manager city-hq-building",role:"button",tabindex:0,"aria-label":"Open Big Manager reports"});
+ bindCityBuilding(big,"BIG MANAGER");
  cityBlock(big,790,835,98,98,16,"#ab6cff",false);
  cityBlock(big,790,819,65,65,173,"#ab6cff");
  cityAdd(big,"ellipse",{cx:790,cy:610,rx:50,ry:17,fill:"none",stroke:"#c998ff","stroke-width":2,filter:"url(#city-glow)"});
@@ -719,6 +723,16 @@ function cityAnalysisRecent(analysis){
  return Number.isFinite(elapsed)&&elapsed>=-30000&&elapsed<=90000&&analysis.state==="READY";
 }
 function cityEyes(robot,color){for(const eye of robot.eyes)eye.setAttribute("fill",color);}
+function bindCityBuilding(node,name){
+ node.addEventListener("click",()=>openCityBuilding(name));
+ node.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();openCityBuilding(name);}});
+}
+function openCityBuilding(name){
+ const destination=name==="THE VAULT"?"payroll-title":name==="BIG MANAGER"?"big-title":null;
+ if(destination){const section=$(destination);section.tabIndex=-1;section.scrollIntoView({behavior:cityMotionQuery.matches?"auto":"smooth",block:"start"});section.focus({preventScroll:true});return;}
+ if(!TEAM_DEFINITIONS.some(team=>team.name===name))return;
+ selectCityDistrict(name,false);enterOffice(name);
+}
 function selectCityDistrict(symbol,panTo=false){
  citySelected=symbol;
  for(const [name,row] of cityNodes){
@@ -772,7 +786,7 @@ function renderCity(snapshot){
   if(fresh)observed++;recordedVotes+=row.def.bots.filter(name=>votes.some(vote=>vote.name===name)).length;if(reportCurrent)managers++;
   row.group.dataset.observed=String(fresh);
   const state=!connected?"LAST SNAPSHOT":fresh?text(team.worker_state,"OBSERVED"):team.health==="stale"?"HEARTBEAT STALE":"NOT OBSERVED";
-  row.group.setAttribute("aria-label",district.name+" district, "+state);
+  row.group.setAttribute("aria-label",district.name+" office, "+state+". Click or press Enter to open.");
   row.panel.state.textContent=state;row.panel.state.setAttribute("fill",fresh&&["RUNNING","ALIVE","READY"].includes(team.worker_state)?"#42e2ad":"#9eacc9");
   row.panel.detail.textContent=analysis.direction?(current?"Consensus ":"Recorded ")+text(analysis.direction)+" · "+text(analysis.agreement,"0")+"/"+row.def.bots.length:"Awaiting source bars";
   cityEyes(row.roofBot,fresh?district.color:"#75839e");
@@ -891,14 +905,14 @@ function renderOffice(){
 }
 $("city-enter-office").addEventListener("click",()=>enterOffice(citySelected));
 $("office-close").addEventListener("click",()=>$("office-dialog").close());
-$("office-dialog").addEventListener("close",()=>{if(officeOpener?.isConnected)officeOpener.focus({preventScroll:true});});
+$("office-dialog").addEventListener("close",()=>{if(officeOpener?.isConnected&&(document.activeElement===document.body||$("office-dialog").contains(document.activeElement)))officeOpener.focus({preventScroll:true});});
 $("office-worker").addEventListener("change",()=>{officeDesk=$("office-worker").value;renderOffice();});
 $("office-controls").addEventListener("click",()=>{const name=officeTeam;$("office-dialog").close();selectCityDistrict(name,false);cards.get(name).card.scrollIntoView({behavior:cityMotionQuery.matches?"auto":"smooth",block:"start"});});
-window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select:selectCityDistrict,enter:enterOffice,selected:()=>citySelected,snapshot:()=>citySnapshot,connected:()=>connected};
+window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select:selectCityDistrict,enter:enterOffice,open:openCityBuilding,selected:()=>citySelected,snapshot:()=>citySnapshot,connected:()=>connected};
 
 initializeCards();initializeCity();refreshStatus();
 </script>
-<script src="/world-3d.js?v=20261009-city2"></script>
+<script src="/world-3d.js?v=20261009-buildings"></script>
 <script src="/council-ui.js"></script>
 </body>
 </html>
