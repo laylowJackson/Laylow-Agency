@@ -238,7 +238,7 @@ class Scene {
  }
  trainingDisplay(data){
   const t=data?.teams?.find(t=>t.name===this.symbol)||data?.teams?.[0];if(!t)return;
-  if(this.kind==='office')this.display('academy-desk',-5.9,2.5,-6.20,2.5,1,'NIGHT SCHOOL / '+t.name,[t.experiments+' DRILLS',t.status,t.trades+' held-out trades'],[],this.theme?.accent||'#70e2e8');
+  if(this.kind==='office'&&!this.crew)this.display('academy-desk',-5.9,2.5,-6.20,2.5,1,'NIGHT SCHOOL / '+t.name,[t.experiments+' DRILLS',t.status,t.trades+' held-out trades'],[],this.theme?.accent||'#70e2e8');
   if(this.kind==='council')this.display('academy-wall',5.65,3.6,-6,2.6,1.15,'ACADEMY / RESEARCH',[data.experiments+' EXPERIMENTS',data.scenario,'Synthetic · baseline protected'],[],'#70e2e8');
   this.draw();
  }
@@ -428,7 +428,7 @@ function start(){
 window.Laylow3D={
  council(members,bars=[],review=null){try{if(!councilScene)councilScene=new Scene(byId("council-3d"),"council");const key=JSON.stringify(members.map(m=>m.color));if(key!==councilKey){councilKey=key;councilScene.councilRoom(members);}councilScene.councilData(members,bars,review);councilScene.trainingDisplay(window.LaylowTraining?.snapshot());byId("council-render-note").textContent="Drag to orbit · select a member to inspect their opinion · green support, amber wait, red veto.";}catch(error){byId("council-render-note").textContent="3D chamber unavailable; opinions and decisions remain accessible below.";}},
  roomCamera(kind,view){const scene=kind==="council"?councilScene:office;if(!scene)return;
-  if(kind==='office'&&office){if(view==='wide'){office.yaw=.2;office.pitch=.48;office.distance=17;office.target=[0,1.3,-.3];office.canvas.dataset.camera=view;office.draw();return;}if(view==='desk'||view==='screens'){window.LaylowTeamOffices.focus(office,byId('office-worker').value,view);return;}}
+  if(kind==='office'&&office){if(view==='wall'){office.yaw=0;office.pitch=.08;office.distance=office.canvas.clientWidth<650?14.5:12;office.target=[0,3.3,-6.2];office.canvas.dataset.camera=view;office.draw();return;}if(view==='wide'){office.yaw=.2;office.pitch=.48;office.distance=17;office.target=[0,1.3,-.3];office.canvas.dataset.camera=view;office.draw();return;}if(view==='desk'||view==='screens'){window.LaylowTeamOffices.focus(office,byId('office-worker').value,view);return;}}
   const presets=kind==="council"?{wide:[.25,.38,13.5,[0,1.6,0]],table:[.15,.74,10.5,[0,1,0]],wall:[0,.12,10.4,[0,2.5,-2.5]]}:{wide:[.3,.28,9,[0,1.6,-.25]],desk:[-.48,.17,5.8,[0,1.7,.25]],screens:[0,.12,4.2,[0,2,-.6]]};
   if(view==="closer"||view==="further")scene.distance=Math.max(4,Math.min(18,scene.distance+(view==="closer"?-1:1)));
   else {const p=presets[view];if(!p)return;[scene.yaw,scene.pitch,scene.distance,scene.target]=p;}
@@ -449,7 +449,7 @@ window.Laylow3D={
  const analysis=data.teams?.find(row=>row.name===bridge.selected())?.analysis||{};
  city?.marketBackdrop(Array.isArray(analysis.bars)?analysis.bars:[],bridge.selected()+"/"+(analysis.bar_time||"empty"));
  if(office&&byId("office-dialog").open){const analysis=data.teams?.find(row=>row.name===office.symbol)?.analysis||{};office.officeBars(Array.isArray(analysis.bars)?analysis.bars:[]);}},
- enter(name){try{if(!office)office=new Scene(byId("office-3d"),"office");office.office(name);office.trainingDisplay(window.LaylowTraining?.snapshot());office.officeBars(snapshot?.teams?.find(row=>row.name===name)?.analysis?.bars||[]);byId("office-theme-name").textContent=office.theme.name;byId("office-layout-note").textContent=office.crew.length+" teammates in one room · individual desks, shared research and team ledger";byId("office-dialog").style.setProperty("--office-accent",office.theme.accent);byId("office-render-note").textContent="Everyone shares this office · select a robot or roster card to inspect their work · drag or arrow keys to explore";}catch(error){byId("office-render-note").textContent="3D office unavailable; recorded workstation panels remain available.";}},
+ enter(name){try{if(!office)office=new Scene(byId("office-3d"),"office");office.office(name);office.trainingDisplay(window.LaylowTraining?.snapshot());office.officeBars(snapshot?.teams?.find(row=>row.name===name)?.analysis?.bars||[]);byId("office-theme-name").textContent=office.theme.name;byId("office-layout-note").textContent=office.crew.length+" teammates in one room · individual desks, shared research and team ledger";byId("office-dialog").style.setProperty("--office-accent",office.theme.accent);byId("office-render-note").textContent="Click Trade wall for the room-sized chart and ledger · select a robot to inspect its desk · drag to explore";}catch(error){byId("office-render-note").textContent="3D office unavailable; recorded workstation panels remain available.";}},
  training(data){this.trainingSnapshot=data;office?.trainingDisplay(data);councilScene?.trainingDisplay(data);},
  roomEffects(kind,on){const scene=kind==='council'?councilScene:office;if(scene){scene.effects=on;scene.draw();scheduleRoomEffects();}},
  focusOfficeWorker(name){if(office&&office.crew)window.LaylowTeamOffices.focus(office,name);},

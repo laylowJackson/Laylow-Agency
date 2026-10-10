@@ -138,6 +138,14 @@ def main():
                         assert page.locator("#office-chart polyline").count()==3
                         assert "Not recorded" in page.locator("#office-earned").inner_text()
                         assert page.locator("#office-votes img").count()==0
+                        page.locator("#office-trade-wall-open").click()
+                        assert page.locator("#office-3d").get_attribute("data-camera") == "wall"
+                        assert page.locator("#office-3d").get_attribute("data-trade-wall") == "AAPL"
+                        assert "UNVERIFIED" in page.locator("#office-trade-wall-source").inner_text()
+                        assert "No recorded trades" in page.locator("#office-trade-wall-rows").inner_text()
+                        assert page.locator("#office-trade-wall-panel").is_visible()
+                        assert page.locator("#office-dialog").evaluate("e=>e.scrollWidth<=e.clientWidth+1")
+                        page.locator('[data-room="office"][data-room-camera="wide"]').click()
                         office_preview=page.locator("#office-dialog").screenshot(type="jpeg",quality=76,animations="disabled")
                         office_label="DESKTOP" if width>800 else "PHONE"
                         print("LAYLOW_OFFICE_PREVIEW_"+office_label+"_BEGIN"+
@@ -169,6 +177,10 @@ def main():
                         page.locator("#city-enter-office").click()
                         assert "100.00" in page.locator("#office-earned").inner_text()
                         assert "ci-paper-export" in page.locator("#office-performance-note").inner_text()
+                        wall_rows = page.locator("#office-trade-wall-rows").inner_text()
+                        assert "WIN" in wall_rows and "100.00" in wall_rows
+                        assert "—" in wall_rows, "Missing imported fill terms acquired invented prices"
+                        assert "ci-paper-export" in wall_rows
                         page.keyboard.press("Escape")
                         risk=page.locator("#profit-amount-AAPL")
                         risk.fill("123.45")
@@ -223,6 +235,9 @@ def main():
                     fallback.locator("#city-enter-office").click()
                     assert fallback.locator("#office-chart polyline").count()==3
                     assert "unavailable" in fallback.locator("#office-render-note").inner_text()
+                    fallback.locator("#office-trade-wall-open").click()
+                    assert fallback.locator("#office-trade-wall-panel").is_visible()
+                    assert "AAPL" in fallback.locator("#office-trade-wall-title").inner_text()
                     fallback.close()
                 finally:
                     browser.close()

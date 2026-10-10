@@ -316,3 +316,17 @@ the public city remains a synthetic practice viewer until a backend is hosted.
 Adapter contract references: [Alpaca Python order API](https://alpaca.markets/sdks/python/api_reference/trading/orders.html)
 and [client order ID lookup](https://docs.alpaca.markets/us/reference/getorderbyclientorderid).
 Tests use local fixtures only; no actual broker account was connected or tested.
+
+### Team trading walls
+
+Enter any district office and click **Trade wall** for a panoramic physical wall
+with candlesticks, timestamped entry/exit markers and that team's trade ledger.
+The readable display beneath the room lists side, quantity, entry, exit, net after
+fees and exit reason. The table also works without WebGL. Return to **Whole room**
+to inspect the team's robots again.
+
+Practice walls use the saved browser simulation, including open fake positions;
+they do not change its balance or trades. Recorded mode uses imported closed-trade
+results and keeps order intents separate. Missing fill details remain blank, and
+markers outside the chart's price/time window are omitted. Net results exclude
+open positions. The public site still uses generated market prices, not live quotes.
