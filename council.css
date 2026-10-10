@@ -113,3 +113,22 @@
 #council-room #council-3d{height:clamp(360px,calc(100dvh - 245px),720px)}
 #council-room .council-panel>.muted{margin-top:16px}
 @media(max-width:800px){#council-room>.game-mission-bar{margin:8px 12px}#council-room #council-3d{height:clamp(360px,calc(100dvh - 245px),640px)}}
+
+/* Interior design pass: let the room lead, with quiet, legible game controls. */
+.office-stage canvas,.council-stage canvas{filter:none}
+#office-dialog .office-room-identity{padding:8px 14px;margin:6px 0;background:linear-gradient(90deg,#253748aa,#14213350)}
+#office-dialog .office-options{margin:8px 0}
+#office-dialog>.game-mission-bar{padding:8px 12px;margin:8px 0;min-height:44px}
+#office-dialog .office-room-identity .world-kicker{font-size:9px;letter-spacing:1.3px}
+#office-dialog .office-room-identity p{font-size:11px}
+#office-dialog .team-room-badge{border:0;background:#09142177;border-radius:20px;padding:8px 12px}
+.office-stage,.council-stage{border-radius:12px;border-color:#64839360;background:#0a1020}
+.office-stage::after,.council-stage::after{border:none;inset:0;box-shadow:inset 0 0 35px #060b1620}
+.office-speech,.crew-bubble,#council-seat-labels button{backdrop-filter:blur(8px);box-shadow:0 8px 20px #0006}
+#office-speech{max-width:210px;font-size:11px;padding:10px 12px;border-color:#89b4c177}
+.room-hud{font-size:9px;letter-spacing:1.4px;color:#bbd1df}
+.office-roster button{border-radius:8px;background:#152334;border-color:#6a87954a}
+.office-roster button[aria-pressed='true']{background:#294653;border-color:var(--office-accent)}
+.room-camera-bar{background:linear-gradient(100deg,#172838,#101b2d);box-shadow:none}
+@media(min-width:801px){#office-3d{height:clamp(500px,calc(100dvh - 290px),900px)}}
+@media(max-width:800px){#office-dialog .office-room-identity p{max-width:250px;font-size:10px}#office-dialog .office-room-identity h3{font-size:16px}#office-dialog .team-room-badge{display:none}#office-speech{max-width:160px}}

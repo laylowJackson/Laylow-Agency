@@ -31,13 +31,23 @@ class Scene {
   const gl=this.gl;
   const shader=(type,source)=>{const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error("Shader could not compile");return s;};
   const program=(v,f)=>{const p=gl.createProgram();gl.attachShader(p,shader(gl.VERTEX_SHADER,v));gl.attachShader(p,shader(gl.FRAGMENT_SHADER,f));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error("Renderer could not link");return p;};
-  this.program=program(`attribute vec3 position,color,normal;attribute float emission;uniform mat4 camera;varying vec3 tint,n,world;varying float glow,depth;void main(){gl_Position=camera*vec4(position,1.0);world=position;tint=color;n=normal;glow=emission;depth=gl_Position.w;}`,`precision mediump float;varying vec3 tint,n,world;varying float glow,depth;uniform float ambientPulse;uniform vec3 eyePosition;void main(){vec3 N=normalize(n);float light=.32+.63*max(dot(N,normalize(vec3(-.5,1.,.6))),0.)+.24*max(dot(N,normalize(vec3(.8,.2,-1.))),0.);vec3 V=normalize(eyePosition-world);float rim=pow(1.-max(dot(N,V),0.),3.);float shine=pow(max(dot(reflect(-normalize(vec3(-.5,1.,.6)),N),V),0.),36.);vec3 lit=tint*mix(light,1.2+ambientPulse,glow)+vec3(.1,.24,.32)*rim*(1.-glow)+vec3(.23,.26,.3)*shine*(1.-glow);float fog=clamp((depth-36.)/110.,0.,.66);gl_FragColor=vec4(mix(lit,vec3(.035,.047,.105),fog),1.);}`);
+  this.program=program(`attribute vec3 position,color,normal;attribute float emission;uniform mat4 camera;varying vec3 tint,n,world;varying float glow,depth;void main(){gl_Position=camera*vec4(position,1.0);world=position;tint=color;n=normal;glow=emission;depth=gl_Position.w;}`,`precision mediump float;varying vec3 tint,n,world;varying float glow,depth;uniform float ambientPulse;uniform vec3 eyePosition,roomAccent;uniform float interior;uniform vec3 contact[6];void main(){vec3 N=normalize(n);float light=.32+.63*max(dot(N,normalize(vec3(-.5,1.,.6))),0.)+.24*max(dot(N,normalize(vec3(.8,.2,-1.))),0.);vec3 V=normalize(eyePosition-world);float rim=pow(1.-max(dot(N,V),0.),3.);float shine=pow(max(dot(reflect(-normalize(vec3(-.5,1.,.6)),N),V),0.),36.);vec3 lit=tint*mix(light,1.2+ambientPulse,glow)+vec3(.1,.24,.32)*rim*(1.-glow)+vec3(.23,.26,.3)*shine*(1.-glow);if(interior>.5){
+ vec3 warm=vec3(1.,.83,.66),cool=vec3(.55,.77,1.);
+ float key=max(dot(N,normalize(vec3(-.6,1.,.45))),0.);
+ float fill=max(dot(N,normalize(vec3(.7,.45,-.4))),0.);
+ vec3 material=tint*(vec3(.28)+warm*key*.62+cool*fill*.27);
+ float pool=exp(-length(world.xz-vec2(-5.,-2.))*.3);
+ material+=tint*roomAccent*pool*.17;
+ float shade=1.;
+ for(int i=0;i<6;i++){float d=length(world.xz-contact[i].xz);shade*=1.-.30*exp(-d*d/1.1)*step(world.y,.22);}
+ lit=(material*shade+cool*rim*.055+warm*shine*.07)*(1.-glow)+tint*(1.03+ambientPulse)*glow;
+ }float fog=clamp((depth-36.)/110.,0.,.66);gl_FragColor=vec4(mix(lit,vec3(.035,.047,.105),fog),1.);}`);
   this.buffer=gl.createBuffer();this.attributes=["position","color","normal","emission"].map(n=>gl.getAttribLocation(this.program,n));this.camera=gl.getUniformLocation(this.program,"camera");this.pulse=gl.getUniformLocation(this.program,"ambientPulse");
   this.displayProgram=program(`attribute vec3 position;attribute vec2 uv;uniform mat4 camera;varying vec2 tex;void main(){tex=uv;gl_Position=camera*vec4(position,1.);}`,`precision mediump float;varying vec2 tex;uniform sampler2D display;void main(){gl_FragColor=texture2D(display,tex);}`);
   this.displayBuffer=gl.createBuffer();this.displays=new Map();
   const screenVertex=`attribute vec2 point;varying vec2 uv;void main(){uv=point*.5+.5;gl_Position=vec4(point,0.,1.);}`;
   this.blur=program(screenVertex,`precision mediump float;varying vec2 uv;uniform sampler2D source;uniform vec2 direction;uniform float extract;vec3 tap(vec2 p){vec3 c=texture2D(source,p).rgb;return mix(c,c*smoothstep(.48,.95,max(c.r,max(c.g,c.b))),extract);}void main(){vec3 c=tap(uv)*.227027;c+=(tap(uv+direction*1.384615)+tap(uv-direction*1.384615))*.316216;c+=(tap(uv+direction*3.230769)+tap(uv-direction*3.230769))*.070270;gl_FragColor=vec4(c,1.);}`);
-  this.composite=program(screenVertex,`precision mediump float;varying vec2 uv;uniform sampler2D source,halo;uniform float city;float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}void main(){vec4 scene=texture2D(source,uv);vec3 sky=mix(vec3(.065,.072,.17),vec3(.013,.012,.045),smoothstep(.12,1.,uv.y));float cloud=sin(uv.x*7.+uv.y*9.)*sin(uv.x*13.-uv.y*6.);sky+=vec3(.028,.015,.059)*cloud;vec2 cell=floor(uv*vec2(760.,440.));float star=step(.9994,hash(cell))*pow(max(0.,uv.y-.38),1.5);sky+=star*.7*city;vec2 moon=(uv-vec2(.84,.85))*vec2(1.35,1.);float d=length(moon);sky+=vec3(.10,.14,.22)*exp(-d*16.)*city;sky+=vec3(.6,.7,.9)*(1.-smoothstep(.021,.024,d))*city;vec3 c=mix(sky,scene.rgb,scene.a)+texture2D(halo,uv).rgb*1.05;c*=1.-.22*pow(length((uv-.5)*1.2),2.);gl_FragColor=vec4(c,1.);}`);
+  this.composite=program(screenVertex,`precision mediump float;varying vec2 uv;uniform sampler2D source,halo;uniform float city;float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}void main(){vec4 scene=texture2D(source,uv);vec3 sky=mix(vec3(.065,.072,.17),vec3(.013,.012,.045),smoothstep(.12,1.,uv.y));float cloud=sin(uv.x*7.+uv.y*9.)*sin(uv.x*13.-uv.y*6.);sky+=vec3(.028,.015,.059)*cloud;vec2 cell=floor(uv*vec2(760.,440.));float star=step(.9994,hash(cell))*pow(max(0.,uv.y-.38),1.5);sky+=star*.7*city;vec2 moon=(uv-vec2(.84,.85))*vec2(1.35,1.);float d=length(moon);sky+=vec3(.10,.14,.22)*exp(-d*16.)*city;sky+=vec3(.6,.7,.9)*(1.-smoothstep(.021,.024,d))*city;vec3 c=mix(sky,scene.rgb,scene.a)+texture2D(halo,uv).rgb*mix(.30,1.05,city);c*=1.-.22*pow(length((uv-.5)*1.2),2.);gl_FragColor=vec4(c,1.);}`);
   this.quad=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,this.quad);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);this.targets=[];
   this.yaw=.25;this.pitch=kind==="city"?.43:kind==="council"?.38:.28;this.distance=kind==="city"?57:kind==="council"?13.5:9;this.target=kind==="city"?[0,3,3]:[0,1.6,0];this.data=[];this.labels=[];
   this.resize=new ResizeObserver(()=>this.draw());this.resize.observe(canvas);this.installCamera();
@@ -70,6 +80,21 @@ class Scene {
  box(x,y,z,w,h,d,color,emission=0){
   const rgb=Array.isArray(color)?color:hex(color);
   for(let f=0;f<cube.length;f++)for(let i=0;i<18;i+=3)this.vertex([x+(cube[f][i]-.5)*w,y+cube[f][i+1]*h,z+(cube[f][i+2]-.5)*d],rgb,faceNormals[f],emission);
+ }
+ // Rounded furniture profiles keep a small, deterministic mesh budget.
+ roundedBox(x,y,z,w,h,d,color,r=.08,emission=0){
+  r=Math.min(r,w/2,d/2);const rgb=hex(color),outline=[];
+  for(let k=0;k<4;k++){const a=k*Math.PI/2,cx=Math.cos(a+Math.PI/4)>0?w/2-r:-w/2+r,cz=Math.sin(a+Math.PI/4)>0?d/2-r:-d/2+r;
+   for(let j=0;j<=5;j++){const angle=a+j*Math.PI/10;outline.push([cx+Math.cos(angle)*r,cz+Math.sin(angle)*r,Math.cos(angle),Math.sin(angle)]);}}
+  for(let i=0;i<outline.length;i++){const a=outline[i],b=outline[(i+1)%outline.length],lo=[x+a[0],y,z+a[1]],hi=[x+a[0],y+h,z+a[1]],ll=[x+b[0],y,z+b[1]],hh=[x+b[0],y+h,z+b[1]];
+   for(const [v,n]of[[lo,[a[2],0,a[3]]],[ll,[b[2],0,b[3]]],[hh,[b[2],0,b[3]]],[lo,[a[2],0,a[3]]],[hh,[b[2],0,b[3]]],[hi,[a[2],0,a[3]]]])this.vertex(v,rgb,n,emission);
+   for(const v of[[x,y+h,z],hh,hi])this.vertex(v,rgb,[0,1,0],emission);
+  }
+ }
+ ellipsoid(x,y,z,rx,ry,rz,color,emission=0){
+  const start=this.data.length;this.sphere(x,y,z,1,color,emission);
+  for(let i=start;i<this.data.length;i+=10){this.data[i]=x+(this.data[i]-x)*rx;this.data[i+1]=y+(this.data[i+1]-y)*ry;this.data[i+2]=z+(this.data[i+2]-z)*rz;
+   const n=norm([this.data[i+6]/rx,this.data[i+7]/ry,this.data[i+8]/rz]);this.data.splice(i+6,3,...n);}
  }
  sphere(x,y,z,r,color,emission=0){
   const rgb=hex(color),point=(lat,lon)=>[Math.cos(lat)*Math.sin(lon),Math.sin(lat),Math.cos(lat)*Math.cos(lon)];
@@ -104,7 +129,11 @@ class Scene {
   this.sphere(x-.37*scale,y+.69*scale,z,.13*scale,"#d3dcf1");this.sphere(x+.37*scale,y+.69*scale,z,.13*scale,"#d3dcf1");
   b(-.4,.32,.12,.12,.33,.12,"#71849f");b(.4,.32,.12,.12,.33,.12,"#71849f");
   this.sphere(x-.4*scale,y+.32*scale,z+.15*scale,.10*scale,color);this.sphere(x+.4*scale,y+.32*scale,z+.15*scale,.10*scale,color);
-  this.sphere(x,y+1.08*scale,z,.37*scale,"#d7e0f2");
+  this.ellipsoid(x,y+1.08*scale,z,.39*scale,.33*scale,.35*scale,'#bac9d9');
+  // Twin molded ear cups, a colored brow and a dark faceplate.
+  b(0,1.20,.28,.45,.035,.12,color,.35);
+  this.ellipsoid(x,y+1.065*scale,z+.305*scale,.26*scale,.13*scale,.07*scale,'#0a1828');
+  for(const side of[-1,1])this.ellipsoid(x+side*.40*scale,y+1.075*scale,z,.08*scale,.17*scale,.14*scale,'#41536b');
   b(0,.94,.29,.53,.25,.12,"#080f22");b(-.13,1.04,.36,.085,.07,.015,color,1);b(.13,1.04,.36,.085,.07,.015,color,1);
   b(0,.985,.367,.14,.018,.015,color,.8);
   b(-.38,.93,0,.12,.31,.28,"#242b45");b(.38,.93,0,.12,.31,.28,"#242b45");
@@ -284,8 +313,8 @@ class Scene {
   this.cylinder(0,1.4,0,.5,.18,"#61758d",.43);this.ring(0,1.61,0,.65,"#70e2e8",.025,1);this.ring(0,2.12,0,.48,"#70e2e8",.013,.5);this.ring(0,2.4,0,.29,"#ffe4a0",.013,.6);
   this.sphere(0,1.99,0,.19,"#56a8bb",.4);
   // Suspended chandelier, slender cables and warm downlights.
-  for(const r of[3.1,3.4]){this.ring(0,4.45,0,r,"#705d49",.065,0);this.ring(0,4.46,0,r,"#ffe4a0",.025,.85);}
-  for(let i=0;i<12;i++){const a=i*Math.PI/6,x=Math.sin(a)*3.25,z=Math.cos(a)*3.25;this.box(x,4.5,z,.03,1.7,.03,"#9c8b69");this.sphere(x,4.39,z,.055,"#ffe4a0",1);}
+  for(const r of[2.25,2.5]){this.ring(0,4.45,0,r,"#705d49",.065,0);this.ring(0,4.46,0,r,"#ffe4a0",.025,.85);}
+  for(let i=0;i<12;i++){const a=i*Math.PI/6,x=Math.sin(a)*2.38,z=Math.cos(a)*2.38;this.box(x,4.5,z,.03,1.7,.03,"#9c8b69");this.sphere(x,4.39,z,.055,"#ffe4a0",1);}
   for(let i=0;i<6;i++){const a=i*Math.PI/3,x=Math.sin(a)*3.8,z=Math.cos(a)*3.8,m=members[i]||{},color=/^#[0-9a-f]{6}$/i.test(m.color)?m.color:["#74c8ff","#ad94ff","#ff7cb0","#ffb86c","#70e1bd","#ffe58f"][i];
    this.cylinder(x,.14,z,.53,.1,"#53617c");this.cylinder(x,.24,z,.075,.31,"#a3aec5");this.box(x,.55,z,1.12,.16,.87,"#213449");
    this.robot(x,.72,z,color,1.04,true,a+Math.PI);this.ring(x,2.54,z,.51,color,.023,.8);
@@ -300,7 +329,7 @@ class Scene {
   }
   this.gameInterior('council','#70e2e8');
   this.chamberArchitecture();
-  this.councilBase=this.data.slice();this.upload();this.draw();
+  this.chamberFurnishings(members);this.councilBase=this.data.slice();this.upload();this.draw();
  }
  chamberArchitecture(){
   // A dedicated executive chamber, with a cutaway roof for the room camera.
@@ -317,8 +346,7 @@ class Scene {
    for(let j=0;j<8;j++)this.box(x*.98,1+j*.38,z,.05,.045,1.8,'#38495d');
   }
   // Tiered suspended fixture; avoid a solid ceiling blocking isometric views.
-  for(const r of[2.35,2.55]){this.ring(0,5.35,0,r,'#665f55',.045,0);this.ring(0,5.33,0,r,'#c6edec',.016,.35);}
-  for(const x of[-6.6,6.6]){this.box(x,5.65,-1.5,.09,.09,8.5,'#9c825b');this.box(x,5.62,-1.5,.04,.015,8.3,'#ffdda9',.35);}
+  for(const x of[-6.6,6.6]){this.box(x,5.65,-4.5,.09,.09,3,'#9c825b');this.box(x,5.62,-4.5,.04,.015,2.8,'#ffdda9',.2);}
   // Recessed podiums, executive shelves and low planted lounge corners.
   for(const x of[-6,6]){
    this.cylinder(x,.02,4.7,.45,.65,'#475064',.35);this.box(x,.55,4.7,.04,1,.04,'#326868');
@@ -335,6 +363,25 @@ class Scene {
    for(let j=0;j<5;j++){const b=j*Math.PI*2/5;this.sphere(sx+Math.sin(b)*.46,.18,sz+Math.cos(b)*.46,.06,'#142031');}
   }
   this.display('council-crest',0,5.58,-6.01,4.4,.65,'THE COUNCIL',['SIX PERSPECTIVES / ONE DECISION'],[],'#f3cf91');
+ }
+ chamberFurnishings(members){
+  // Walnut tabletop with radial brass inlays and six inward-facing club chairs.
+  this.cylinder(0,1.401,0,2.90,.018,'#55463c',2.9,0,80);
+  for(const r of[1.25,2.66])this.ring(0,1.425,0,r,'#bca27e',.014,.08);
+  for(let i=0;i<36;i++){const a=i*Math.PI/18;this.box(Math.sin(a)*2.76,1.428,Math.cos(a)*2.76,.024,.006,.024,'#ddc39b',.1);}
+  for(let i=0;i<6;i++){
+   const a=i*Math.PI/3,x=Math.sin(a)*3.8,z=Math.cos(a)*3.8,start=this.data.length,c=members[i]?.color||'#70e2e8';
+   this.roundedBox(0,.56,0,1.12,.15,1.0,'#58687a',.16);
+   this.roundedBox(0,.68,.47,1.10,.88,.17,'#283848',.11);
+   this.roundedBox(0,.76,.36,.94,.66,.08,'#667384',.04);
+   for(const side of[-1,1]){this.box(side*.57,.6,0,.05,.32,.08,'#bca27e');this.roundedBox(side*.57,.92,0,.18,.08,.73,'#43566c',.08);}
+   this.box(0,1.48,.56,.52,.025,.025,c,.25);
+   const ca=Math.cos(a),sa=Math.sin(a);for(let j=start;j<this.data.length;j+=10){const xx=this.data[j],zz=this.data[j+2],nx=this.data[j+6],nz=this.data[j+8];this.data[j]=x+xx*ca+zz*sa;this.data[j+2]=z-xx*sa+zz*ca;this.data[j+6]=nx*ca+nz*sa;this.data[j+8]=-nx*sa+nz*ca;}
+  }
+  for(const x of[-5,5]){this.roundedBox(x,.50,5.4,1.85,.19,.90,'#617285',.15);for(const dx of[-.48,.48])this.roundedBox(x+dx,.69,5.73,.88,.56,.16,'#45576d',.07);this.cylinder(x,.16,4.25,.63,.40,'#283b4c');this.cylinder(x,.57,4.25,.68,.05,'#a68f71');}
+  // Framed brass relief and luminous wall sconces, not fake performance data.
+  for(const x of[-7.15,7.15])for(const z of[-3.9,-.5,2.9]){this.box(x,2.1,z,.12,.65,.22,'#b19b75');this.ellipsoid(x,2.45,z,.11,.17,.11,'#ffe4ba',.35);}
+  for(let i=0;i<9;i++){this.roundedBox(-6.15+i*.25,3.6,-5.7,.06,.7+(i%3)*.24,.12,'#a58b67',.025);}
  }
  councilData(members,bars,review){
   if(!this.councilBase)return;const key=JSON.stringify([members.map(m=>m.vote),bars.at(-1)?.timestamp,bars.at(-1)?.close,review?.action,review?.team_name]);if(key===this.councilDataKey)return;this.councilDataKey=key;this.data=this.councilBase.slice();
@@ -368,6 +415,10 @@ class Scene {
   gl.bindFramebuffer(gl.FRAMEBUFFER,this.bloomAvailable?this.targets[0].fbo:null);gl.viewport(0,0,w,h);gl.enable(gl.DEPTH_TEST);gl.useProgram(this.program);gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
   for(let i=0;i<4;i++){gl.enableVertexAttribArray(this.attributes[i]);gl.vertexAttribPointer(this.attributes[i],i===3?1:3,gl.FLOAT,false,40,i*12);}
   const t=this.target,r=this.distance,eye=[t[0]+r*Math.sin(this.yaw)*Math.cos(this.pitch),t[1]+r*Math.sin(this.pitch),t[2]+r*Math.cos(this.yaw)*Math.cos(this.pitch)];
+  gl.uniform1f(gl.getUniformLocation(this.program,'interior'),this.kind==='city'?0:1);
+  gl.uniform3fv(gl.getUniformLocation(this.program,'roomAccent'),new Float32Array(hex(this.theme?.accent||'#d9b174')));
+  const contacts=Array.from({length:6},(_,i)=>this.kind==='office'&&this.crew?.[i]?[this.crew[i].x,0,this.crew[i].z+1]:this.kind==='council'?[Math.sin(i*Math.PI/3)*3.8,0,Math.cos(i*Math.PI/3)*3.8]:[1000,0,1000]);
+  gl.uniform3fv(gl.getUniformLocation(this.program,'contact[0]'),new Float32Array(contacts.flat()));
   this.eye=eye;gl.uniform3fv(gl.getUniformLocation(this.program,"eyePosition"),new Float32Array(eye));this.matrix=cameraMatrix(eye,t,w/h);gl.uniformMatrix4fv(this.camera,false,new Float32Array(this.matrix));gl.uniform1f(this.pulse,byId("world").dataset.motion==="on"&&!document.hidden?.035+.035*Math.sin(performance.now()/900):0);
   gl.clearColor(.012,.018,.04,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.drawArrays(gl.TRIANGLES,0,this.vertices||0);this.drawRoomEffects();this.drawDisplays();
   if(this.bloomAvailable){
