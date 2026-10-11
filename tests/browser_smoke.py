@@ -57,9 +57,9 @@ def main():
         fixture["teams"][0]["analysis"]["indicators"]["vwap"] = 103
         fixture["teams"][0]["controls"] = dict(headline_locked=False,earnings_at="",earnings_status="UNKNOWN",lock_reason="Earnings unknown")
         posted = []
-        def status_fixture(route):
-            # Treat each successful poll as a fresh fixture snapshot. Software
-            # WebGL rendering can take longer than the product freshness window.
+        def refresh_fixture_clock():
+            # Each viewport starts with fresh evidence. Keep it stable during
+            # that pass so status polling does not rebuild the same chart scene.
             # Offline tests still abort requests and exercise the cached snapshot.
             nonlocal clock_now, now
             clock_now = datetime.now(timezone.utc)
@@ -72,6 +72,8 @@ def main():
             analysis["updated_at"] = analysis["bar_time"] = now
             for index, bar in enumerate(analysis["bars"]):
                 bar["timestamp"] = (clock_now - timedelta(minutes=29-index)).isoformat()
+
+        def status_fixture(route):
             route.fulfill(status=200, content_type="application/json", body=json.dumps(fixture))
 
         def mutation(route):
@@ -84,6 +86,7 @@ def main():
                 browser = playwright.chromium.launch(executable_path=os.getenv("LAYLOW_TEST_CHROME") or None, args=["--enable-unsafe-swiftshader"])
                 try:
                     for width, height in ((1440, 1000), (390, 844)):
+                        refresh_fixture_clock()
                         fixture.pop("payroll",None)
                         page = browser.new_page(viewport={"width": width, "height": height})
                         errors = []
@@ -286,6 +289,7 @@ def main():
                         assert not errors, errors
                         page.close()
 
+                    refresh_fixture_clock()
                     reduced = browser.new_page(viewport={"width":390,"height":844},reduced_motion="reduce")
                     reduced.route("**/api/status", status_fixture)
                     reduced.goto(url,wait_until="domcontentloaded")
