@@ -78,6 +78,25 @@ class ScreenshotReviewsTests(unittest.TestCase):
         body['id']='../outside'
         with self.assertRaises(ValueError):self.store.save(body)
 
+    def test_six_chart_marks_render_and_reopen_without_fake_extraction(self):
+        body=self.review()
+        body['annotations']=[
+            {'type':kind,'role':'entry','x':.25,'x2':.65,'y':y,'y2':y2}
+            for kind,y,y2 in [('entry',.5,.5),('stop',.75,.75),('target',.2,.2),
+                              ('structure',.4,.4),('demand',.8,.9),('supply',.25,.33)]
+        ]
+        saved=self.store.save(body)
+        reopened=self.store.get(saved['id'])
+        self.assertEqual({m['type'] for m in reopened['annotations']},
+                         {'entry','stop','target','structure','demand','supply'})
+        self.assertTrue(all(m['estimated'] and m['origin']=='user' for m in reopened['annotations']))
+        self.assertIsNone(reopened['raw_extraction']['entry']['value'])
+        self.assertEqual(reopened['raw_extraction']['visible_conditions'],[])
+        with Image.open(self.store.directory/saved['annotated_screenshot_path']) as output:
+            # Structure is a blue line; zones tint the pixels inside the area.
+            self.assertEqual(output.getpixel((320,144)),(96,185,255))
+            self.assertNotEqual(output.getpixel((320,306)),(18,30,48))
+
     def test_no_lookahead_no_fake_strategy_and_invalid_geometry(self):
         values={'entry_value':100,'stop_value':95,'target_value':110,'direction':'LONG',
                 'conditions':[{'label':'breakout','timing':'post_entry'}]}

@@ -199,7 +199,7 @@ class ReviewStore:
                   "annotations": marks, "strategy_rules": rules, "strategy_evaluation": evaluation,
                   "review_status": status, "created_at": old["created_at"] if old else now, "updated_at": now}
         entry_image = next(i for i in images if i["role"] == "entry")
-        record["annotated_screenshot_path"] = self.annotate(rid, entry_image, marks)
+        record["annotated_screenshot_path"] = self.annotate(rid, entry_image, marks, values)
         with connect_db(self.database) as c:
             c.execute("""INSERT INTO screenshot_reviews (id,trade_id,trade_source,trade_mode,symbol,team_name,strategy,instrument,
               entry_timeframe,direction,entry_value,stop_value,target_value,reward_risk,outcome,extraction_confidence,
@@ -222,29 +222,59 @@ class ReviewStore:
                json.dumps(record,allow_nan=False),record["created_at"],now))
         return record
 
-    def annotate(self, rid, item, marks):
-        from PIL import Image, ImageDraw
+    def annotate(self, rid, item, marks, values=None):
+        from PIL import Image, ImageDraw, ImageFont, ImageColor
         with Image.open(self.directory / item["path"]) as source:
             image = source.convert("RGB")
         image.thumbnail((2400,2400))
-        draw = ImageDraw.Draw(image)
-        colors = {"entry": "#60b9ff", "stop": "#ff708f", "target": "#6cf0b2", "supply": "#ff708f", "demand": "#6cf0b2"}
         w,h=image.size
+        colors = {"entry": "#60b9ff", "stop": "#ff708f", "target": "#6cf0b2", "supply": "#ff708f", "demand": "#6cf0b2", "structure":"#60b9ff"}
+        names = {"entry":"Entry", "stop":"Stop", "target":"Target", "supply":"Supply", "demand":"Demand", "structure":"Structure break", "cutoff":"Entry cutoff"}
+        price_fields = {"entry":"entry_value", "stop":"stop_value", "target":"target_value"}
+        values = values or {}
+        size=max(13,round(w/85))
+        try:
+            font=ImageFont.load_default(size=size)
+        except TypeError:
+            font=ImageFont.load_default()
+        stroke=max(2,round(w/600))
         for a in marks:
             if a["role"] != item["role"]:
                 continue
             x,y,x2,y2=a["x"]*w,a["y"]*h,a["x2"]*w,a["y2"]*h
             color=colors.get(a["type"],"#bca2ff")
-            if a["type"] in {"supply","demand","structure"}:
-                draw.rectangle((min(x,x2),min(y,y2),max(x,x2),max(y,y2)),outline=color,width=3)
+            layer=Image.new('RGBA',image.size,(0,0,0,0))
+            draw=ImageDraw.Draw(layer)
+            zone=a["type"] in {"supply","demand"} or (a["type"]=="structure" and abs(a["y2"]-a["y"])>.001)
+            if zone:
+                draw.rectangle((min(x,x2),min(y,y2),max(x,x2),max(y,y2)),fill=(*ImageColor.getrgb(color),38),outline=color,width=stroke)
             elif a["type"] in {"entry","stop","target"}:
-                draw.line((0,y,w,y),fill=color,width=3)
+                for left in range(0,w,17):
+                    draw.line((left,y,min(left+10,w),y),fill=color,width=stroke)
+            elif a["type"] == "structure":
+                draw.line((x,y,x2,y),fill=color,width=stroke)
+                draw.line((x,y,x,y+14),fill=color,width=stroke)
             elif a["type"] == "cutoff":
-                draw.line((x,0,x,h),fill=color,width=3)
+                draw.line((x,0,x,h),fill=color,width=stroke)
             else:
-                draw.line((x,y,x2,y2),fill=color,width=3)
-            label=(a["label"] or a["type"])+" (user / estimated)"
-            draw.text((min(w-180,max(4,x)),max(3,y-17)),label,fill=color)
+                draw.line((x,y,x2,y2),fill=color,width=stroke)
+                if a["type"]=="arrow":
+                    angle=math.atan2(y2-y,x2-x)
+                    for delta in [-.5,.5]:
+                        draw.line((x2,y2,x2-14*math.cos(angle+delta),y2-14*math.sin(angle+delta)),fill=color,width=stroke)
+            price=values.get(price_fields.get(a["type"]))
+            label=(a["label"] or names.get(a["type"],a["type"]))+(" | "+format(price,'g') if price is not None else "")+" | estimated"
+            if a["type"]=="cutoff":
+                label="Entry cutoff | later candles are not entry proof"
+            while draw.textbbox((0,0),label,font=font)[2]>w-24 and len(label)>16:
+                label=label[:-4]+'...'
+            tw=draw.textbbox((0,0),label,font=font)[2]
+            lx=max(8,w-tw-14) if a["type"] in price_fields else max(8,min(w-tw-10,min(x,x2)+8 if zone else x))
+            ly=max(5,min(h-45,(min(y,y2) if zone else y)-size-10))
+            draw.rectangle((lx-5,ly-4,lx+tw+5,ly+size+7),fill='#071120ed')
+            draw.text((lx,ly),label,fill=color,font=font)
+            image=Image.alpha_composite(image.convert('RGBA'),layer).convert('RGB')
+        draw=ImageDraw.Draw(image)
         draw.rectangle((0,h-25,w,h),fill="#071120")
         draw.text((8,h-19),"LAYLOW / VISUAL ESTIMATES / AI NOT CONNECTED",fill="#b6c6e3")
         path=self.directory/"annotated"/(rid+".png")
