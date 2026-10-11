@@ -57,6 +57,23 @@ def main():
         fixture["teams"][0]["analysis"]["indicators"]["vwap"] = 103
         fixture["teams"][0]["controls"] = dict(headline_locked=False,earnings_at="",earnings_status="UNKNOWN",lock_reason="Earnings unknown")
         posted = []
+        def status_fixture(route):
+            # Treat each successful poll as a fresh fixture snapshot. Software
+            # WebGL rendering can take longer than the product freshness window.
+            # Offline tests still abort requests and exercise the cached snapshot.
+            nonlocal clock_now, now
+            clock_now = datetime.now(timezone.utc)
+            now = clock_now.isoformat()
+            fixture["generated_at"] = now
+            fixture["big_manager"]["generated_at"] = now
+            for manager in fixture["managers"]:
+                manager["generated_at"] = now
+            analysis = fixture["teams"][0]["analysis"]
+            analysis["updated_at"] = analysis["bar_time"] = now
+            for index, bar in enumerate(analysis["bars"]):
+                bar["timestamp"] = (clock_now - timedelta(minutes=29-index)).isoformat()
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(fixture))
+
         def mutation(route):
             body = route.request.post_data_json
             posted.append((route.request.url,body,route.request.headers.get("x-laylow-csrf")))
@@ -71,9 +88,7 @@ def main():
                         page = browser.new_page(viewport={"width": width, "height": height})
                         errors = []
                         page.on("pageerror", lambda error: errors.append(str(error)))
-                        page.route("**/api/status", lambda route: route.fulfill(
-                            status=200, content_type="application/json",
-                            body=json.dumps(fixture)))
+                        page.route("**/api/status", status_fixture)
                         page.route("**/api/teams/AAPL/headline-lock",mutation)
                         page.goto(url, wait_until="domcontentloaded")
                         page.wait_for_function(
@@ -272,8 +287,7 @@ def main():
                         page.close()
 
                     reduced = browser.new_page(viewport={"width":390,"height":844},reduced_motion="reduce")
-                    reduced.route("**/api/status", lambda route: route.fulfill(
-                        status=200,content_type="application/json",body=json.dumps(fixture)))
+                    reduced.route("**/api/status", status_fixture)
                     reduced.goto(url,wait_until="domcontentloaded")
                     reduced.wait_for_function("document.body.innerText.includes('ci-worker-note')")
                     assert reduced.locator("#city-motion").is_disabled()
@@ -284,8 +298,7 @@ def main():
                         HTMLCanvasElement.prototype.getContext=function(kind,...args){
                             return kind==="webgl"?null:original.call(this,kind,...args);
                         };""")
-                    fallback.route("**/api/status",lambda route:route.fulfill(
-                        status=200,content_type="application/json",body=json.dumps(fixture)))
+                    fallback.route("**/api/status", status_fixture)
                     fallback.goto(url,wait_until="domcontentloaded")
                     fallback.wait_for_function("document.body.innerText.includes('ci-worker-note')")
                     assert fallback.locator("#world").get_attribute("data-view")=="map"
