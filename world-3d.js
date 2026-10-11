@@ -36,7 +36,8 @@ class Scene {
   const gl=this.gl;
   const shader=(type,source)=>{const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error("Shader could not compile");return s;};
   const program=(v,f)=>{const p=gl.createProgram();gl.attachShader(p,shader(gl.VERTEX_SHADER,v));gl.attachShader(p,shader(gl.FRAGMENT_SHADER,f));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error("Renderer could not link");return p;};
-  this.program=program(`attribute vec3 position,color,normal;attribute float emission;uniform mat4 camera,lightCamera;varying vec4 shadowCoord;varying vec3 tint,n,world;varying float glow,depth;void main(){gl_Position=camera*vec4(position,1.0);world=position;shadowCoord=lightCamera*vec4(position,1.);tint=color;n=normal;glow=emission;depth=gl_Position.w;}`,`precision highp float;varying vec4 shadowCoord;varying vec3 tint,n,world;varying float glow,depth;uniform float ambientPulse;uniform vec3 eyePosition,roomAccent;uniform float interior,woodFloor;uniform vec3 contact[6];uniform sampler2D shadowMap;uniform float shadows;
+  this.program=program(`attribute vec3 position,color,normal;attribute float emission;uniform mat4 camera,lightCamera,reflectionCamera;varying vec4 shadowCoord,reflectionCoord;varying vec3 tint,n,world;varying float glow,depth;void main(){gl_Position=camera*vec4(position,1.0);world=position;shadowCoord=lightCamera*vec4(position,1.);reflectionCoord=reflectionCamera*vec4(position.x,0.,position.z,1.);tint=color;n=normal;glow=emission;depth=gl_Position.w;}`,`precision highp float;varying vec4 shadowCoord,reflectionCoord;varying vec3 tint,n,world;varying float glow,depth;uniform float ambientPulse;uniform vec3 eyePosition,roomAccent;uniform float interior,woodFloor;uniform vec3 contact[6];uniform sampler2D shadowMap,reflectionMap;uniform float shadows,reflectionPass,reflectionReady;uniform vec3 practicalPosition[4],practicalColor[4];
+ vec3 practical(vec3 N,vec3 V){vec3 c=vec3(0.);for(int i=0;i<4;i++){vec3 delta=practicalPosition[i]-world;float distanceSquared=dot(delta,delta);vec3 L=normalize(delta);float diffuse=max(dot(N,L),0.);float spec=pow(max(dot(N,normalize(L+V)),0.),48.);c+=practicalColor[i]*(tint*diffuse+vec3(spec*.13))/(1.+distanceSquared*.20);}return c;}
  float shadowDepth(vec2 p){vec4 v=texture2D(shadowMap,p);return dot(v,vec4(1.,1./255.,1./65025.,1./16581375.));}
  float visibility(vec3 N){
   if(shadows<.5)return 1.;vec3 p=shadowCoord.xyz/shadowCoord.w*.5+.5;
@@ -45,15 +46,31 @@ class Scene {
   for(int i=-1;i<=1;i++)for(int j=-1;j<=1;j++)v+=step(p.z-bias,shadowDepth(p.xy+vec2(float(i),float(j))/768.));
   return .38+.62*v/9.;
  }
- void main(){vec3 N=normalize(n);float light=.32+.63*max(dot(N,normalize(vec3(-.5,1.,.6))),0.)+.24*max(dot(N,normalize(vec3(.8,.2,-1.))),0.);vec3 V=normalize(eyePosition-world);float rim=pow(1.-max(dot(N,V),0.),3.);float shine=pow(max(dot(reflect(-normalize(vec3(-.5,1.,.6)),N),V),0.),36.);vec3 lit=tint*mix(light,1.2+ambientPulse,glow)+vec3(.1,.24,.32)*rim*(1.-glow)+vec3(.23,.26,.3)*shine*(1.-glow);if(interior>.5){
+ void main(){if(reflectionPass>.5&&world.y<.08)discard;vec3 N=normalize(n);float light=.32+.63*max(dot(N,normalize(vec3(-.5,1.,.6))),0.)+.24*max(dot(N,normalize(vec3(.8,.2,-1.))),0.);vec3 V=normalize(eyePosition-world);float rim=pow(1.-max(dot(N,V),0.),3.);float shine=pow(max(dot(reflect(-normalize(vec3(-.5,1.,.6)),N),V),0.),36.);vec3 lit=tint*mix(light,1.2+ambientPulse,glow)+vec3(.1,.24,.32)*rim*(1.-glow)+vec3(.23,.26,.3)*shine*(1.-glow);if(interior>.5){
  vec3 warm=vec3(1.,.83,.66),cool=vec3(.55,.77,1.);
  float key=max(dot(N,normalize(vec3(-.6,1.,.45))),0.);
  float fill=max(dot(N,normalize(vec3(.7,.45,-.4))),0.);
  float direct=visibility(N);
- vec3 material=tint*(vec3(.30)+warm*key*.72*direct+cool*fill*.29);
+ vec3 material=tint*(vec3(.20,.23,.28)+warm*key*.62*direct+cool*fill*.22);
  // Satin panels catch soft highlights, while the side bays wash the room in blue.
  float windowLight=exp(-abs(abs(world.x)-7.8)*.58)*max(0.,N.y)*.14;
  material+=tint*cool*windowLight;
+ material+=practical(N,V)*.85;
+ // Subtle brushed alloy and stone grain, stable when the camera moves.
+ float surfaceDetail=sin(world.x*73.+world.y*57.)*sin(world.z*61.+world.y*13.);
+ material*=1.+surfaceDetail*.009;
+ if(N.y>.92&&world.y<.065&&reflectionReady>.5){
+  vec2 uv=reflectionCoord.xy/reflectionCoord.w*.5+.5;
+  if(uv.x>0.&&uv.y>0.&&uv.x<1.&&uv.y<1.){
+   vec4 reflection=texture2D(reflectionMap,uv)*.40;
+   reflection+=texture2D(reflectionMap,uv+vec2(.002,0.))*.15;
+   reflection+=texture2D(reflectionMap,uv-vec2(.002,0.))*.15;
+   reflection+=texture2D(reflectionMap,uv+vec2(0.,.002))*.15;
+   reflection+=texture2D(reflectionMap,uv-vec2(0.,.002))*.15;
+   float fresnel=.08+.18*pow(1.-max(dot(N,V),0.),3.);
+   material=mix(material,reflection.rgb,fresnel*reflection.a);
+  }
+ }
  // Stable world-space material detail: oak planks or fine acoustic floor texture.
  if(N.y>.9&&world.y<.065){
   float grain=sin(world.x*26.+sin(world.z*3.2)*1.8)*.017+sin(world.x*81.+world.z*.6)*.008;
@@ -81,7 +98,9 @@ class Scene {
   this.displayBuffer=gl.createBuffer();this.displays=new Map();
   const screenVertex=`attribute vec2 point;varying vec2 uv;void main(){uv=point*.5+.5;gl_Position=vec4(point,0.,1.);}`;
   this.blur=program(screenVertex,`precision mediump float;varying vec2 uv;uniform sampler2D source;uniform vec2 direction;uniform float extract;vec3 tap(vec2 p){vec3 c=texture2D(source,p).rgb;return mix(c,c*smoothstep(.48,.95,max(c.r,max(c.g,c.b))),extract);}void main(){vec3 c=tap(uv)*.227027;c+=(tap(uv+direction*1.384615)+tap(uv-direction*1.384615))*.316216;c+=(tap(uv+direction*3.230769)+tap(uv-direction*3.230769))*.070270;gl_FragColor=vec4(c,1.);}`);
-  this.composite=program(screenVertex,`precision mediump float;varying vec2 uv;uniform sampler2D source,halo;uniform float city;float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}void main(){vec4 scene=texture2D(source,uv);vec3 sky=mix(vec3(.065,.072,.17),vec3(.013,.012,.045),smoothstep(.12,1.,uv.y));float cloud=sin(uv.x*7.+uv.y*9.)*sin(uv.x*13.-uv.y*6.);sky+=vec3(.028,.015,.059)*cloud;vec2 cell=floor(uv*vec2(760.,440.));float star=step(.9994,hash(cell))*pow(max(0.,uv.y-.38),1.5);sky+=star*.7*city;vec2 moon=(uv-vec2(.84,.85))*vec2(1.35,1.);float d=length(moon);sky+=vec3(.10,.14,.22)*exp(-d*16.)*city;sky+=vec3(.6,.7,.9)*(1.-smoothstep(.021,.024,d))*city;vec3 c=mix(sky,scene.rgb,scene.a)+texture2D(halo,uv).rgb*mix(.30,1.05,city);c*=1.-.22*pow(length((uv-.5)*1.2),2.);gl_FragColor=vec4(c,1.);}`);
+  this.composite=program(screenVertex,`precision mediump float;varying vec2 uv;uniform sampler2D source,halo;uniform float city;float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}void main(){vec4 scene=texture2D(source,uv);vec3 sky=mix(vec3(.065,.072,.17),vec3(.013,.012,.045),smoothstep(.12,1.,uv.y));float cloud=sin(uv.x*7.+uv.y*9.)*sin(uv.x*13.-uv.y*6.);sky+=vec3(.028,.015,.059)*cloud;vec2 cell=floor(uv*vec2(760.,440.));float star=step(.9994,hash(cell))*pow(max(0.,uv.y-.38),1.5);sky+=star*.7*city;vec2 moon=(uv-vec2(.84,.85))*vec2(1.35,1.);float d=length(moon);sky+=vec3(.10,.14,.22)*exp(-d*16.)*city;sky+=vec3(.6,.7,.9)*(1.-smoothstep(.021,.024,d))*city;vec3 c=mix(sky,scene.rgb,scene.a)+texture2D(halo,uv).rgb*mix(.20,1.05,city);
+ if(city<.5){c*=1.08;c=mix(c,pow(max(c,vec3(0.)),vec3(.91)),.35);c=mix(vec3(dot(c,vec3(.2126,.7152,.0722))),c,1.08);}
+ c*=1.-.16*pow(length((uv-.5)*1.2),2.);gl_FragColor=vec4(c,1.);}`);
   this.quad=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,this.quad);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);this.targets=[];
   this.yaw=kind==="council"?-.30:.25;this.pitch=kind==="city"?.43:kind==="council"?.55:.28;this.distance=kind==="city"?57:kind==="council"?19.5:9;this.target=kind==="city"?[0,3,3]:[0,1.6,0];this.data=[];this.labels=[];
   this.resize=new ResizeObserver(()=>this.draw());this.resize.observe(canvas);this.installCamera();
@@ -194,14 +213,16 @@ class Scene {
   for(const side of[-1,1]){ball(side*.19,.13,seated?.33:.06,.14,.15,.22,'#dae7ed');b(side*.19,.10,seated?.51:.24,.21,.035,.035,color,.3);ball(side*.38,.62,0,.13,.13,.13,'#bfd0dd');ball(side*.44,.44,.12,.095,.13,.095,color);ball(side*.40,.32,.27,.11,.08,.12,'#dae7ed');}
   ball(0,.50,0,.32,.33,.26,color);ball(0,.51,.24,.21,.22,.06,'#dbe8ef');b(0,.49,.30,.16,.055,.035,'#172535');b(0,.51,.324,.10,.018,.013,color,.7);
   this.cylinder(x,y+.77*scale,z,.09*scale,.13*scale,'#69819a');
+  for(const side of[-1,1]){ball(side*.32,.62,.05,.07,.075,.07,'#253950');ball(side*.43,.37,.22,.07,.055,.07,'#758f9f');b(side*.40,.35,.31,.16,.02,.08,color,.18);}
+  b(0,.69,.25,.19,.026,.025,'#d1e5eb');for(let i=0;i<3;i++)b(-.05+i*.05,.70,.28,.012,.018,.008,color,.6);
   const head=this.data.length;
-  ball(0,1.19,0,.47,.42,.39,'#dce8ec');ball(0,1.18,.31,.365,.27,.12,'#102235');
+  ball(0,1.19,0,.47,.42,.39,'#dce8ec');ball(0,1.18,.31,.365,.27,.12,'#081a2a');ball(-.11,1.36,.393,.15,.025,.014,'#789cab',.08);
   for(const side of[-1,1]){ball(side*.49,1.20,0,.095,.20,.16,color);ball(side*.53,1.20,.01,.035,.12,.11,'#9ab8c9');ball(side*.14,1.23,.427,.074,.10,.022,color,.75);ball(side*.16,1.26,.443,.018,.025,.008,'#f1fcff',.6);b(side*.145,1.37,.36,.14,.025,.035,color,.35);}
   // A smiling segmented mouth, curved headset band and antenna.
   for(let i=0;i<7;i++){const a=-1.15+i*2.3/6;ball(Math.sin(a)*.105,1.09-Math.cos(a)*.035,.43,.019,.012,.012,color,.6);}
   for(let i=0;i<13;i++){const a=i*Math.PI/12;ball(Math.cos(a)*.49,1.20+Math.sin(a)*.435,-.02,.045,.045,.065,'#3b536b');}
   b(.35,1.01,.26,.035,.035,.28,'#7e9eb3');ball(.34,1.02,.405,.055,.04,.045,color);
-  b(0,1.57,0,.028,.19,.028,'#718a9f');ball(0,1.79,0,.065,.065,.065,color,.65);
+  for(const side of[-1,1])for(let i=0;i<3;i++)ball(side*.50,1.12+i*.07,.12,.012,.012,.012,'#d8e9ed');b(0,1.57,0,.028,.19,.028,'#718a9f');ball(0,1.79,0,.065,.065,.065,color,.65);
   const rotate=(from,a)=>{const c=Math.cos(a),s=Math.sin(a);for(let i=from;i<this.data.length;i+=10){const xx=this.data[i]-x,zz=this.data[i+2]-z,nx=this.data[i+6],nz=this.data[i+8];this.data[i]=x+xx*c+zz*s;this.data[i+2]=z-xx*s+zz*c;this.data[i+6]=nx*c+nz*s;this.data[i+8]=-nx*s+nz*c;}};
   if(headTurn)rotate(head,headTurn);if(angle)rotate(start,angle);
  }
@@ -412,6 +433,17 @@ class Scene {
   // Lantern constellation: thin warm arcs instead of a heavy ceiling lid.
   for(let i=0;i<12;i++){const a=i*Math.PI/6,x=Math.sin(a)*2.65,z=Math.cos(a)*2.65;this.ellipsoid(x,4.84,z,.075,.09,.075,'#fff0d0',.85);}
   for(const x of[-6.2,6.2]){this.cylinder(x,.58,3.35,.08,.16,'#ddc5a1');this.ellipsoid(x,2.4,4.8,.22,.36,.22,'#ffdeaa',.7);this.rod([x,.02,4.8],[x,2.3,4.8],.026,'#bea47a');}
+  // Gallery ceiling and sculpted chair shells create a complete, readable chamber.
+  for(const x of[-7.7,7.7]){this.roundedBox(x,4.88,-1.9,.36,.24,8.9,'#172337',.10);this.box(x*.992,4.855,-1.9,.07,.025,8.65,'#ffe9ba',.55);}
+  for(let i=0;i<6;i++){const a=i*Math.PI/3,x=Math.sin(a)*3.8,z=Math.cos(a)*3.8,side=[Math.cos(a),0,-Math.sin(a)];
+   for(const d of[-.51,.51]){const xx=x+side[0]*d,zz=z+side[2]*d;this.rod([xx,.59,zz],[xx,.98,zz],.024,'#c6a571');this.sphere(xx,.98,zz,.052,'#48667c');}
+   const px=Math.sin(a)*2.55,pz=Math.cos(a)*2.55;this.cylinder(px,1.42,pz,.12,.02,'#cbb484');this.cylinder(px,1.44,pz,.055,.16,'#ddddd1');
+  }
+  // Walnut panels, recessed bronze seams, carved round-table detailing.
+  for(let i=0;i<48;i++){const a=i*Math.PI/24;this.rod([Math.sin(a)*2.99,1.14,Math.cos(a)*2.99],[Math.sin(a)*2.99,1.31,Math.cos(a)*2.99],.012,'#8e704e');}
+  for(const x of[-4.5,4.5]){this.box(x,.13,-5.61,.45,2.12,.045,'#2b4350');this.box(x-.17,.13,-5.56,.016,2.12,.035,'#cba871');this.box(x+.17,.13,-5.56,.016,2.12,.035,'#cba871');}
+  this.ring(0,.025,6.6,.50,'#d8b585',.020,.12);for(const x of[-.20,.20])this.box(x,.028,6.6,.028,.006,.37,'#ead6b4');
+  this.canvas.dataset.design='flagship-v3';
   this.councilBase=this.data.slice();this.upload();this.draw();
  }
  councilData(members,bars,review){
@@ -424,14 +456,30 @@ class Scene {
   if(this.targetWidth===w&&this.targetHeight===h)return;
   const gl=this.gl;for(const t of this.targets){gl.deleteTexture(t.texture);gl.deleteFramebuffer(t.fbo);if(t.depth)gl.deleteRenderbuffer(t.depth);}this.targets=[];
   this.targetWidth=w;this.targetHeight=h;
-  for(let i=0;i<3;i++){
+  for(let i=0;i<(this.kind==='city'?3:4);i++){
    const tw=i?Math.max(1,Math.floor(w/2)):w,th=i?Math.max(1,Math.floor(h/2)):h;
    const texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,tw,th,0,gl.RGBA,gl.UNSIGNED_BYTE,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
    const fbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);let depth=null;
-   if(!i){depth=gl.createRenderbuffer();gl.bindRenderbuffer(gl.RENDERBUFFER,depth);gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT16,tw,th);gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,depth);}
+   if(!i||i===3){depth=gl.createRenderbuffer();gl.bindRenderbuffer(gl.RENDERBUFFER,depth);gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT16,tw,th);gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,depth);}
    this.targets.push({texture,fbo,depth,w:tw,h:th});
   }
-  this.bloomAvailable=this.targets.every(t=>{gl.bindFramebuffer(gl.FRAMEBUFFER,t.fbo);return gl.checkFramebufferStatus(gl.FRAMEBUFFER)===gl.FRAMEBUFFER_COMPLETE;});gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  this.bloomAvailable=this.targets.slice(0,3).every(t=>{gl.bindFramebuffer(gl.FRAMEBUFFER,t.fbo);return gl.checkFramebufferStatus(gl.FRAMEBUFFER)===gl.FRAMEBUFFER_COMPLETE;});this.reflectionAvailable=!!this.targets[3]&&(()=>{gl.bindFramebuffer(gl.FRAMEBUFFER,this.targets[3].fbo);return gl.checkFramebufferStatus(gl.FRAMEBUFFER)===gl.FRAMEBUFFER_COMPLETE;})();gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+ }
+ renderReflection(eye,target){
+  if(!this.reflectionAvailable)return;
+  const gl=this.gl,rt=this.targets[3],saved=this.matrix;
+  this.matrix=cameraMatrix([eye[0],-eye[1],eye[2]],[target[0],-target[1],target[2]],this.canvas.width/this.canvas.height);
+  gl.uniformMatrix4fv(gl.getUniformLocation(this.program,'reflectionCamera'),false,new Float32Array(this.matrix));
+  gl.uniformMatrix4fv(this.camera,false,new Float32Array(this.matrix));
+  gl.uniform1f(gl.getUniformLocation(this.program,'reflectionPass'),1);gl.uniform1f(gl.getUniformLocation(this.program,'reflectionReady'),0);
+  // Never bind the attached reflection texture as a sampler during its own pass.
+  gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,this.shadowTexture);gl.activeTexture(gl.TEXTURE0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,rt.fbo);gl.viewport(0,0,rt.w,rt.h);gl.clearColor(.02,.035,.07,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.drawArrays(gl.TRIANGLES,0,this.vertices||0);this.drawDisplays();
+  this.matrix=saved;gl.useProgram(this.program);gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
+  for(let i=0;i<4;i++){gl.enableVertexAttribArray(this.attributes[i]);gl.vertexAttribPointer(this.attributes[i],i===3?1:3,gl.FLOAT,false,40,i*12);}
+  gl.uniformMatrix4fv(this.camera,false,new Float32Array(saved));gl.uniform1f(gl.getUniformLocation(this.program,'reflectionPass'),0);gl.uniform1f(gl.getUniformLocation(this.program,'reflectionReady'),1);
+  gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,rt.texture);gl.uniform1i(gl.getUniformLocation(this.program,'reflectionMap'),3);gl.activeTexture(gl.TEXTURE0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,this.bloomAvailable?this.targets[0].fbo:null);gl.viewport(0,0,this.canvas.width,this.canvas.height);
  }
  screen(program,target,source){
   const gl=this.gl;gl.bindFramebuffer(gl.FRAMEBUFFER,target?.fbo||null);gl.viewport(0,0,target?.w||this.canvas.width,target?.h||this.canvas.height);gl.useProgram(program);gl.bindBuffer(gl.ARRAY_BUFFER,this.quad);
@@ -453,12 +501,27 @@ class Scene {
   const contacts=Array.from({length:6},(_,i)=>this.kind==='office'&&this.crew?.[i]?[this.crew[i].x,0,this.crew[i].z+1]:this.kind==='council'?[Math.sin(i*Math.PI/3)*3.8,0,Math.cos(i*Math.PI/3)*3.8]:[1000,0,1000]);
   gl.uniform3fv(gl.getUniformLocation(this.program,'contact[0]'),new Float32Array(contacts.flat()));
   this.eye=eye;gl.uniform3fv(gl.getUniformLocation(this.program,"eyePosition"),new Float32Array(eye));this.matrix=cameraMatrix(eye,t,w/h);gl.uniformMatrix4fv(this.camera,false,new Float32Array(this.matrix));gl.uniform1f(this.pulse,byId("world").dataset.motion==="on"&&!document.hidden?.035+.035*Math.sin(performance.now()/900):0);
+  const warm=this.kind==='council'||['boardroom','exchange','garden','bullion'].includes(this.theme?.feature),accent=hex(this.theme?.accent||'#e6c694');
+  gl.uniform3fv(gl.getUniformLocation(this.program,'practicalPosition[0]'),new Float32Array([-5.8,3.4,4.8,6,3.8,-2,0,5,-3.8,0,1.8,0]));
+  gl.uniform3fv(gl.getUniformLocation(this.program,'practicalColor[0]'),new Float32Array([1.5,1.05,.65,.48,.92,1.6,warm?1.4:.75,warm?1.15:1.1,warm?.82:1.5,...accent.map(v=>v*.7)]));
+  gl.uniform1f(gl.getUniformLocation(this.program,'reflectionPass'),0);gl.uniform1f(gl.getUniformLocation(this.program,'reflectionReady'),0);
+  gl.uniformMatrix4fv(gl.getUniformLocation(this.program,'reflectionCamera'),false,new Float32Array(this.matrix));
+  gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,this.shadowTexture);gl.uniform1i(gl.getUniformLocation(this.program,'reflectionMap'),3);gl.activeTexture(gl.TEXTURE0);
+  if(this.kind!=='city')this.renderReflection(eye,t);
+  canvas.dataset.reflections=String(this.kind!=='city'&&!!this.reflectionAvailable);canvas.dataset.graphics='premium';
   gl.clearColor(.012,.018,.04,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.drawArrays(gl.TRIANGLES,0,this.vertices||0);this.drawRoomEffects();this.drawDisplays();
   if(this.bloomAvailable){
    gl.disable(gl.DEPTH_TEST);const [scene,a,b]=this.targets;
    this.screen(this.blur,a,scene);gl.uniform2f(gl.getUniformLocation(this.blur,"direction"),3/scene.w,0);gl.uniform1f(gl.getUniformLocation(this.blur,"extract"),1);gl.drawArrays(gl.TRIANGLES,0,6);
    this.screen(this.blur,b,a);gl.uniform2f(gl.getUniformLocation(this.blur,"direction"),0,3/a.h);gl.uniform1f(gl.getUniformLocation(this.blur,"extract"),0);gl.drawArrays(gl.TRIANGLES,0,6);
    this.screen(this.composite,null,scene);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,b.texture);gl.uniform1i(gl.getUniformLocation(this.composite,"halo"),1);gl.uniform1f(gl.getUniformLocation(this.composite,"city"),this.kind==="city"?1:0);gl.drawArrays(gl.TRIANGLES,0,6);gl.activeTexture(gl.TEXTURE0);
+  }
+  if(this.kind!=='city'){
+   const view=canvas.dataset.camera||'wide';
+   for(const button of document.querySelectorAll('[data-room="'+this.kind+'"][data-room-camera]')){
+    if(button.classList.contains('room-enter-view')){button.dataset.roomCamera=view==='inside'?'wide':'inside';button.textContent=view==='inside'?'Whole room ↗':'Step inside ↗';}
+    else if(!['closer','further'].includes(button.dataset.roomCamera))button.setAttribute('aria-pressed',String(button.dataset.roomCamera===view));
+   }
   }
   canvas.dataset.ready="true";canvas.dataset.bloom=String(this.bloomAvailable);if(this.kind==="city")placeLabels();
   if(this.kind==="office"){const buttons=Array.from(byId("office-screen-labels")?.children||[]);buttons.forEach((button,i)=>{button.hidden=false;button.style.left=canvas.clientWidth*(i+1)/4+"px";button.style.top=canvas.clientHeight-14+"px";});}
@@ -559,6 +622,7 @@ function start(){
 window.Laylow3D={
  council(members,bars=[],review=null){try{if(!councilScene)councilScene=new Scene(byId("council-3d"),"council");const key=JSON.stringify(members.map(m=>m.color));if(key!==councilKey){councilKey=key;councilScene.councilRoom(members);}councilScene.councilData(members,bars,review);councilScene.trainingDisplay(window.LaylowTraining?.snapshot());byId("council-render-note").textContent="Drag to orbit · select a member to inspect their opinion · green support, amber wait, red veto.";}catch(error){byId("council-render-note").textContent="3D chamber unavailable; opinions and decisions remain accessible below.";}},
  roomCamera(kind,view){const scene=kind==="council"?councilScene:office;if(!scene)return;
+  if(view==='inside'){scene.yaw=0;scene.pitch=.07;scene.distance=kind==='office'?15:15.3;scene.target=[0,1.5,-3.7];scene.canvas.dataset.camera=view;scene.draw();return;}
   if(kind==='office'&&office){if(view==='wall'){office.yaw=0;office.pitch=.08;office.distance=office.canvas.clientWidth<650?14.5:12;office.target=[0,3.3,-6.2];office.canvas.dataset.camera=view;office.draw();return;}if(view==='wide'){office.yaw=-.38;office.pitch=.57;office.distance=19.8;office.target=[0,1.4,-.1];office.canvas.dataset.camera=view;office.draw();return;}if(view==='desk'||view==='screens'){window.LaylowTeamOffices.focus(office,byId('office-worker').value,view);return;}}
   const presets=kind==="council"?{wide:[-.30,.55,19.5,[0,1.6,0]],table:[.15,.74,10.5,[0,1,0]],wall:[0,.12,10.4,[0,2.5,-2.5]]}:{wide:[.3,.28,9,[0,1.6,-.25]],desk:[-.48,.17,5.8,[0,1.7,.25]],screens:[0,.12,4.2,[0,2,-.6]]};
   if(view==="closer"||view==="further")scene.distance=Math.max(4,Math.min(26,scene.distance+(view==="closer"?-1:1)));

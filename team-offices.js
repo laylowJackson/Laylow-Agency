@@ -77,6 +77,62 @@ function flagshipInterior(s,t){
  if(t.feature==='bullion'){for(let i=0;i<8;i++){const x=-2.3+i*.65;s.box(x,.025,5.4,.035,.009,1.4,a,.25);}}
  if(t.feature==='garden'){for(const x of[-7.1,7.1])for(let z=-5.7;z<-.7;z+=.6){s.rod([x,4.6,z],[x*.90,4.9,z+.3],.035,'#84a783');s.ellipsoid(x*.92,4.75,z,.15,.09,.28,'#71a777');}}
 }
+function premiumInterior(s,t){
+ const a=t.accent,warm=['boardroom','exchange','garden','bullion'].includes(t.feature),stone=warm?'#ddccb1':'#8da5b8',dark=warm?'#203537':'#15263b',brass=warm?'#cfa974':'#91adbd';
+ // Cutaway ceiling: layered acoustic coffers and thin pendants leave the crew in view.
+ for(const x of[-7.9,7.9]){
+  s.roundedBox(x,5.16,-3.8,.38,.24,5.7,dark,.10);s.box(x*.992,5.12,-3.8,.07,.025,5.5,'#dceefa',.6);
+  for(let z=-6;z<-.8;z+=.58){s.box(x*.987,5.42,z,.31,.14,.32,brass);s.box(x*.974,5.33,z,.06,.035,.18,a,.25);}
+ }
+ s.roundedBox(0,6.04,-6.42,16.1,.26,.52,dark,.13);s.box(0,6.015,-6.11,15.5,.025,.025,'#d5e6ea',.65);
+ // A real modeled entry threshold with a smoked glass rail and an inset agency medallion.
+ s.roundedBox(0,-.05,7.22,5.8,.08,.75,dark,.20);s.roundedBox(0,.031,6.28,3.35,.025,1.05,stone,.18);
+ s.ring(0,.065,6.28,.37,brass,.025,.12);s.box(0,.068,6.28,.18,.006,.18,a,.35);
+ for(const x of[-7.5,7.5]){s.roundedBox(x,.035,6.72,1.02,.09,1.06,stone,.09);s.box(x,.13,6.85,.055,.80,.055,brass);s.box(x,.92,6.85,1,.055,.055,brass);}
+ for(const x of[-3.5,3.5]){s.box(x,.07,6.82,3.0,.026,.035,a,.35);}
+ // Inset terrazzo paths and warm metal floor seams add scale to the office.
+ for(let i=0;i<18;i++){const x=-7.65+(i%6)*3.04,z=5.98-Math.floor(i/6)*.48;s.box(x,.019,z,.33,.005,.025,brass);}
+ for(const p of s.crew)transformed(s,p,()=>{
+  // Suspended rounded light panels, monitor brackets and dark upholstered chair backs.
+  s.roundedBox(0,4.7,-.95,1.15,.065,.32,'#24394d',.14);s.roundedBox(0,4.68,-.95,.98,.021,.23,'#e6f4ee',.09,.6);
+  for(const x of[-.52,.52])s.rod([x,4.78,-.95],[x,5.4,-.95],.009,brass);
+  s.box(0,1.32,-.64,.65,.035,.035,'#628291');s.box(.65,1.26,-.47,.034,.28,.035,'#526f83');
+  for(const x of[-.39,.39]){s.rod([x,.55,1.29],[x,.99,1.39],.025,'#253d50');s.box(x,.68,1.48,.018,.17,.018,p.color,.25);}
+  // Keycaps, a tablet and a cable spine remain distinct when inspecting a desk.
+  for(let row=0;row<3;row++)for(let col=0;col<10;col++)s.roundedBox(-.36+col*.072,1.159,.073+row*.062,.048,.010,.041,row===2&&col>2&&col<7?'#bdd8dc':'#243d50',.005);
+  s.roundedBox(.98,1.13,-.22,.25,.018,.35,'#162a3b',.026);s.box(.98,1.149,-.22,.20,.002,.27,p.color,.14);
+  s.box(1.31,.5,-.5,.035,.62,.11,'#162837');for(let i=0;i<4;i++)s.box(1.335,.55+i*.14,-.5,.012,.025,.09,brass);
+ });
+ // Each district has its own signature installation rather than a palette swap.
+ if(t.feature==='boardroom'){
+  for(let i=0;i<6;i++){const aa=i*Math.PI/3,x=Math.cos(aa)*1.15,z=.1+Math.sin(aa)*1.15;s.roundedBox(x,.935,z,.38,.018,.25,'#142a30',.04);s.box(x,.955,z,.29,.003,.18,a,.15);}
+  s.cylinder(0,.96,.1,.35,.045,brass);s.ring(0,1.1,.1,.45,a,.012,.45);
+ }else if(t.feature==='garage'){
+  s.roundedBox(0,.25,.45,2.75,.36,1.38,'#9f2b46',.28);s.roundedBox(0,.81,.16,1.23,.18,.77,'#1b2d43',.15);
+  for(const x of[-1.13,1.13])for(const z of[-.13,.98]){s.ellipsoid(x,.37,z,.08,.19,.19,'#738591');s.ellipsoid(x*1.01,.37,z,.04,.10,.10,'#142333');}
+  for(const x of[-.45,.45])s.roundedBox(x,.56,1.1,.32,.08,.045,'#ffdacf',.04,.7);
+  for(let i=0;i<7;i++)s.box(-.45+i*.15,.36,1.16,.04,.11,.035,'#142339');
+ }else if(t.feature==='studio'){
+  for(let i=0;i<12;i++){const aa=i*Math.PI/6;s.rod([Math.cos(aa)*.68,.72,.25+Math.sin(aa)*.68],[Math.cos(aa+.3)*.38,1.55,.25+Math.sin(aa+.3)*.38],.012,a,.45);}
+  s.ellipsoid(0,1.58,.25,.18,.22,.18,'#bee8e5',.3);
+ }else if(t.feature==='aurora'||t.feature==='orbital'){
+  for(let i=0;i<3;i++){const h=1.65+i*.2,r=.55+i*.18;s.ring(0,h,.15,r,a,.012,.40);}
+  for(let i=0;i<20;i++){const aa=i*Math.PI/10;s.rod([Math.sin(aa)*.6,.98,.15+Math.cos(aa)*.6],[Math.sin(aa)*.6,1.13,.15+Math.cos(aa)*.6],.012,'#c1e1eb',.25);}
+ }else if(t.feature==='exchange'){
+  for(let i=0;i<9;i++){s.roundedBox(-1.14+i*.28,1.02,.3,.19,.05,.36,'#d5be94',.025);s.box(-1.14+i*.28,1.07,.3,.10,.005,.27,'#856641');}
+ }else if(t.feature==='garden'){
+  for(let i=0;i<8;i++){const aa=i*Math.PI/4,x=Math.cos(aa)*.83,z=.2+Math.sin(aa)*.83;s.ellipsoid(x,.55,z,.17,.09,.24,'#3f7769');s.rod([x,.53,z],[x*.85,1.0,z*.85],.016,'#95b778');}
+ }else if(t.feature==='cyber'){
+  for(let i=0;i<12;i++){const aa=i*Math.PI/6;s.rod([Math.cos(aa)*.5,1.13,.4+Math.sin(aa)*.5],[Math.cos(aa+.3)*.3,1.95,.4+Math.sin(aa+.3)*.3],.018,a,.40);}
+  s.sphere(0,1.65,.4,.15,'#e4bdff',.55);
+ }else if(t.feature==='arena'){
+  for(let i=0;i<4;i++){const x=-.42+i*.28;s.box(x,.68,.3,.17,.11+(i%3)*.13,.27,a,.18);}
+  s.ring(0,1.26,.3,.65,'#cceff6',.018,.35);
+ }else if(t.feature==='bullion'){
+  for(let i=0;i<9;i++){const x=-.55+i%3*.55,y=.16+Math.floor(i/3)*.21;s.box(x,y+.12,.83,.28,.026,.008,'#e7c479',.08);}
+ }
+ s.canvas.dataset.design='flagship-v3';
+}
 function desk(s,p,t){transformed(s,p,()=>{
  s.roundedBox(0,.025,0,3.1,.03,2.8,'#101d2d',.22);for(const x of[-1.43,1.43])s.box(x,.06,0,.014,.005,2.45,'#526276');s.roundedBox(0,.96,-.25,2.85,.12,1.45,t.metal,.17);s.roundedBox(0,1.08,-.25,2.80,.035,1.40,'#233344',.15);s.box(0,1.01,.41,2.48,.04,.025,p.color,.9);
  for(const x of[-1.06,1.06])s.box(x,.02,-.25,.085,.94,1.12,t.metal);
@@ -110,7 +166,7 @@ function build(s,symbol,bridge){
  s.yaw=-.38;s.pitch=.57;s.distance=19.8;s.target=[0,1.4,-.1];
  s.canvas.dataset.theme=t.feature;s.canvas.dataset.team=symbol;s.canvas.dataset.crewCount=String(1+def.bots.length);s.canvas.dataset.camera='wide';
  const coords=[[0,-4.1,0],...t.desks];s.crew=['Team Manager',...def.bots].map((name,i)=>({name,x:coords[i][0],z:coords[i][1],angle:coords[i][2],color:i===0?t.accent:['#75e8cc','#a7b7ff','#ffd18b','#f997bf'][i-1]}));
- flagshipInterior(s,t);for(const p of s.crew)desk(s,p,t);feature(s,t);
+ flagshipInterior(s,t);for(const p of s.crew)desk(s,p,t);feature(s,t);premiumInterior(s,t);
  if(!['garden','cyber','bullion'].includes(t.feature))for(const x of[-6.6,6.6])plant(s,x,4.5,'#397d79');
  s.officeBase=s.data.slice();s.upload();s.draw();return t;
 }

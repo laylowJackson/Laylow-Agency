@@ -166,3 +166,9 @@
 }
 
 @media(max-width:600px){#office-3d,#council-room #council-3d{height:480px}#office-speech{max-width:155px;font-size:10px;padding:8px 10px}#council-seat-labels button{width:auto;max-width:155px;min-height:36px}#council-seat-labels button .bubble-opinion{display:none}#council-seat-labels button[aria-pressed="true"] .bubble-opinion{display:-webkit-box}.council-stage .room-hud{gap:6px}.room-hud{font-size:8px}}
+
+/* Immersive entry remains on the scene, so the camera is available without scrolling. */
+.room-enter-view{position:absolute;left:18px;top:18px;z-index:4;min-height:44px;padding:9px 15px;border:1px solid #99e9f087;background:linear-gradient(135deg,#163848e8,#0d1e32ed);color:#dbfaff;border-radius:12px;font-size:12px;font-weight:650;box-shadow:0 6px 24px #0005,inset 0 1px #e1fbff20;backdrop-filter:blur(12px)}
+.room-enter-view:hover{background:#28526be8;border-color:#b5f4fb}
+.council-stage .room-enter-view{border-color:#e5cda08a;background:linear-gradient(135deg,#413728e8,#1c2838ed);color:#fff0cf}
+@media(max-width:600px){.room-enter-view{top:12px;left:12px;padding:8px 10px;font-size:10px}.council-stage .room-enter-view{top:88px}}
