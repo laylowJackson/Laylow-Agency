@@ -14,6 +14,7 @@ FILES = [
     "research-evidence.js", "historical-research.js", "historical-research-worker.js", "research-station-ui.js", "exit-research.js", "entry-research.js", "ENTRY_RESEARCH.md", "EXIT_RESEARCH.md", "BOT_RESEARCH_EVIDENCE.md", "tests/test_research_evidence.cjs", "tests/test_exit_research.cjs", "tests/test_entry_research.cjs",
     "training-policy.js", "training-worker.cjs", "training_worker.py", "CLOSED_MARKET_TRAINING.md", "tests/test_training_shift.cjs",
     "practice-engine.js", "practice-ui.js", "training-engine.js", "training-ui.js", "team-offices.js",
+    "live_market_data.py", "live-practice.js", "LIVE_PRICE_PRACTICE.md", "tests/test_live_practice.cjs",
     "wick-knowledge.js", "wick_knowledge.py", "WICK_KNOWLEDGE.md", "tests/test_wick_knowledge.cjs",
     "screenshot-lab.js", "screenshot-lab.css", "screenshot_analysis.py", "screenshot_reviews.py", "training-theater.js",
     "tests/__init__.py", "tests/browser_smoke.py", "tests/test_training_engine.cjs",

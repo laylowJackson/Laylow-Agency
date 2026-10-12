@@ -20,6 +20,8 @@ def create_app(db_path=None, settings_path=None):
     application.config["CONTROL_CSRF"] = secrets.token_urlsafe(32)
     application.config["MAX_CONTENT_LENGTH"] = 9 * 1024 * 1024
     application.config["BROKER_SETTINGS_PATH"] = Path(settings_path or Path(ROOT_DIR) / ".env.local")
+    from live_market_data import LiveMarketData
+    application.config["LIVE_MARKET_DATA"] = LiveMarketData(application.config["BROKER_SETTINGS_PATH"])
     try:
         ensure_system_tables(db_path=database)
     except sqlite3.Error:
@@ -66,6 +68,17 @@ def create_app(db_path=None, settings_path=None):
     @application.get("/practice-ui.js")
     def practice_ui():
         return send_file(Path(ROOT_DIR) / "practice-ui.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/live-practice.js")
+    def live_practice_script():
+        return send_file(Path(ROOT_DIR) / "live-practice.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/api/market-data")
+    def live_market_data():
+        origin = request.headers.get("Origin")
+        if origin is not None and origin != request.host_url.rstrip("/"):
+            return jsonify({"error": "local_origin_required"}), 403
+        return jsonify(application.config["LIVE_MARKET_DATA"].snapshot())
 
     @application.get("/team-offices.js")
     def team_offices():
@@ -165,7 +178,11 @@ def create_app(db_path=None, settings_path=None):
             return jsonify({"error": "invalid_control_token_or_origin"}), 403
         from app_settings import save_credentials
         try:
-            return jsonify(save_credentials(application.config["BROKER_SETTINGS_PATH"], request.get_json(silent=True)))
+            result = save_credentials(application.config["BROKER_SETTINGS_PATH"], request.get_json(silent=True))
+            feed = application.config["LIVE_MARKET_DATA"]
+            with feed.lock:
+                feed.cache = None
+            return jsonify(result)
         except ValueError:
             return jsonify({"error": "invalid_broker_settings"}), 400
         except OSError:

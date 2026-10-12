@@ -26,7 +26,7 @@ const select=$("council-team");for(const d of window.LaylowWorld.definitions){co
 function render(data,online){
  last=data||{};const council=last.council||{},review=(council.reviews||[]).find(r=>r.team_name===selected),history=(council.history||[]).filter(r=>r.team_name===selected);
  section.querySelector(".muted").textContent=last.practice?"Inside the Council room. Choose a seat to inspect a member's personality and current simulated opinion. Six rule-based personalities debate each fake-money proposal.":"Choose a seat to inspect a member's personality and risk opinion. Explicit rules review the same source bars; the existing AI review may veto or reduce their decision.";
- $("council-feed").textContent=last.practice?"MARKET FEED: SIMULATED · Live broker/data feed not connected. Generated candles only.":"Recorded evidence review · live quote connection is not verified.";
+ $("council-feed").textContent=last.live_price_practice?"IEX "+last.market_feed.status+" · observed stock data · simulated fills · futures disconnected":last.practice?"MARKET FEED: SIMULATED · Live broker/data feed not connected. Generated candles only.":"Recorded evidence review · live quote connection is not verified.";
  $("council-context").textContent=last.practice?"PRACTICE · RULE-BASED SIMULATED OPINIONS":last.public_viewer?"PUBLIC VIEWER / EVIDENCE NOT CONNECTED":online?"CURRENT EVIDENCE REVIEW":"LAST SNAPSHOT / CONNECTION LOST";
  $("council-action").textContent=review?(review.action==="SKIP"?"WAIT / NO ENTRY":String(review.action).replaceAll("_"," ")):"Waiting for evidence";
  $("council-reason").textContent=review?.reason||"Council opinions appear when source evidence is available.";

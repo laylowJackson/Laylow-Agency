@@ -4,6 +4,8 @@ Four stock teams (SPY, QQQ, AAPL, TSLA) and six independent futures watch teams 
 
 ## Start on Windows
 
+Live-price fake-money practice is now available in the local app. Save Alpaca paper API keys in Settings, then click **Open live-price practice**. It reads IEX prices for SPY, QQQ, AAPL and TSLA into a separate $50,000 fake ledger; it never submits broker orders. No AI key is needed. See [LIVE_PRICE_PRACTICE.md](LIVE_PRICE_PRACTICE.md) for setup, polling/fill limitations and disconnected futures. GitHub Pages remains a public viewer; it cannot host the private market-data proxy.
+
 First-team research: the Training Lab now has a SPY / 5-minute preset and a separate fixed-risk comparison of fixed targets, partial exits and a close-based trailing stop. Real candle data must be uploaded before market research can run. See [EXIT_RESEARCH.md](EXIT_RESEARCH.md) for predefined rules, costs, chronological selection and limitations. This does not change the practice balance or enable LIVE.
 
 1. Install Python 3.11 or newer.
