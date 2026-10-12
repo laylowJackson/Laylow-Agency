@@ -15,6 +15,22 @@ const rules=Object.freeze([
 const sum=a=>a.reduce((n,v)=>n+v,0),mean=a=>a.length?sum(a)/a.length:0;
 function valid(b){return b&&b.closed!==false&&Number.isFinite(Date.parse(b.timestamp))&&['open','high','low','close'].every(k=>Number.isFinite(b[k])&&b[k]>0)&&b.low<=Math.min(b.open,b.close)&&b.high>=Math.max(b.open,b.close);}
 function context(bars,i){const recent=bars.slice(i-24,i),p=bars[i-1],ranges=recent.slice(-14).map((b,j)=>Math.max(b.high-b.low,Math.abs(b.high-(recent[recent.length-15+j]?.close??b.open)),Math.abs(b.low-(recent[recent.length-15+j]?.close??b.open))));const atr=mean(ranges),closes=recent.map(b=>b.close),travel=sum(closes.slice(1).map((v,j)=>Math.abs(v-closes[j])));return {atr,efficiency:travel?Math.abs(closes.at(-1)-closes[0])/travel:0,fast:mean(closes.slice(-8)),slow:mean(closes),prior:p,high:Math.max(...recent.map(b=>b.high)),low:Math.min(...recent.map(b=>b.low))};}
+function entryFilter(bars,i,side,config,c){
+ const b=bars[i],m=wicks.measure(b),evidence={};
+ if(config.higher){const duration=300000,bucket=900000,completed=[];let group=[];
+  for(const v of bars.slice(0,i+1)){const time=Date.parse(v.timestamp),key=Math.floor(time/bucket);if(group.length&&Math.floor(Date.parse(group[0].timestamp)/bucket)!==key)group=[];group.push(v);
+   if(group.length===3&&Date.parse(group[0].timestamp)%bucket===0&&group.every((v,j)=>Date.parse(v.timestamp)===Date.parse(group[0].timestamp)+j*duration)){completed.push({time:Date.parse(group[0].timestamp),close:v.close});group=[];}}
+  const recent=completed.slice(-8);if(recent.length<8||recent.some((v,j)=>j&&v.time-recent[j-1].time!==bucket))return {rejected:'Insufficient contiguous completed 15m context'};
+  const fast=mean(recent.slice(-3).map(v=>v.close)),slow=mean(recent.map(v=>v.close));if((fast-slow)*side<=0||(recent.at(-1).close-recent.at(-2).close)*side<=0)return {rejected:'15m trend disagreement'};
+  evidence.higher_timeframe='Completed 15m trend aligned';
+ }
+ if(config.quality){const previous=bars.slice(i-20,i),volumes=previous.map(v=>v.volume),prior=bars.slice(i-5,i);
+  if(!Number.isFinite(b.volume)||b.volume<=0||volumes.some(v=>!Number.isFinite(v)||v<=0))return {rejected:'Volume unavailable'};
+  if(b.volume<mean(volumes)||m.body/m.range<.35||m.range>c.atr*2.5||(side===1?m.close_location<.65:m.close_location>.35)||(side===1?b.close<=Math.max(...prior.map(v=>v.high)):b.close>=Math.min(...prior.map(v=>v.low))))return {rejected:'Structure / candle / volume confirmation failed'};
+  evidence.quality='Prior boundary break, confirming body/close and volume';
+ }
+ return {filter_evidence:evidence};
+}
 function signal(asset,bars,i,rule){
  if(i<24||!valid(bars[i]))return null;const b=bars[i],c=context(bars,i),m=wicks.measure(b);if(!c.atr||!m.valid)return null;
  const move=b.close/mean(bars.slice(i-rule.lookback,i).map(v=>v.close))-1;let side=Math.sign(move),reason='Close displaced from earlier moving average',anchor=null;
@@ -41,11 +57,12 @@ function signal(asset,bars,i,rule){
   }
  }
  if(!side)return null;if(rule.wick_filter&&(m.body/m.range<=.05||(side===1?!(m.close_location>=.6&&m.lower_wick>=m.body):!(m.close_location<=.4&&m.upper_wick>=m.body))))return {rejected:'Wick filter'};
+ const filtered=rule.entry_filter?entryFilter(bars,i,side,rule.entry_filter,c):{};if(filtered.rejected)return filtered;
  const distance=Math.max(asset.tick*4,c.atr*rule.stop,anchor===null?0:Math.abs(b.close-anchor));
  const stop=Number(((side===1?Math.floor:Math.ceil)((b.close-side*distance)/asset.tick+side*1e-8)*asset.tick).toFixed(8)),risk=Math.abs(b.close-stop),target=Number(((side===1?Math.ceil:Math.floor)((b.close+side*risk*rule.rr)/asset.tick-side*1e-8)*asset.tick).toFixed(8));
- return {side,stop,target,reason,regime:c.efficiency>.24?'trend':c.efficiency<.22?'range':'transition',atr:c.atr};
+ return {...filtered,side,stop,target,reason,regime:c.efficiency>.24?'trend':c.efficiency<.22?'range':'transition',atr:c.atr};
 }
-function empty(){return {wick_checked:0,wick_rejected:0,blocked:0,trade_records:[],gross_profit_cents:0,gross_loss_cents:0,net_cents:0,drawdown_cents:0,trades:0,wins:0,losses:0,breakeven:0,ambiguous_exits:0,fees_cents:0,expectancy_cents:null,profit_factor:null};}
+function empty(){return {wick_checked:0,wick_rejected:0,entry_filter_rejected:0,blocked:0,trade_records:[],gross_profit_cents:0,gross_loss_cents:0,net_cents:0,drawdown_cents:0,trades:0,wins:0,losses:0,breakeven:0,ambiguous_exits:0,fees_cents:0,expectancy_cents:null,profit_factor:null};}
 function simulate(asset,bars,rule,start,end,options={}){
  const result=empty();end=Math.min(end,bars.length);const begin=Math.max(24,start),slip=asset.tick*(options.slippage_ticks??1),feeFactor=options.fee_multiplier??1,feeBase=options.roundtrip_fee??(asset.margin?4:2),gapLimit=options.max_gap_ms??Infinity,defaultBudget=asset.multiplier>=20?1500:125,budget=options.risk_budget??defaultBudget,exitMode=options.exit_mode??null;
  if(!Number.isFinite(budget)||budget<=0||budget>defaultBudget||!(exitMode===null||['fixed','partial','trailing'].includes(exitMode)))throw Error('Invalid research risk budget or exit method');
@@ -53,7 +70,7 @@ function simulate(asset,bars,rule,start,end,options={}){
  if(!Number.isInteger(start)||start<0||!Number.isInteger(end)||end<start||!Number.isFinite(slip)||slip<0||!Number.isFinite(feeFactor)||feeFactor<1||!Number.isFinite(feeBase)||feeBase<0||!(gapLimit>0)||!Number.isFinite(asset.tick)||asset.tick<=0||!Number.isFinite(asset.multiplier)||asset.multiplier<=0||!bars.slice(Math.max(0,begin-24),end).every((b,j,a)=>valid(b)&&(!j||Date.parse(b.timestamp)>Date.parse(a[j-1].timestamp))))throw Error('Research requires ordered, completed standard OHLC bars and valid costs');
  let pos=null,pending=null,net=0,peak=0,dd=0,lastExit=-99;
  const fee=q=>Math.round((asset.margin?q*feeBase:feeBase)*feeFactor*100),mark=equity=>{peak=Math.max(peak,equity);dd=Math.max(dd,peak-equity);};
- function close(i,price,reason,ambiguous=false){const p=pos,exit=Number((price-p.side*slip).toFixed(8)),gross=Math.round((exit-p.entry)*p.side*p.qty*asset.multiplier*100),fees=fee(p.qty),pnl=gross-fees,totalPnl=pnl+(p.partial_net||0);net+=pnl;mark(net);const record={net_cents:totalPnl,gross_cents:gross+(p.partial_gross||0),fees_cents:fees+(p.partial_fees||0),reason,ambiguous,signal_index:p.signal,entry_index:p.opened,exit_index:i,entry_price:p.entry,exit_price:exit,side:p.side,qty:p.original_qty??p.qty,stop_distance:Math.abs(p.entry-(p.initial_stop??p.stop)),stop_price:p.initial_stop??p.stop,target_price:exitMode==='trailing'?null:p.target,risk_cents:p.risk_cents,result_r:p.risk_cents?totalPnl/p.risk_cents:null,setup_reason:p.reason,regime:p.regime,candle_review:p.candle_review};if(exitMode)Object.assign(record,{exit_mode:exitMode,final_stop_price:p.stop,partial_skipped:exitMode==='partial'&&p.original_qty<2,fills:[...(p.fills||[]),{index:i,qty:p.qty,price:exit,reason,fees_cents:fees}]});result.trade_records.push(record);if(ambiguous)result.ambiguous_exits++;pos=null;lastExit=i;}
+ function close(i,price,reason,ambiguous=false){const p=pos,exit=Number((price-p.side*slip).toFixed(8)),gross=Math.round((exit-p.entry)*p.side*p.qty*asset.multiplier*100),fees=fee(p.qty),pnl=gross-fees,totalPnl=pnl+(p.partial_net||0);net+=pnl;mark(net);const record={net_cents:totalPnl,gross_cents:gross+(p.partial_gross||0),fees_cents:fees+(p.partial_fees||0),reason,ambiguous,signal_index:p.signal,entry_index:p.opened,exit_index:i,entry_price:p.entry,exit_price:exit,side:p.side,qty:p.original_qty??p.qty,stop_distance:Math.abs(p.entry-(p.initial_stop??p.stop)),stop_price:p.initial_stop??p.stop,target_price:exitMode==='trailing'?null:p.target,risk_cents:p.risk_cents,result_r:p.risk_cents?totalPnl/p.risk_cents:null,setup_reason:p.reason,regime:p.regime,candle_review:p.candle_review,entry_filter_evidence:p.filter_evidence||null};if(exitMode)Object.assign(record,{exit_mode:exitMode,final_stop_price:p.stop,partial_skipped:exitMode==='partial'&&p.original_qty<2,fills:[...(p.fills||[]),{index:i,qty:p.qty,price:exit,reason,fees_cents:fees}]});result.trade_records.push(record);if(ambiguous)result.ambiguous_exits++;pos=null;lastExit=i;}
  for(let i=begin;i<end;i++){
   const b=bars[i];
   if(pending){const p=pending;pending=null;const entry=Number((b.open+p.side*slip).toFixed(8)),distance=(entry-p.stop)*p.side,reward=(p.target-entry)*p.side;
@@ -80,7 +97,7 @@ function simulate(asset,bars,rule,start,end,options={}){
   if(i+1<end&&Date.parse(bars[i+1].timestamp)-Date.parse(b.timestamp)>gapLimit){if(pos)close(i,b.close,'Data gap boundary');pending=null;continue;}
   if(pos||i>=end-2||i-lastExit<2)continue;
   if(Number.isFinite(gapLimit)&&bars.slice(i-24,i+1).some((v,j,a)=>j&&Date.parse(v.timestamp)-Date.parse(a[j-1].timestamp)>gapLimit))continue;
-  const proposal=signal(asset,bars,i,rule);if(!proposal)continue;if(rule.wick_filter)result.wick_checked++;if(proposal.rejected){result.wick_rejected++;continue;}
+  const proposal=signal(asset,bars,i,rule);if(!proposal)continue;if(rule.wick_filter)result.wick_checked++;if(proposal.rejected){if(rule.entry_filter)result.entry_filter_rejected++;else result.wick_rejected++;continue;}
   const candle_review=options.imported_ohlc?{metrics:wicks.measure(b),candle_time:b.timestamp,provenance:'user_imported_ohlc',entry_evidence:true,summary:'User-declared completed standard OHLC. Wick geometry is measured; provider and chart type remain unverified.'}:wicks.reviewCandles(bars.slice(0,i+1),{chart_type:'standard',basis:'synthetic_ohlc',as_of:b.timestamp});pending={...proposal,signal:i,candle_review};
  }
  const trades=result.trade_records;Object.assign(result,{net_cents:net,drawdown_cents:Math.round(dd),trades:trades.length,wins:trades.filter(t=>t.net_cents>0).length,losses:trades.filter(t=>t.net_cents<0).length,breakeven:trades.filter(t=>t.net_cents===0).length,gross_profit_cents:sum(trades.filter(t=>t.net_cents>0).map(t=>t.net_cents)),gross_loss_cents:-sum(trades.filter(t=>t.net_cents<0).map(t=>t.net_cents)),fees_cents:sum(trades.map(t=>t.fees_cents))});result.expectancy_cents=trades.length?net/trades.length:null;result.profit_factor=result.gross_loss_cents?result.gross_profit_cents/result.gross_loss_cents:null;return result;
@@ -112,5 +129,5 @@ function lessons(result){const rows=result.trade_records,losers=rows.filter(t=>t
  {label:'Targets after costs',count:winners.filter(t=>t.reason==='Target').length,action:'Repeat the same rule unchanged across other regimes before keeping it.'},
  {label:'Intrabar order unknown',count:result.ambiguous_exits,action:'Stop-first is a conservative assumption. Tick data would be needed to resolve the sequence.'}
  ];}
-return {VERSION,REGIMES,rules,simulate,signal,generate,select,lessons,valid};
+return {VERSION,REGIMES,rules,simulate,signal,entryFilter,generate,select,lessons,valid};
 });

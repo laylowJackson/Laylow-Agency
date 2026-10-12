@@ -84,6 +84,7 @@ def create_app(db_path=None, settings_path=None):
         return send_file(Path(ROOT_DIR) / "strategy-research.css", mimetype="text/css", conditional=False)
 
     @application.get("/research-evidence.js")
+    @application.get("/entry-research.js")
     @application.get("/exit-research.js")
     @application.get("/historical-research.js")
     @application.get("/historical-research-worker.js")

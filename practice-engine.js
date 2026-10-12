@@ -30,7 +30,7 @@ class PracticeMarket {
  normal(){return sum(Array.from({length:12},()=>this.random()))-6;}
  round(price,def){return Math.max(def.tick,Math.round(price/def.tick)*def.tick);}
  reset(seed=73017){
-  this.seed=seed>>>0;this.minute=0;this.baseTime=Date.now();this.positions=[];this.trades=[];this.events=[];this.decisions=[];this.reviews=[];this.history=[];this.cooldowns={};this.peak=START;this.maxDrawdown=0;this.riskLocked=false;this.serial=0;
+  this.seed=seed>>>0;this.minute=0;this.baseTime=Date.now();this.positions=[];this.trades=[];this.events=[];this.decisions=[];this.reviews=[];this.history=[];this.cooldowns={};this.learning_policy={};this.peak=START;this.maxDrawdown=0;this.riskLocked=false;this.serial=0;
   this.assets=MARKETS.map(def=>({...def,bars:[]}));
   for(let i=-79;i<=0;i++)this.generateBars(i);
   this.evaluate();this.log("System","SESSION_START","Practice account opened with $50,000 fake dollars. All prices are generated.");
@@ -83,9 +83,8 @@ class PracticeMarket {
  }
  teamNet(name){return sum(this.trades.filter(t=>t.team_name===name).map(t=>t.net_cents));}
  learningStats(name){
-  const trades=this.trades.filter(t=>t.team_name===name),recent=trades.slice(-12),wins=recent.filter(t=>t.net_cents>0).length,losses=recent.filter(t=>t.net_cents<0).length,rate=wins+losses?wins/(wins+losses):null;
-  const enough=wins+losses>=5,risk_factor=enough&&rate<.4?.65:enough&&rate<.5?.85:1,extra_agreement=enough&&rate<.4?1:0;
-  return {team_name:name,reviewed:trades.length,wins:trades.filter(t=>t.net_cents>0).length,losses:trades.filter(t=>t.net_cents<0).length,sample_size:recent.length,risk_factor,extra_agreement,planned_risk_cents:Math.floor(25000*risk_factor),summary:!enough?"Collecting five decisive outcomes before changing entry rules":extra_agreement?"Recent losses: risk reduced to 65%; require one more specialist vote":risk_factor<1?"Mixed recent results: practice risk reduced to 85%":"Recent wins support retaining the baseline rules; risk stays capped"};
+  const trades=this.trades.filter(t=>t.team_name===name),policy=this.learning_policy[name]||{risk_factor:1,extra_agreement:0};
+  return {team_name:name,reviewed:trades.length,wins:trades.filter(t=>t.net_cents>0).length,losses:trades.filter(t=>t.net_cents<0).length,sample_size:trades.length,risk_factor:policy.risk_factor,extra_agreement:policy.extra_agreement,planned_risk_cents:Math.floor(25000*policy.risk_factor),summary:"Review only: entry requirements and risk are frozen pending independent validation. Legacy reduced caps are preserved."};
  }
  reviewTrade(t){
   const result=t.net_cents>0?"WIN":t.net_cents<0?"LOSS":"FLAT",move=(t.exit_price-t.entry_price)*sign(t.direction),context=t.entry_context||{};
@@ -121,19 +120,20 @@ class PracticeMarket {
   this.decisions.unshift({created_at:new Date().toISOString(),team_name:asset.name,direction:fresh.direction,action:"SIMULATED ENTRY",reason:fresh.reason});this.decisions.length=Math.min(50,this.decisions.length);
   this.log(asset.name,"ENTRY",fresh.direction+" · "+s.qty+" "+(asset.margin?"fake contract":"fake shares")+" at "+s.entry.toFixed(2)+". No broker order.");return true;
  }
- close(id,reason="Manual practice close"){
+ close(id,reason="Manual practice close",fillPrice=null,ambiguous=false){
   const index=this.positions.findIndex(p=>p.id===id);if(index<0)return false;
-  const p=this.positions[index],asset=this.asset(p.team_name),exit=this.round(Math.max(asset.tick,asset.bars.at(-1).close-sign(p.direction)*asset.tick),asset),exitFee=asset.margin?200*p.qty:100;
+  const p=this.positions[index],asset=this.asset(p.team_name),exit=this.round(Math.max(asset.tick,(fillPrice??asset.bars.at(-1).close)-sign(p.direction)*asset.tick),asset),exitFee=asset.margin?200*p.qty:100;
   const gross=cents((exit-p.entry_price)*sign(p.direction)*p.qty*asset.multiplier),fees=p.entry_fee_cents+exitFee;
-  this.trades.push({...p,exit_price:exit,gross_cents:gross,fees_cents:fees,net_cents:gross-fees,closed_at:new Date(this.baseTime+this.minute*60000).toISOString(),reason,source:"SIMULATED FILL · 1 tick slippage per side"});
+  this.trades.push({...p,exit_price:exit,gross_cents:gross,fees_cents:fees,net_cents:gross-fees,closed_at:new Date(this.baseTime+this.minute*60000).toISOString(),reason,ambiguous,execution_model:"ohlc_stop_first_v2",source:"SIMULATED FILL · 1 tick slippage per side"});
   this.positions.splice(index,1);this.cooldowns[asset.name]=this.minute+(gross-fees<0?5:3);this.log(asset.name,"CLOSE",reason+" · net "+((gross-fees)/100).toFixed(2)+" fake USD after fees");this.log(asset.name,"TRADE_REVIEW",this.reviewTrade(this.trades.at(-1)).lesson+" "+this.learningStats(asset.name).summary);return true;
  }
  step(){
   if(this.minute>=3000||this.riskLocked)return false;
   this.minute++;this.generateBars(this.minute);
-  for(const p of [...this.positions]){const movement=(this.asset(p.team_name).bars.at(-1).close-p.entry_price)*sign(p.direction);
-   if(movement<=-p.stop_distance)this.close(p.id,"Stop at generated candle close");
-   else if(movement>=p.stop_distance*1.6)this.close(p.id,"Profit target at generated candle close");
+  for(const p of [...this.positions]){const b=this.asset(p.team_name).bars.at(-1),side=sign(p.direction),stop=p.entry_price-side*p.stop_distance,target=p.entry_price+side*p.stop_distance*1.6;
+   const stopHit=side===1?b.low<=stop:b.high>=stop,targetHit=side===1?b.high>=target:b.low<=target;
+   if(stopHit)this.close(p.id,targetHit?"Stop / ambiguous generated candle / stop first":"Stop at generated OHLC level",side===1?Math.min(b.open,stop):Math.max(b.open,stop),targetHit);
+   else if(targetHit)this.close(p.id,"Profit target at generated OHLC level",target);
    else if(this.minute-p.opened_minute>=12)this.close(p.id,"12-minute practice time exit");
   }
   if(this.account.equity_cents<=START-100000){for(const p of [...this.positions])this.close(p.id,"$1,000 account loss brake");this.riskLocked=true;this.log("System","LOSS_BRAKE","Practice entries stopped. Reset to start a new account.");}
@@ -147,7 +147,7 @@ class PracticeMarket {
   const managers=this.assets.map(a=>({team_name:a.name,candle_review:a.analysis.candle_review,severity:"INFO",generated_at:now,summary:this.positions.some(p=>p.team_name===a.name)?"Monitoring simulated position and exit rules":this.reviews.find(r=>r.team_name===a.name).reason}));
   return {practice:true,public_viewer:true,mode:"practice",database_available:false,generated_at:now,account,learning:this.assets.map(a=>this.learningStats(a.name)),trade_reviews:this.trades.slice(-60).reverse().map(t=>this.reviewTrade(t)),market_feed:{status:"SIMULATED",live:false,source:"Generated candles",reason:"Live market data is not connected. Add a broker/data feed when ready."},teams:this.assets.map(a=>({name:a.name,enabled:true,worker_state:this.riskLocked?"PAUSED":this.teamNet(a.name)>=30000?"PROFIT_BRAKE_HIT":"RUNNING",health:"fresh",heartbeat:now,heartbeat_age_seconds:0,notes:"Browser simulation · generated prices and fake fills only",controls:{enabled:false,entry_locked:true,lock_reason:"Real execution unavailable; sandbox only",profit_brake:{status:this.teamNet(a.name)>=30000?"PROFIT_BRAKE_HIT":"ARMED",limit_cents:30000}},analysis:{...a.analysis,updated_at:now,bar_time:now,bars:a.bars},execution_health:{order_count:0,pending_or_uncertain:0}})),processes:[],events:this.events,managers,big_manager:{severity:this.riskLocked?"CRITICAL":"INFO",generated_at:now,summary:"Practice supervisor: "+this.positions.length+"/4 positions · $250 planned risk per entry · $1,000 account loss brake",ai_status:"disabled"},recent_orders:[],recent_decisions:this.decisions,summary:{total_teams:10,enabled_teams:10,fresh_workers:10,running_processes:0},payroll:{available:true,fresh:true,day:"Practice session",timezone:"Simulated clock",basis:"Fake realized P&L, excluding open positions; entry and exit fees included",sources:[{source:"SYNTHETIC PRACTICE LEDGER",as_of:now}],total_net_cents:account.realized_cents,all_time_net_cents:account.realized_cents,workers,daily:[{day:"Practice",net_cents:account.realized_cents}],recent:this.trades.slice(-30).reverse()},council:{members:MEMBERS,reviews:this.reviews,history:this.history}};
  }
- export(){return {version:VERSION,seed:this.seed,minute:this.minute,baseTime:this.baseTime,assets:this.assets.map(a=>({name:a.name,bars:a.bars})),positions:this.positions,trades:this.trades,events:this.events,decisions:this.decisions,history:this.history,cooldowns:this.cooldowns,peak:this.peak,maxDrawdown:this.maxDrawdown,riskLocked:this.riskLocked,serial:this.serial};}
+ export(){return {version:VERSION,seed:this.seed,minute:this.minute,baseTime:this.baseTime,assets:this.assets.map(a=>({name:a.name,bars:a.bars})),positions:this.positions,trades:this.trades,events:this.events,decisions:this.decisions,history:this.history,cooldowns:this.cooldowns,learning_policy:this.learning_policy,peak:this.peak,maxDrawdown:this.maxDrawdown,riskLocked:this.riskLocked,serial:this.serial};}
  restore(data){
   // Rebuild definitions locally; never import code, strategy rules or broker credentials.
   if(!data||data.version!==VERSION||!Number.isInteger(data.seed)||data.seed<0||data.seed>4294967295||!Number.isInteger(data.minute)||data.minute<0||data.minute>3000||!Number.isFinite(data.baseTime)||!Array.isArray(data.assets)||data.assets.length!==10||!Array.isArray(data.positions)||data.positions.length>4||!Array.isArray(data.trades)||data.trades.length>3000)throw Error("Invalid practice save");
@@ -156,6 +156,10 @@ class PracticeMarket {
   const ids=new Set(),names=new Set();for(const p of data.positions){if(!MARKETS.some(a=>a.name===p.team_name)||!integer(p.id)||ids.has(p.id)||names.has(p.team_name)||!integer(p.qty)||p.qty<1||!["LONG","SHORT"].includes(p.direction)||!price(p.entry_price)||!price(p.stop_distance)||!integer(p.entry_fee_cents)||!integer(p.reserve_cents)||!integer(p.opened_minute)||p.opened_minute>data.minute)throw Error("Invalid saved position");ids.add(p.id);names.add(p.team_name);}
   for(const t of data.trades){const def=MARKETS.find(a=>a.name===t.team_name);if(!def||!integer(t.qty)||t.qty<1||!["LONG","SHORT"].includes(t.direction)||!price(t.entry_price)||!price(t.exit_price)||!integer(t.fees_cents)||!Number.isSafeInteger(t.gross_cents)||t.gross_cents!==cents((t.exit_price-t.entry_price)*sign(t.direction)*t.qty*def.multiplier)||t.net_cents!==t.gross_cents-t.fees_cents)throw Error("Invalid saved trade ledger");}
   if(!integer(data.serial)||!integer(data.peak)||data.peak<START||!integer(data.maxDrawdown)||!data.cooldowns||typeof data.cooldowns!=="object"||Object.values(data.cooldowns).some(v=>!integer(v)))throw Error("Invalid practice account");
+  const policy={};for(const def of MARKETS){const saved=data.learning_policy?.[def.name];
+   if(saved){if(![1,.85,.65].includes(saved.risk_factor)||![0,1].includes(saved.extra_agreement))throw Error("Invalid frozen learning policy");policy[def.name]={risk_factor:saved.risk_factor,extra_agreement:saved.extra_agreement};}
+   else if(!data.learning_policy){const recent=data.trades.filter(t=>t.team_name===def.name).slice(-12),wins=recent.filter(t=>t.net_cents>0).length,losses=recent.filter(t=>t.net_cents<0).length,rate=wins+losses?wins/(wins+losses):1,enough=wins+losses>=5;policy[def.name]={risk_factor:enough&&rate<.4?.65:enough&&rate<.5?.85:1,extra_agreement:enough&&rate<.4?1:0};}
+  }this.learning_policy=policy;
   this.seed=data.seed;this.minute=data.minute;this.baseTime=data.baseTime;this.assets=MARKETS.map(def=>({...def,bars:data.assets.find(a=>a.name===def.name).bars}));this.positions=data.positions;this.trades=data.trades;this.cooldowns=data.cooldowns;this.peak=data.peak;this.maxDrawdown=data.maxDrawdown;this.riskLocked=data.riskLocked===true;this.serial=data.serial;
   for(const key of["events","decisions","history"])this[key]=Array.isArray(data[key])?data[key].slice(0,60):[];
   if(this.account.available_cents<0||!Number.isSafeInteger(this.account.equity_cents))throw Error("Invalid saved collateral");this.evaluate();
