@@ -48,6 +48,7 @@ class TeamManager:
                 "worker_health": {"state": state, "heartbeat_fresh": worker.get("health") == "fresh",
                                   "pid": worker.get("pid")},
                 "bot_votes": analysis.get("votes", []),
+                "candle_review": analysis.get("candle_review"),
                 "consensus": {"direction": analysis.get("direction"), "agreement": analysis.get("agreement"),
                               "required": analysis.get("required")},
                 "atr": {"value": indicators.get("atr")}, "rvol": {"value": indicators.get("relative_volume")},
@@ -68,6 +69,6 @@ def build_manager_reports(status_payload, analyses, controls, ledger_summary, no
            "summary": str(len(attention)) + " of "+str(len(TEAM_NAMES))+" teams need attention" if attention
                       else "All "+str(len(TEAM_NAMES))+" team reports have no reported issue",
            "reports": [{"team_name": row["team_name"], "severity": row["severity"],
-                        "summary": row["summary"]} for row in reports],
+                        "summary": row["summary"], "candle_review": row.get("candle_review")} for row in reports],
            "severity_counts": {level: sum(row["severity"] == level for row in reports) for level in SEVERITY}}
     return reports + [big]

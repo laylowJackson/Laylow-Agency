@@ -11,7 +11,7 @@ FILES = [
     "broker_adapter.py", "broker_alpaca.py", "broker_practice.py", "execution_config.py",
     "risk_engine.py", "order_store.py", "execution_service.py", "reconciliation_worker.py", "execution_bot.py",
     "practice-engine.js", "practice-ui.js", "training-engine.js", "training-ui.js", "team-offices.js",
-    "wick-knowledge.js", "wick-knowledge.css", "WICK_KNOWLEDGE.md", "tests/test_wick_knowledge.cjs",
+    "wick-knowledge.js", "wick_knowledge.py", "WICK_KNOWLEDGE.md", "tests/test_wick_knowledge.cjs",
     "screenshot-lab.js", "screenshot-lab.css", "screenshot_analysis.py", "screenshot_reviews.py", "training-theater.js",
     "tests/__init__.py", "tests/browser_smoke.py", "tests/test_training_engine.cjs",
     "team_worker.py", "teams/__init__.py", "teams/aapl_team.py", "teams/tsla_team.py",

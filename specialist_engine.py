@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 from config import STOCK_TEAM_NAMES
 from entry_controls import parse_utc
 from team_specs import TEAM_SPECS
+from wick_knowledge import review_candles
 
 def validate_bars(bars):
     if not isinstance(bars, list) or len(bars) > 10000:
@@ -40,14 +41,19 @@ def ema(values, period):
     return result
 
 def evaluate_team(team_name, bars, source="market_data", observed_at=None,
-                  max_age_seconds=300, session_start=None):
+                  max_age_seconds=300, session_start=None,
+                  bar_duration_seconds=None, chart_type=None):
     spec = TEAM_SPECS[team_name]
     current = parse_utc(observed_at) if observed_at is not None else datetime.now(timezone.utc)
     bars = validate_bars(bars)
+    candle_review = review_candles(bars, current, source=source,
+                                  duration_seconds=bar_duration_seconds,
+                                  chart_type=chart_type)
     result = {"team_name": team_name, "source": str(source), "observed_at": current.isoformat(),
               "bar_time": bars[-1]["timestamp"].isoformat() if bars else None,
               "direction": "SKIP", "agreement": 0, "required": spec["required"],
-              "votes": [], "indicators": {}, "watch_only": team_name not in STOCK_TEAM_NAMES,
+              "votes": [], "indicators": {}, "candle_review": candle_review,
+              "watch_only": team_name not in STOCK_TEAM_NAMES,
               "reason": "Insufficient bars", "state": "INSUFFICIENT_DATA",
               "bars": [dict(row, timestamp=row["timestamp"].isoformat()) for row in bars[-240:]]}
     def skip(reason, state="INSUFFICIENT_DATA"):
@@ -119,6 +125,7 @@ def evaluate_team(team_name, bars, source="market_data", observed_at=None,
             valid = rvol >= 1 and atr/price <= .03
             row = vote(name, momentum if valid else 0, atr*.3,
                        "Momentum confirmed by RVOL >= 1 and ATR/price <= 3%")
+        row["candle_review"] = candle_review
         votes.append(row)
     counts = Counter(row["direction"] for row in votes if row["direction"] != "SKIP")
     direction = max(counts, key=counts.get) if counts else "SKIP"

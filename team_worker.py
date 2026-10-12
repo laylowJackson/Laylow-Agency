@@ -270,7 +270,8 @@ class TeamWorker:
             self.services = self.services_factory(settings)
             self.service_settings = settings.copy()
         self.report("ANALYZING", "Evaluating OHLCV specialist votes")
-        analysis = evaluate_team(self.symbol, self.services.bars(self.symbol), source="Alpaca IEX minute bars")
+        analysis = evaluate_team(self.symbol, self.services.bars(self.symbol), source="Alpaca IEX minute bars",
+                                 bar_duration_seconds=60, chart_type="standard")
         save_analysis(self.symbol, analysis, self.db_path)
         from council import review_proposal
         execution_mode = settings.get("execution_mode", "PRACTICE")

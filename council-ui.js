@@ -2,6 +2,7 @@
 const $=id=>document.getElementById(id),node=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls||"";n.textContent=text??"";return n;},stamp=value=>value?new Date(value).toLocaleString():"not recorded";
 let selected="AAPL",last={},seat=0,opinions=[],opener=null;
 const chamber=$("council-room"),section=$("council");
+const wickEvidence=node("p","city-source");wickEvidence.id="council-wick-evidence";$("council-evidence").after(wickEvidence);
 function selectSeat(index){seat=index;renderSeat();window.Laylow3D?.focusCouncilSeat?.(index);}
 function renderSeat(){
  const m=opinions[seat];for(const button of document.querySelectorAll("[data-council-seat]")){const member=opinions[Number(button.dataset.councilSeat)];button.setAttribute("aria-pressed",String(Number(button.dataset.councilSeat)===seat));if(member){button.style.setProperty("--member-color",member.color);button.title=member.name+": "+(member.vote||"NOT OBSERVED")+" · "+(member.reason||"Awaiting evidence");if(button.parentElement.id==="council-seat-labels"){if(!button.firstElementChild)button.replaceChildren(node("strong"),node("span","bubble-opinion"));button.firstElementChild.textContent=member.name+" · "+(member.vote||"WAITING");button.lastElementChild.textContent=member.reason||"I need source evidence before giving an opinion.";}}}
@@ -29,6 +30,7 @@ function render(data,online){
  $("council-context").textContent=last.practice?"PRACTICE · RULE-BASED SIMULATED OPINIONS":last.public_viewer?"PUBLIC VIEWER / EVIDENCE NOT CONNECTED":online?"CURRENT EVIDENCE REVIEW":"LAST SNAPSHOT / CONNECTION LOST";
  $("council-action").textContent=review?(review.action==="SKIP"?"WAIT / NO ENTRY":String(review.action).replaceAll("_"," ")):"Waiting for evidence";
  $("council-reason").textContent=review?.reason||"Council opinions appear when source evidence is available.";
+ wickEvidence.textContent="BOT CANDLE REVIEW · "+(review?.candle_review?.summary||"No completed candle evidence recorded for this review.");
  $("council-evidence").textContent=review?selected+" · "+review.direction+" · "+review.favorable_votes+"/6 support · source "+stamp(review.analysis_time)+" · review "+stamp(review.generated_at):"No current review.";
  $("council-authority").textContent=last.practice?"Fake-money simulation only. These six opinions are deterministic strategy rules, not live AI agents or real trade approvals.":last.public_viewer?"Connect a hosted worker backend to display real council decisions. This public viewer has no order authority.":!online?"Displayed opinions cannot authorize entries while disconnected.":review?.watch_only?"Watch-only district; no futures order authority.":last.mode!=="paper"?"Analysis only in "+(last.mode||"observe")+" mode. No order authority.":"Fresh recorded approval and all existing broker/account/event limits required.";
  $("council-last").textContent=history.length?"Latest worker deliberation: "+history[0].action+" · "+stamp(history[0].generated_at)+" · "+history[0].proposal_id:"No worker deliberations recorded for this district.";

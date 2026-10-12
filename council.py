@@ -18,6 +18,9 @@ MEMBERS=(
 )
 def fingerprint(analysis):
     fields={k:analysis.get(k) for k in ("team_name","source","bar_time","direction","agreement","required","votes","indicators","bars")}
+    # Preserve old approvals' fingerprints; bind new evidence when present.
+    if "candle_review" in analysis:
+        fields["candle_review"] = analysis["candle_review"]
     return hashlib.sha256(json.dumps(fields,sort_keys=True,allow_nan=False).encode()).hexdigest()
 
 def assess_council(team_name,analysis,controls,ledger,mode="observe",now=None,proposal_id=None):
@@ -71,7 +74,7 @@ def assess_council(team_name,analysis,controls,ledger,mode="observe",now=None,pr
         engine="deterministic_personality_rules",generated_at=now.isoformat(),analysis_time=analysis.get("bar_time"),
         input_fingerprint=evidence,direction=analysis.get("direction") if action!="SKIP" else "SKIP",
         action=action,reason=reason,favorable_votes=favorable,quorum=4,hard_gates=gates,members=members,mode=mode,
-        watch_only=team_name not in STOCK_TEAM_NAMES,
+        watch_only=team_name not in STOCK_TEAM_NAMES, candle_review=analysis.get("candle_review"),
         entry_eligible=action!="SKIP" and mode in {"paper","practice"} and team_name in STOCK_TEAM_NAMES,
         order_terms={k:ind.get(k) for k in ("atr","vwap","stop_distance")})
 

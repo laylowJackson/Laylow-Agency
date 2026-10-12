@@ -1,5 +1,5 @@
 /* Synthetic market sandbox. No network, broker, credentials or real orders. */
-(function(root,factory){const api=factory();if(typeof module==="object"&&module.exports)module.exports=api;else root.LaylowPracticeEngine=api;})(typeof window!=="undefined"?window:this,function(){
+(function(root,factory){const api=factory(typeof module==='object'&&module.exports?require('./wick-knowledge.js'):root.LaylowWickKnowledge);if(typeof module==="object"&&module.exports)module.exports=api;else root.LaylowPracticeEngine=api;})(typeof window!=="undefined"?window:this,function(wicks){
 "use strict";
 const START=5000000,VERSION=1;
 const MARKETS=[
@@ -63,14 +63,15 @@ class PracticeMarket {
  }
  analyze(asset){
   const m=this.metrics(asset),direction=value=>value>.00015?"LONG":value<-.00015?"SHORT":"WAIT";
+  const candle_review=wicks.reviewCandles(asset.bars,{chart_type:'standard',basis:'synthetic_ohlc',as_of:asset.bars.at(-1).timestamp});
   const votes=asset.bots.map(name=>{let value=m.momentum;
    if(name==="Trend")value=m.trend;if(name==="VWAP")value=m.price/m.vwap-1;if(name==="Mean Reversion")value=1-m.price/m.vwap;
    if(name==="Breakout"){const prior=asset.bars.slice(-16,-1);value=m.price>Math.max(...prior.map(b=>b.high))?.001:m.price<Math.min(...prior.map(b=>b.low))?-.001:0;}
    if(["Volume Confirmation","Volume-Volatility"].includes(name)&&m.relative_volume<.8)value=0;
-   return {name,direction:direction(value),reason:"Synthetic "+name+" check · "+(value*100).toFixed(3)+"% · generated candles"};
+   return {name,candle_review,direction:direction(value),reason:"Synthetic "+name+" check · "+(value*100).toFixed(3)+"% · generated candles"};
   });
   const longs=votes.filter(v=>v.direction==="LONG").length,shorts=votes.filter(v=>v.direction==="SHORT").length,agreement=Math.max(longs,shorts),side=agreement>=asset.required?(longs>shorts?"LONG":"SHORT"):"WAIT";
-  return {state:"READY",direction:side,agreement,votes,indicators:{atr:Number(m.atr.toFixed(3)),relative_volume:Number(m.relative_volume.toFixed(2)),vwap:Number(m.vwap.toFixed(3))},reason:"Practice indicators from synthetic candles",source:"SYNTHETIC PRACTICE FEED",...m};
+  return {state:"READY",candle_review,direction:side,agreement,votes,indicators:{atr:Number(m.atr.toFixed(3)),relative_volume:Number(m.relative_volume.toFixed(2)),vwap:Number(m.vwap.toFixed(3))},reason:"Practice indicators from synthetic candles",source:"SYNTHETIC PRACTICE FEED",...m};
  }
  sizing(asset,analysis){
   const stop=Math.max(asset.tick*4,analysis.atr*1.8),fee=asset.margin?200:100;
@@ -91,7 +92,7 @@ class PracticeMarket {
   let observed=move<0?"Price moved against the "+t.direction.toLowerCase()+" entry by "+Math.abs(move).toFixed(2)+" price units":move>0?"Price moved in the entry direction by "+move.toFixed(2)+" price units":"Entry and exit prices were equal";
   observed+=". Gross $"+(t.gross_cents/100).toFixed(2)+" minus $"+(t.fees_cents/100).toFixed(2)+" simulated fees produced $"+(t.net_cents/100).toFixed(2)+" net. Exit: "+t.reason+".";
   const lesson=result==="WIN"?"Keep the winning setup in the review sample. A single win does not justify increasing risk.":t.gross_cents>=0&&t.net_cents<0?"The favorable move did not cover costs. Count fees and slippage when assessing small edges.":String(t.reason).includes("Stop")?"The entry direction failed before the target. Review agreement and volatility; retain the stop.":String(t.reason).includes("time exit")?"The setup did not reach its target within the holding window. Review timing and signal agreement.":"Review entry direction, timing and exposure. Preserve account brakes; do not chase the loss.";
-  return {trade_id:t.id,team_name:t.team_name,result,net_cents:t.net_cents,closed_at:t.closed_at,exit_rule:t.reason,observed,lesson,evidence:Number.isFinite(context.agreement)?context.agreement+"/"+context.specialist_count+" specialist agreement at entry · ATR "+Number(context.atr||0).toFixed(3):"Entry indicators were not recorded for this older trade",basis:"Observed price path and costs; this is not a proven causal explanation."};
+  return {trade_id:t.id,candle_review:context.candle_review||null,team_name:t.team_name,result,net_cents:t.net_cents,closed_at:t.closed_at,exit_rule:t.reason,observed,lesson,evidence:Number.isFinite(context.agreement)?context.agreement+"/"+context.specialist_count+" specialist agreement at entry · ATR "+Number(context.atr||0).toFixed(3):"Entry indicators were not recorded for this older trade",basis:"Observed price path and costs; this is not a proven causal explanation."};
  }
  council(asset,analysis){
   const sizing=this.sizing(asset,analysis),budget=sizing.qty>0&&sizing.reserve+sizing.fee<=this.account.available_cents;
@@ -108,14 +109,14 @@ class PracticeMarket {
   const members=MEMBERS.map((m,i)=>({...m,vote:i===5&&locked?"VETO":choices[i][0]?"SUPPORT":"WAIT",reason:choices[i][1]}));
   const favorable=members.filter(m=>m.vote==="SUPPORT").length,approved=signal&&analysis.agreement>=required&&favorable>=4&&!members.some(m=>m.vote==="VETO");
   const reason=this.riskLocked?"Account loss brake reached":this.teamNet(asset.name)>=30000?"$300 simulated team profit brake reached":this.positions.length>=4?"Four open positions already":!budget?"Insufficient practice collateral or risk budget":signal&&analysis.agreement<required?"Learning filter requires "+required+" specialist votes":approved?"Four of six support; practice risk checks pass":"Waiting for four of six opinions and a directional signal";
-  return {team_name:asset.name,action:approved?"ENTER":"SKIP",direction:analysis.direction,favorable_votes:favorable,members,reason,watch_only:false,proposal_id:"practice-"+this.minute+"-"+asset.name,analysis_time:asset.bars.at(-1).timestamp,generated_at:new Date().toISOString(),sizing};
+  return {team_name:asset.name,candle_review:analysis.candle_review,action:approved?"ENTER":"SKIP",direction:analysis.direction,favorable_votes:favorable,members,reason,watch_only:false,proposal_id:"practice-"+this.minute+"-"+asset.name,analysis_time:asset.bars.at(-1).timestamp,generated_at:new Date().toISOString(),sizing};
  }
  evaluate(){this.reviews=this.assets.map(asset=>{asset.analysis=this.analyze(asset);return this.council(asset,asset.analysis);});}
  open(asset,review){
   if(review.action!=="ENTER"||this.positions.some(p=>p.team_name===asset.name))return false;
   // Recheck the shared account after any previous team consumes its budget.
   const fresh=this.council(asset,asset.analysis);if(fresh.action!=="ENTER")return false;
-  const s=fresh.sizing;this.positions.push({id:++this.serial,team_name:asset.name,direction:fresh.direction,qty:s.qty,entry_price:s.entry,entry_fee_cents:s.fee,reserve_cents:s.reserve,stop_distance:s.stop,opened_minute:this.minute,opened_at:new Date(this.baseTime+this.minute*60000).toISOString(),entry_context:{agreement:asset.analysis.agreement,specialist_count:asset.bots.length,atr:asset.analysis.atr,momentum:asset.analysis.momentum,relative_volume:asset.analysis.relative_volume},entry_learning:this.learningStats(asset.name)});
+  const s=fresh.sizing;this.positions.push({id:++this.serial,team_name:asset.name,direction:fresh.direction,qty:s.qty,entry_price:s.entry,entry_fee_cents:s.fee,reserve_cents:s.reserve,stop_distance:s.stop,opened_minute:this.minute,opened_at:new Date(this.baseTime+this.minute*60000).toISOString(),entry_context:{candle_review:structuredClone(asset.analysis.candle_review),agreement:asset.analysis.agreement,specialist_count:asset.bots.length,atr:asset.analysis.atr,momentum:asset.analysis.momentum,relative_volume:asset.analysis.relative_volume},entry_learning:this.learningStats(asset.name)});
   this.history.unshift({...fresh});this.history.length=Math.min(100,this.history.length);
   this.decisions.unshift({created_at:new Date().toISOString(),team_name:asset.name,direction:fresh.direction,action:"SIMULATED ENTRY",reason:fresh.reason});this.decisions.length=Math.min(50,this.decisions.length);
   this.log(asset.name,"ENTRY",fresh.direction+" · "+s.qty+" "+(asset.margin?"fake contract":"fake shares")+" at "+s.entry.toFixed(2)+". No broker order.");return true;
@@ -143,7 +144,7 @@ class PracticeMarket {
  }
  snapshot(){
   const now=new Date().toISOString(),account=this.account,workers=this.assets.map(a=>{const trades=this.trades.filter(t=>t.team_name===a.name);return {team_name:a.name,closed_trades:trades.length,wins:trades.filter(t=>t.net_cents>0).length,losses:trades.filter(t=>t.net_cents<0).length,net_cents:sum(trades.map(t=>t.net_cents))};});
-  const managers=this.assets.map(a=>({team_name:a.name,severity:"INFO",generated_at:now,summary:this.positions.some(p=>p.team_name===a.name)?"Monitoring simulated position and exit rules":this.reviews.find(r=>r.team_name===a.name).reason}));
+  const managers=this.assets.map(a=>({team_name:a.name,candle_review:a.analysis.candle_review,severity:"INFO",generated_at:now,summary:this.positions.some(p=>p.team_name===a.name)?"Monitoring simulated position and exit rules":this.reviews.find(r=>r.team_name===a.name).reason}));
   return {practice:true,public_viewer:true,mode:"practice",database_available:false,generated_at:now,account,learning:this.assets.map(a=>this.learningStats(a.name)),trade_reviews:this.trades.slice(-60).reverse().map(t=>this.reviewTrade(t)),market_feed:{status:"SIMULATED",live:false,source:"Generated candles",reason:"Live market data is not connected. Add a broker/data feed when ready."},teams:this.assets.map(a=>({name:a.name,enabled:true,worker_state:this.riskLocked?"PAUSED":this.teamNet(a.name)>=30000?"PROFIT_BRAKE_HIT":"RUNNING",health:"fresh",heartbeat:now,heartbeat_age_seconds:0,notes:"Browser simulation · generated prices and fake fills only",controls:{enabled:false,entry_locked:true,lock_reason:"Real execution unavailable; sandbox only",profit_brake:{status:this.teamNet(a.name)>=30000?"PROFIT_BRAKE_HIT":"ARMED",limit_cents:30000}},analysis:{...a.analysis,updated_at:now,bar_time:now,bars:a.bars},execution_health:{order_count:0,pending_or_uncertain:0}})),processes:[],events:this.events,managers,big_manager:{severity:this.riskLocked?"CRITICAL":"INFO",generated_at:now,summary:"Practice supervisor: "+this.positions.length+"/4 positions · $250 planned risk per entry · $1,000 account loss brake",ai_status:"disabled"},recent_orders:[],recent_decisions:this.decisions,summary:{total_teams:10,enabled_teams:10,fresh_workers:10,running_processes:0},payroll:{available:true,fresh:true,day:"Practice session",timezone:"Simulated clock",basis:"Fake realized P&L, excluding open positions; entry and exit fees included",sources:[{source:"SYNTHETIC PRACTICE LEDGER",as_of:now}],total_net_cents:account.realized_cents,all_time_net_cents:account.realized_cents,workers,daily:[{day:"Practice",net_cents:account.realized_cents}],recent:this.trades.slice(-30).reverse()},council:{members:MEMBERS,reviews:this.reviews,history:this.history}};
  }
  export(){return {version:VERSION,seed:this.seed,minute:this.minute,baseTime:this.baseTime,assets:this.assets.map(a=>({name:a.name,bars:a.bars})),positions:this.positions,trades:this.trades,events:this.events,decisions:this.decisions,history:this.history,cooldowns:this.cooldowns,peak:this.peak,maxDrawdown:this.maxDrawdown,riskLocked:this.riskLocked,serial:this.serial};}

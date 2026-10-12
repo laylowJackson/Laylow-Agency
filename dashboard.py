@@ -71,6 +71,10 @@ def create_app(db_path=None, settings_path=None):
     def team_offices():
         return send_file(Path(ROOT_DIR) / "team-offices.js", mimetype="text/javascript", conditional=False)
 
+    @application.get("/wick-knowledge.js")
+    def wick_knowledge():
+        return send_file(Path(ROOT_DIR) / "wick-knowledge.js", mimetype="text/javascript", conditional=False)
+
     @application.get("/training-engine.js")
     def training_engine():
         return send_file(Path(ROOT_DIR) / "training-engine.js", mimetype="text/javascript", conditional=False)
