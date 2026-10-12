@@ -281,7 +281,7 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 <p class="muted">Different personalities, different risk opinions. Explicit rules on the same source bars; the existing AI review may veto or reduce their decision.</p><details class="room-archive"><summary>All six opinions & recorded deliberations</summary><div id="council-members" class="council-members" aria-label="Council opinions"></div><h3 class="small-heading">Recorded deliberations</h3><ol id="council-history" class="council-history"></ol></details>
 </section>
 </div></dialog>
-<dialog id="vault-room" aria-labelledby="vault-title"><div class="office-header"><div><span class="world-kicker">LAYLOW / THE VAULT</span><h2 id="vault-title">Results & team learning</h2></div><button type="button" id="vault-close">Return to city ×</button></div><p id="vault-source"></p><p class="market-feed-notice" id="vault-feed">Live market data is not connected.</p><div class="vault-hero"><div class="vault-emblem"><strong>THE VAULT<small>EVERY OUTCOME COUNTS</small></strong></div><div class="vault-stats"><div class="vault-stat"><span>Win / loss ratio</span><strong id="vault-ratio">—</strong></div><div class="vault-stat"><span>Win rate</span><strong id="vault-win-rate">—</strong></div><div class="vault-stat"><span>Closed-trade net</span><strong id="vault-net">—</strong></div><div class="vault-stat"><span>Winning trades</span><strong id="vault-wins">—</strong></div><div class="vault-stat"><span>Losing trades</span><strong id="vault-losses">—</strong></div><div class="vault-stat"><span>Break-even trades</span><strong id="vault-flat">—</strong></div></div></div><p id="vault-ratio-note"></p><h3>Team learning desk</h3><p class="city-source">Practice teams review both wins and losses. After five decisive outcomes, the last twelve trades may reduce planned risk or require stronger specialist agreement. Wins can restore baseline rules; they never raise risk above $250. This is bounded rule adaptation, not a promise of better returns.</p><div id="vault-teams" class="vault-teams"></div><h3>Why did the trade win or lose?</h3><div id="vault-reviews"></div></dialog>
+<dialog id="vault-room" aria-labelledby="vault-title"><div class="office-header"><div><span class="world-kicker">LAYLOW / THE VAULT</span><h2 id="vault-title">Results & team learning</h2></div><button type="button" id="vault-close">Return to city ×</button></div><p id="vault-source"></p><p class="market-feed-notice" id="vault-feed">Live market data is not connected.</p><div class="vault-hero"><div class="vault-emblem"><strong>THE VAULT<small>EVERY OUTCOME COUNTS</small></strong></div><div class="vault-stats"><div class="vault-stat"><span>Win / loss ratio</span><strong id="vault-ratio">—</strong></div><div class="vault-stat"><span>Win rate</span><strong id="vault-win-rate">—</strong></div><div class="vault-stat"><span>Closed-trade net</span><strong id="vault-net">—</strong></div><div class="vault-stat"><span>Winning trades</span><strong id="vault-wins">—</strong></div><div class="vault-stat"><span>Losing trades</span><strong id="vault-losses">—</strong></div><div class="vault-stat"><span>Break-even trades</span><strong id="vault-flat">—</strong></div></div></div><p id="vault-ratio-note"></p><h3>Team learning desk</h3><p class="city-source">Practice teams review both wins and losses. Outcomes create review hypotheses only. Entry requirements and risk stay frozen pending independent historical and forward paper evidence. Restored legacy risk reductions are preserved.</p><div id="vault-teams" class="vault-teams"></div><h3>Why did the trade win or lose?</h3><div id="vault-reviews"></div></dialog>
 <dialog id="office-dialog" aria-labelledby="office-title">
  <div class="office-header"><div><div class="world-kicker" id="office-context">VIRTUAL WORKSTATION / RECORDED DATA</div><h2 id="office-title">Bot office</h2></div><button id="office-close" type="button" aria-label="Close office">Return to city ×</button></div>
  <div class="office-stage"><button type="button" class="room-enter-view" data-room="office" data-room-camera="inside">Step inside ↗</button><canvas id="office-3d" tabindex="0" aria-label="Shared 3D team office. All specialist robots and their manager work in this room. Select a teammate or use the roster below."></canvas><div class="room-hud"><span>LAYLOW / SHARED TEAM OFFICE</span><span>3D WORKSTATION</span></div><button id="office-trade-wall-open" type="button" aria-controls="office-trade-wall-panel" aria-expanded="true">Trade wall ↗</button><div id="office-speech" class="office-speech"><strong id="office-speech-name">TEAM MANAGER</strong><span id="office-speech-text">Waiting for source evidence.</span></div><div id="office-crew" aria-label="Teammates in the room"></div><div id="office-screen-labels" aria-label="Interactive desk terminals"><button type="button" data-screen-x="-1.95" data-office-terminal="signal">Signal scanner ↗</button><button type="button" data-screen-x="0" data-office-terminal="market">Market terminal ↗</button><button type="button" data-screen-x="1.95" data-office-terminal="performance">Performance ↗</button></div></div>
@@ -1005,19 +1005,20 @@ initializeCards();initializeCity();refreshStatus();
 <script src="./world-3d.js?v=20261011-premium-rooms"></script>
 <script src="./council-ui.js?v=20261011-bot-wicks"></script>
 <script src="./wick-knowledge.js?v=20261011-bot-wicks"></script>
-<script src="./practice-engine.js?v=20261011-bot-wicks"></script>
-<script src="./practice-ui.js?v=20261011-premium-rooms"></script>
-<link rel="stylesheet" href="./strategy-research.css?v=20261012-exits">
-<script src="./strategy-research.js?v=20261012-exits"></script>
+<script src="./practice-engine.js?v=20261012-entries"></script>
+<script src="./practice-ui.js?v=20261012-entries"></script>
+<link rel="stylesheet" href="./strategy-research.css?v=20261012-entries">
+<script src="./strategy-research.js?v=20261012-entries"></script>
 <script src="./training-policy.js?v=20261011-nightshift2"></script>
 <script src="./training-engine.js?v=20261011-nightshift2"></script>
 <script src="./training-ui.js?v=20261011-nightshift2"></script>
 <script src="./settings-ui.js?v=20261011-nightshift2"></script>
 <script src="./screenshot-lab.js?v=20261011-bot-wicks"></script>
 <script src="./training-theater.js?v=20261011-nightshift2"></script>
-<script src="./research-evidence.js?v=20261012-exits"></script>
-<script src="./exit-research.js?v=20261012-exits"></script>
-<script src="./historical-research.js?v=20261012-exits"></script>
-<script src="./research-station-ui.js?v=20261012-exits"></script>
+<script src="./research-evidence.js?v=20261012-entries"></script>
+<script src="./exit-research.js?v=20261012-entries"></script>
+<script src="./entry-research.js?v=20261012-entries"></script>
+<script src="./historical-research.js?v=20261012-entries"></script>
+<script src="./research-station-ui.js?v=20261012-entries"></script>
 </body>
 </html>
