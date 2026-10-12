@@ -75,6 +75,14 @@ def create_app(db_path=None, settings_path=None):
     def wick_knowledge():
         return send_file(Path(ROOT_DIR) / "wick-knowledge.js", mimetype="text/javascript", conditional=False)
 
+    @application.get("/strategy-research.js")
+    def strategy_research_js():
+        return send_file(Path(ROOT_DIR) / "strategy-research.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/strategy-research.css")
+    def strategy_research_css():
+        return send_file(Path(ROOT_DIR) / "strategy-research.css", mimetype="text/css", conditional=False)
+
     @application.get("/training-engine.js")
     def training_engine():
         return send_file(Path(ROOT_DIR) / "training-engine.js", mimetype="text/javascript", conditional=False)

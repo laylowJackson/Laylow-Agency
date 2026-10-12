@@ -35,5 +35,5 @@ const saved=JSON.parse(JSON.stringify(market.export()));const old=new PracticeMa
 const lab=new TrainingLab();lab.step();assert(lab.teams.every(t=>t.wick_research.version===1&&!t.wick_research.auto_promoted));
 const asset=market.assets[0],rule=variants.find(r=>r.wick_filter),training=lab.teams[0].trace.bars;
 assert.deepEqual(test(asset,training,rule,21,75),test(asset,training.map((b,i)=>i>=75?{...b,high:b.high+9999}:b),rule,21,75));
-for(const team of lab.teams)for(const t of team.trace.candidate.trade_records)assert.equal(t.candle_review.candle_time,team.trace.bars[t.entry_index].timestamp,'Trade retains only knowledge at entry');
+for(const team of lab.teams)for(const t of team.trace.candidate.trade_records){assert.equal(t.entry_index,t.signal_index+1);assert.equal(t.candle_review.candle_time,team.trace.bars[t.signal_index].timestamp,'Trade retains only completed signal-candle knowledge before next-open entry');}
 console.log('Bot integration passed: ten teams/council, experimental held-out candidate, no future evidence or screenshot inference, preserved account.');

@@ -406,12 +406,23 @@ annotated exports are rendered from saved marks.
 
 **Training** opens completed synthetic drill replay, with a team selector,
 play/pause and candle scrubber. Entry/exit markers and trade-by-trade reasons are
-revealed as playback progresses. Earlier candles select among four candidate
-rules (including selective trend confirmation); later held-out candles compare
-the selected rule with baseline. The latest drill and cumulative comparable
-scorecard survive reload. Old saved research totals are preserved, and the new
-comparison starts counting from its installation. These are simplified
-close-based synthetic experiments with fees/slippage, not OHLC backtests of
+revealed as playback progresses. Research v2 compares eight fixed recipes,
+including trend pullback/rejection, breakout retest, and range-edge rejection,
+across six synthetic regimes. Each drill uses 128 training candles, 64 validation
+candles and 96 untouched test candles. Entries fill at the next open; OHLC wicks
+trigger stops/targets, ambiguous bars use stop-first, and gap losses, costs and
+open-position drawdown are recorded. The selected recipe and matched control
+are retested with three-tick slippage and double fees. Each exact recipe has its
+own sample, regime and evidence gates; no automatic promotion occurs.
+
+The **Strategy evidence station** shows gate progress, regime results and a bot
+review queue for stops, weak follow-through, costs and successful targets. These
+are research hypotheses, not definitive causes or neural-network training.
+The latest drill, export and scorecards survive reload. Previous model totals
+remain in an explicit legacy summary and are excluded from v2 gates. See
+[STRATEGY_RESEARCH.md](STRATEGY_RESEARCH.md) for the full rules, costs, limitations
+and tests. There is no connected live feed or independent historical-market
+validation yet. These are synthetic OHLC experiments, not backtests of
 screenshots or validated live-market results. Training runs while this page is
 open and visible; a hosted worker is required for unattended training.
 
