@@ -30,7 +30,7 @@ class TrainingLab{
    team.history.unshift({model_version:2,round,scenario,rule:selected.label,candidate:summary(candidate),baseline:summary(baseline),stress:summary(stress),better});team.history.length=Math.min(12,team.history.length);
   }this.round=round;return this.snapshot();
  }
- snapshot(){return {model_version:2,round:this.round,scenario:this.round?research.REGIMES[(this.round-1)%research.REGIMES.length]:'First drill pending',source:'SYNTHETIC RESEARCH / UNTOUCHED HOLDOUT / COST STRESS',teams:JSON.parse(JSON.stringify(this.teams)),experiments:this.round*MARKETS.length};}
+ snapshot(){return {model_version:2,round:this.round,scenario:this.teams[0]?.trace?.scenario||'First v2 drill pending',source:this.teams[0]?.research_version===2?'SYNTHETIC RESEARCH / UNTOUCHED HOLDOUT / COST STRESS':'PREVIOUS RESEARCH MODEL / V2 DRILL PENDING',teams:JSON.parse(JSON.stringify(this.teams)),experiments:this.round*MARKETS.length};}
  export(){return {version:1,model_version:2,round:this.round,teams:this.teams};}
  restore(data){
   if(!data||data.version!==1||!Number.isSafeInteger(data.round)||data.round<0||data.round>100000||!Array.isArray(data.teams)||data.teams.length!==10)throw Error('Invalid research save');
