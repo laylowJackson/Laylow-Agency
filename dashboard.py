@@ -83,6 +83,14 @@ def create_app(db_path=None, settings_path=None):
     def strategy_research_css():
         return send_file(Path(ROOT_DIR) / "strategy-research.css", mimetype="text/css", conditional=False)
 
+    @application.get("/research-evidence.js")
+    @application.get("/historical-research.js")
+    @application.get("/historical-research-worker.js")
+    @application.get("/research-station-ui.js")
+    def research_station_assets():
+        # Only these exact routes are registered; this is not an arbitrary file endpoint.
+        return send_file(Path(ROOT_DIR) / request.path.lstrip("/"), mimetype="text/javascript", conditional=False)
+
     @application.get("/training-engine.js")
     def training_engine():
         return send_file(Path(ROOT_DIR) / "training-engine.js", mimetype="text/javascript", conditional=False)

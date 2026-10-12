@@ -431,3 +431,9 @@ cached soft shadows, panoramic skyline windows and more detailed architecture.
 ## Automatic closed-market training
 
 The Practice strategy researcher now tests all eight recipes for teams outside their estimated exchange session. Choose Auto or Deep in Training Lab, inspect per-team net/cost-stress results and watch completed trade replays. Every recipe retains its own evidence; no automatic promotion or account-risk changes occur. Install Node.js LTS and run START_WINDOWS for browser-independent local research; keep the computer/runner on. GitHub Pages still needs an open visible page. See [CLOSED_MARKET_TRAINING.md](CLOSED_MARKET_TRAINING.md) for schedule limitations, persistence and controls.
+# Research evidence and historical candle files
+
+The existing Training lab now includes a source-backed bot playbook, win-rate sample uncertainty, net expectancy and next-test priorities. It also accepts user-supplied standard OHLC CSV files for chronological selection/validation/final-test comparisons and adverse-cost runs. Results stay separate from the practice ledger, and neither imported nor generated tests authorize promotion or trading. AI and broker setup remain deferred.
+
+See [BOT_RESEARCH_EVIDENCE.md](BOT_RESEARCH_EVIDENCE.md) for file format, local saving/export, model assumptions and limitations. Automatic nightshift training still uses generated candles; historical-file testing is manual until a verified provider is connected.
+
