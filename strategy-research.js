@@ -47,16 +47,16 @@ function signal(asset,bars,i,rule){
 }
 function empty(){return {wick_checked:0,wick_rejected:0,blocked:0,trade_records:[],gross_profit_cents:0,gross_loss_cents:0,net_cents:0,drawdown_cents:0,trades:0,wins:0,losses:0,breakeven:0,ambiguous_exits:0,fees_cents:0,expectancy_cents:null,profit_factor:null};}
 function simulate(asset,bars,rule,start,end,options={}){
- const result=empty();end=Math.min(end,bars.length);const begin=Math.max(24,start),slip=asset.tick*(options.slippage_ticks??1),feeFactor=options.fee_multiplier??1,budget=asset.multiplier>=20?1500:125;
+ const result=empty();end=Math.min(end,bars.length);const begin=Math.max(24,start),slip=asset.tick*(options.slippage_ticks??1),feeFactor=options.fee_multiplier??1,feeBase=options.roundtrip_fee??(asset.margin?4:2),gapLimit=options.max_gap_ms??Infinity,budget=asset.multiplier>=20?1500:125;
  // Validate only the interval and its earlier context. Never inspect later bars.
- if(!Number.isInteger(start)||start<0||!Number.isInteger(end)||end<start||!Number.isFinite(slip)||slip<0||!Number.isFinite(feeFactor)||feeFactor<1||!Number.isFinite(asset.tick)||asset.tick<=0||!Number.isFinite(asset.multiplier)||asset.multiplier<=0||!bars.slice(Math.max(0,begin-24),end).every((b,j,a)=>valid(b)&&(!j||Date.parse(b.timestamp)>Date.parse(a[j-1].timestamp))))throw Error('Research requires ordered, completed standard OHLC bars and valid costs');
+ if(!Number.isInteger(start)||start<0||!Number.isInteger(end)||end<start||!Number.isFinite(slip)||slip<0||!Number.isFinite(feeFactor)||feeFactor<1||!Number.isFinite(feeBase)||feeBase<0||!(gapLimit>0)||!Number.isFinite(asset.tick)||asset.tick<=0||!Number.isFinite(asset.multiplier)||asset.multiplier<=0||!bars.slice(Math.max(0,begin-24),end).every((b,j,a)=>valid(b)&&(!j||Date.parse(b.timestamp)>Date.parse(a[j-1].timestamp))))throw Error('Research requires ordered, completed standard OHLC bars and valid costs');
  let pos=null,pending=null,net=0,peak=0,dd=0,lastExit=-99;
- const fee=q=>Math.round((asset.margin?q*4:2)*feeFactor*100),mark=equity=>{peak=Math.max(peak,equity);dd=Math.max(dd,peak-equity);};
+ const fee=q=>Math.round((asset.margin?q*feeBase:feeBase)*feeFactor*100),mark=equity=>{peak=Math.max(peak,equity);dd=Math.max(dd,peak-equity);};
  function close(i,price,reason,ambiguous=false){const p=pos,exit=Number((price-p.side*slip).toFixed(8)),gross=Math.round((exit-p.entry)*p.side*p.qty*asset.multiplier*100),fees=fee(p.qty),pnl=gross-fees;net+=pnl;mark(net);result.trade_records.push({net_cents:pnl,gross_cents:gross,fees_cents:fees,reason,ambiguous,signal_index:p.signal,entry_index:p.opened,exit_index:i,entry_price:p.entry,exit_price:exit,side:p.side,qty:p.qty,stop_distance:Math.abs(p.entry-p.stop),stop_price:p.stop,target_price:p.target,risk_cents:p.risk_cents,result_r:p.risk_cents?pnl/p.risk_cents:null,setup_reason:p.reason,regime:p.regime,candle_review:p.candle_review});if(ambiguous)result.ambiguous_exits++;pos=null;lastExit=i;}
  for(let i=begin;i<end;i++){
   const b=bars[i];
   if(pending){const p=pending;pending=null;const entry=Number((b.open+p.side*slip).toFixed(8)),distance=(entry-p.stop)*p.side,reward=(p.target-entry)*p.side;
-   if(distance<=0||reward<=0||(rule.family!=='baseline'&&reward/distance<1.2)){result.blocked++;}else{const available=budget-(asset.margin?0:2*feeFactor),qty=Math.min(asset.margin?3:50,Math.floor(available/(distance*asset.multiplier+slip*asset.multiplier+(asset.margin?4*feeFactor:0))));if(qty<1)result.blocked++;else pos={...p,entry,qty,opened:i,risk_cents:Math.round(distance*qty*asset.multiplier*100)+fee(qty)+Math.round(slip*qty*asset.multiplier*100)};}
+   if(distance<=0||reward<=0||(rule.family!=='baseline'&&reward/distance<1.2)){result.blocked++;}else{const available=budget-(asset.margin?0:feeBase*feeFactor),qty=Math.min(asset.margin?3:50,Math.floor(available/(distance*asset.multiplier+slip*asset.multiplier+(asset.margin?feeBase*feeFactor:0))));if(qty<1)result.blocked++;else pos={...p,entry,qty,opened:i,risk_cents:Math.round(distance*qty*asset.multiplier*100)+fee(qty)+Math.round(slip*qty*asset.multiplier*100)};}
   }
   if(pos){const p=pos,stopHit=p.side===1?b.low<=p.stop:b.high>=p.stop,targetHit=p.side===1?b.high>=p.target:b.low<=p.target;
    // A gap through the stop fills at the worse open. A target limit never gets a better-than-limit assumed fill.
@@ -67,9 +67,13 @@ function simulate(asset,bars,rule,start,end,options={}){
    else if(i-p.opened>=rule.hold||i===end-1)close(i,b.close,i===end-1?'Segment close':'Time exit');
    else mark(net+Math.round((b.close-p.entry)*p.side*p.qty*asset.multiplier*100)-fee(p.qty));
   }
+  // Imported research uses declared timestamp gaps as dataset boundaries, not a verified exchange calendar.
+  // Flatten at the preceding close; no OHLC from the next segment is read for this decision.
+  if(i+1<end&&Date.parse(bars[i+1].timestamp)-Date.parse(b.timestamp)>gapLimit){if(pos)close(i,b.close,'Data gap boundary');pending=null;continue;}
   if(pos||i>=end-2||i-lastExit<2)continue;
+  if(Number.isFinite(gapLimit)&&bars.slice(i-24,i+1).some((v,j,a)=>j&&Date.parse(v.timestamp)-Date.parse(a[j-1].timestamp)>gapLimit))continue;
   const proposal=signal(asset,bars,i,rule);if(!proposal)continue;if(rule.wick_filter)result.wick_checked++;if(proposal.rejected){result.wick_rejected++;continue;}
-  const candle_review=wicks.reviewCandles(bars.slice(0,i+1),{chart_type:'standard',basis:'synthetic_ohlc',as_of:b.timestamp});pending={...proposal,signal:i,candle_review};
+  const candle_review=options.imported_ohlc?{metrics:wicks.measure(b),candle_time:b.timestamp,provenance:'user_imported_ohlc',entry_evidence:true,summary:'User-declared completed standard OHLC. Wick geometry is measured; provider and chart type remain unverified.'}:wicks.reviewCandles(bars.slice(0,i+1),{chart_type:'standard',basis:'synthetic_ohlc',as_of:b.timestamp});pending={...proposal,signal:i,candle_review};
  }
  const trades=result.trade_records;Object.assign(result,{net_cents:net,drawdown_cents:Math.round(dd),trades:trades.length,wins:trades.filter(t=>t.net_cents>0).length,losses:trades.filter(t=>t.net_cents<0).length,breakeven:trades.filter(t=>t.net_cents===0).length,gross_profit_cents:sum(trades.filter(t=>t.net_cents>0).map(t=>t.net_cents)),gross_loss_cents:-sum(trades.filter(t=>t.net_cents<0).map(t=>t.net_cents)),fees_cents:sum(trades.map(t=>t.fees_cents))});result.expectancy_cents=trades.length?net/trades.length:null;result.profit_factor=result.gross_loss_cents?result.gross_profit_cents/result.gross_loss_cents:null;return result;
 }
@@ -83,13 +87,15 @@ function generate(asset,seed,regime,count=288){
   bars.push({timestamp:new Date(Date.UTC(2020,0,1)+i*60000).toISOString(),open,high:Math.max(high,open,close),low:Math.min(low,open,close),close,closed:true});last=close;
  }return bars;
 }
-function select(asset,bars){
+function select(asset,bars,options={}){
  // Fixed small recipe set; validation ranking never sees the final 96 candles.
- const scores=rules.map(rule=>({rule,train:simulate(asset,bars,rule,24,128),validation:simulate(asset,bars,rule,128,192)}));
+ const trainEnd=options.train_end??128,testStart=options.test_start??192,costs=options.costs??{};
+ if(!Number.isInteger(trainEnd)||!Number.isInteger(testStart)||trainEnd<48||testStart<=trainEnd||testStart>bars.length)throw Error('Invalid chronological research split');
+ const scores=rules.map(rule=>({rule,train:simulate(asset,bars,rule,24,trainEnd,costs),validation:simulate(asset,bars,rule,trainEnd,testStart,costs)}));
  const control=scores[0].validation;
  const eligible=scores.filter(s=>s.rule.id!=='balanced'&&s.train.trades>=3&&s.train.net_cents>0&&s.validation.trades>=2&&s.validation.net_cents>Math.max(0,control.net_cents)&&s.validation.drawdown_cents<=Math.max(12500,s.train.drawdown_cents*1.5));
  eligible.sort((a,b)=>(b.validation.net_cents-b.validation.drawdown_cents*.5)-(a.validation.net_cents-a.validation.drawdown_cents*.5));
- return {rule:eligible[0]?.rule||rules[0],scores,decision:eligible.length?'Earlier selection + validation qualified a candidate':'No candidate qualified; retain the control strategy',train_end:128,test_start:192};
+ return {rule:eligible[0]?.rule||rules[0],scores,decision:eligible.length?'Earlier selection + validation qualified a candidate':'No candidate qualified; retain the control strategy',train_end:trainEnd,test_start:testStart};
 }
 function lessons(result){const rows=result.trade_records,losers=rows.filter(t=>t.net_cents<0),winners=rows.filter(t=>t.net_cents>0);return [
  {label:'Stops / gaps',count:losers.filter(t=>t.reason.includes('Stop')||t.reason.includes('stop')).length,action:'Research entry location and stop geometry; do not widen account risk automatically.'},
