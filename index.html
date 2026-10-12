@@ -209,13 +209,14 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 
 <section id="practice" class="panel practice-panel" aria-labelledby="practice-title">
  <div class="practice-head"><div><span class="world-kicker">SANDBOX / FAKE MONEY</span><h2 id="practice-title">$50,000 practice account</h2></div><span id="practice-state" role="status">Ready to practice</span></div>
- <p class="practice-notice">Generated market prices and fake fills only. Ten rule-based teams and six council opinions share one practice account. No live quotes, AI API, broker connection or real orders.</p>
+ <p class="practice-notice">Choose generated practice or Alpaca IEX live-price practice. Both use fake money and rule-based bots; no broker orders. Live-price mode has a separate ledger for four stock teams and requires the local app. Futures data is not connected.</p>
+ <div class="practice-actions"><label>Price source <select id="practice-feed"><option value="synthetic">Generated practice</option><option value="iex">Alpaca IEX · real prices / fake money</option></select></label><button id="practice-feed-connect" type="button">Connect live-price practice</button><a href="#settings">Set up Alpaca keys ↗</a></div><p id="practice-feed-status" class="practice-notice" role="status">Generated practice · live prices require local setup.</p>
  <div class="practice-actions"><button id="practice-toggle" type="button" class="city-primary">Start $50,000 practice</button><button id="practice-step" type="button">Step 1 market minute</button><label>Speed <select id="practice-speed"><option value="1">1 market min / sec</option><option value="5">5 market min / sec</option><option value="20">20 market min / sec</option></select></label><button id="practice-reset" type="button">Reset to $50,000</button><button id="practice-export" type="button">Export session</button><a href="#world">Go to city ↓</a><button id="practice-exit" type="button">Leave practice</button></div>
  <div id="practice-details" hidden><div class="practice-grid">
  <div><span>Starting fake dollars</span><strong id="practice-initial">$50,000.00</strong></div><div><span>Account equity</span><strong id="practice-equity">$50,000.00</strong></div><div><span>Cash balance</span><strong id="practice-cash">$50,000.00</strong></div><div><span>Available after collateral</span><strong id="practice-available">$50,000.00</strong></div>
  <div><span>Closed-trade net P&amp;L</span><strong id="practice-realized">$0.00</strong></div><div><span>Open-position P&amp;L</span><strong id="practice-unrealized">$0.00</strong></div><div><span>Simulated fees paid</span><strong id="practice-fees">$0.00</strong></div><div><span>Largest equity drawdown</span><strong id="practice-drawdown">$0.00</strong></div></div>
- <p id="practice-clock"></p><details><summary>Practice rules and fill assumptions</summary><p class="practice-notice">Practice limits: 4 open positions, $250 planned risk per entry, $1,000 account loss brake and $300 closed-profit brake per team. Stops and targets fill at generated candle closes, so losses can exceed planned risk. Fictional collateral: full stock notional; $5,000 per full-size futures contract or $500 per micro contract. $1 per stock fill, $2 per futures contract per fill, plus one tick slippage each side. These assumptions do not represent a broker's margin or fee schedule.</p></details>
- <details><summary>Open fake positions</summary><div class="table-scroll"><table><thead><tr><th>Team</th><th>Side</th><th>Qty</th><th>Entry</th><th>Generated price</th><th>Open P&amp;L</th><th>Action</th></tr></thead><tbody id="practice-positions"></tbody></table></div></details>
+ <p id="practice-clock"></p><details><summary>Practice rules and fill assumptions</summary><p class="practice-notice">Practice limits: 4 open positions, $250 planned risk per entry, $1,000 account loss brake and $300 closed-profit brake per team. Generated mode checks OHLC extremes with stop-first ambiguous fills. Live-price mode uses observed IEX last trades every 15 seconds and can miss intervening prices. Losses can exceed planned risk. Fictional collateral: full stock notional; $5,000 per full-size futures contract or $500 per micro contract. $1 per stock fill, $2 per futures contract per fill, plus one tick slippage each side. These assumptions do not represent a broker's margin or fee schedule.</p></details>
+ <details><summary>Open fake positions</summary><div class="table-scroll"><table><thead><tr><th>Team</th><th>Side</th><th>Qty</th><th>Entry</th><th>Observed / generated price</th><th>Open P&amp;L</th><th>Action</th></tr></thead><tbody id="practice-positions"></tbody></table></div></details>
  <details><summary>Recent closed fake trades</summary><div class="table-scroll"><table><thead><tr><th>Team</th><th>Side</th><th>Qty</th><th>Entry</th><th>Exit</th><th>Fees</th><th>Net P&amp;L</th><th>Exit rule</th></tr></thead><tbody id="practice-trades"></tbody></table></div></details></div>
  <p id="practice-save-note" role="status"></p>
 </section>
@@ -515,6 +516,7 @@ function renderSnapshot(payload){
    $("mode").textContent="PRACTICE · SYNTHETIC MARKET";$("updated").textContent="Generated quotes · no broker or real orders";
    $("city-world-status").textContent="PRACTICE · $50,000 FAKE STARTING CASH";$("city-observation").textContent="Browser simulation · generated market prices";
    $("city-render-note").textContent="Synthetic price chart · simulated bots · click a building to enter";
+   if(payload.live_price_practice){$("mode").textContent="PRACTICE · REAL IEX PRICES / FAKE FILLS";$("connection").className=payload.market_feed.live?"good":"warn";$("connection").replaceChildren(element("i","dot"),document.createTextNode("IEX "+payload.market_feed.status+" · FAKE MONEY"));$("updated").textContent=payload.market_feed.reason;$("city-observation").textContent=payload.market_feed.source;$("city-render-note").textContent="Observed stock bars · futures disconnected · simulated fills";}
    $("ai-summary").textContent="Six rule-based council personalities; no external AI service is used in practice.";
    for(const row of cards.values())if(row.controls)row.controls.wrapper.hidden=true;
   }
@@ -1001,18 +1003,19 @@ window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select
 
 initializeCards();initializeCity();refreshStatus();
 </script>
-<script src="./team-offices.js?v=20261011-premium-rooms"></script>
+<script src="./team-offices.js?v=20261012-liveprices-20261011-premium-rooms"></script>
 <script src="./world-3d.js?v=20261011-premium-rooms"></script>
-<script src="./council-ui.js?v=20261011-bot-wicks"></script>
+<script src="./council-ui.js?v=20261012-liveprices-20261011-bot-wicks"></script>
 <script src="./wick-knowledge.js?v=20261011-bot-wicks"></script>
 <script src="./practice-engine.js?v=20261012-entries"></script>
-<script src="./practice-ui.js?v=20261012-entries"></script>
+<script src="./live-practice.js?v=20261012-liveprices"></script>
+<script src="./practice-ui.js?v=20261012-liveprices"></script>
 <link rel="stylesheet" href="./strategy-research.css?v=20261012-entries">
 <script src="./strategy-research.js?v=20261012-entries"></script>
 <script src="./training-policy.js?v=20261011-nightshift2"></script>
 <script src="./training-engine.js?v=20261011-nightshift2"></script>
 <script src="./training-ui.js?v=20261011-nightshift2"></script>
-<script src="./settings-ui.js?v=20261011-nightshift2"></script>
+<script src="./settings-ui.js?v=20261012-liveprices"></script>
 <script src="./screenshot-lab.js?v=20261011-bot-wicks"></script>
 <script src="./training-theater.js?v=20261011-nightshift2"></script>
 <script src="./research-evidence.js?v=20261012-entries"></script>

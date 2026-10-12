@@ -170,7 +170,7 @@ function build(s,symbol,bridge){
  if(!['garden','cyber','bullion'].includes(t.feature))for(const x of[-6.6,6.6])plant(s,x,4.5,'#397d79');
  s.officeBase=s.data.slice();s.upload();s.draw();return t;
 }
-function update(s,snapshot,online,bars){const team=snapshot?.teams?.find(t=>t.name===s.symbol)||{},analysis=team.analysis||{},worker=snapshot?.payroll?.workers?.find(w=>w.team_name===s.symbol)||{},manager=snapshot?.managers?.find(m=>m.team_name===s.symbol),source=snapshot?.practice?'SYNTHETIC PRACTICE':online?'RECORDED DATA':'SOURCE NOT CONNECTED';
+function update(s,snapshot,online,bars){const team=snapshot?.teams?.find(t=>t.name===s.symbol)||{},analysis=team.analysis||{},worker=snapshot?.payroll?.workers?.find(w=>w.team_name===s.symbol)||{},manager=snapshot?.managers?.find(m=>m.team_name===s.symbol),source=snapshot?.live_price_practice?'IEX '+snapshot.market_feed.status+' · FAKE FILLS':snapshot?.practice?'SYNTHETIC PRACTICE':online?'RECORDED DATA':'SOURCE NOT CONNECTED';
  for(const [i,p]of s.crew.entries()){const vote=analysis.votes?.find(v=>v.name===p.name);screen(s,'crew-'+i,p,p.name.toUpperCase(),[i===0?(team.worker_state||'WAITING'):(vote?.direction||'WAITING'),i===0?'Team coordination':vote?.reason||'Awaiting source evidence',source],bars,p.color);}
  for(const [i,p]of s.crew.entries()){const aux={...p,x:point(p,-1.18,0,.12)[0],z:point(p,-1.18,0,.12)[2]};screen(s,'crew-aux-'+i,aux,'SOURCE',[source],bars,p.color);const d=s.displays.get('crew-aux-'+i),center=point(aux,0,1.46,-.49);for(let j=0;j<d.geometry.length;j+=5){d.geometry[j]=center[0]+(d.geometry[j]-center[0])*.31;d.geometry[j+1]=1.46+(d.geometry[j+1]-1.46)*.89;d.geometry[j+2]=center[2]+(d.geometry[j+2]-center[2])*.31;}}renderWall(s.symbol,snapshot,s);s.draw();}
 function focus(s,name,view='desk'){const p=s.crew.find(p=>p.name===name)||s.crew[0];if(!p)return;if(view==='screens'){s.yaw=p.angle;s.pitch=.23;s.distance=4.5;s.target=point(p,0,1.8,-.45);}else{s.yaw=p.angle+.35;s.pitch=.36;s.distance=5.8;s.target=[p.x,1.55,p.z+.5];}s.canvas.dataset.camera=view;s.draw();}
@@ -191,7 +191,7 @@ function wallModel(symbol,snapshot,session){
  const orders=(snapshot?.recent_orders||[]).filter(t=>t.team_name===symbol);
  const bars=(team.analysis?.bars||[]).filter(b=>Number.isFinite(b.close)&&b.close>0&&Number.isFinite(Date.parse(b.timestamp))).slice(-60);
  const worker=snapshot?.payroll?.workers?.find(w=>w.team_name===symbol)||{};
- return {symbol,practice,bars,closed,positions,orders,worker,source:practice?'SIMULATED MARKET · FAKE MONEY':'RECORDED SNAPSHOT · LIVE FEED UNVERIFIED',asOf:bars.at(-1)?.timestamp||snapshot?.generated_at};
+ return {symbol,practice,bars,closed,positions,orders,worker,source:snapshot?.live_price_practice?'IEX '+snapshot.market_feed.status+' · FAKE MONEY':practice?'SIMULATED MARKET · FAKE MONEY':'RECORDED SNAPSHOT · LIVE FEED UNVERIFIED',asOf:bars.at(-1)?.timestamp||snapshot?.generated_at};
 }
 function wallPaint(canvas,m,accent){
  const c=canvas.getContext('2d');if(!c)return;canvas.width=1920;canvas.height=640;
