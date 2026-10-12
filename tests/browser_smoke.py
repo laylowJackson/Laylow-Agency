@@ -169,7 +169,7 @@ def main():
                         # Keep the real pointer interaction and verify the resulting camera state.
                         page.locator('[data-room="office"][data-room-camera="wide"]').click(timeout=90000)
                         assert page.locator("#office-3d").get_attribute("data-camera") == "wide"
-                        office_preview=page.locator("#office-dialog").screenshot(type="jpeg",quality=76,animations="disabled")
+                        office_preview=page.screenshot(type="jpeg",quality=76,animations="disabled",timeout=90000)
                         office_label="DESKTOP" if width>800 else "PHONE"
                         print("LAYLOW_OFFICE_PREVIEW_"+office_label+"_BEGIN"+
                               base64.b64encode(office_preview).decode("ascii")+
