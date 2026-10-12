@@ -67,7 +67,7 @@ A phone cannot reach a computer's localhost URL. A separate authenticated hostin
 
 ## Reliability and packaging
 
-One supervisor owns fourteen children: ten team processes, manager assessments, dashboard, snapshot service, and a read-only reconciliation worker. It uses bounded restart delays, independent logs, fresh process observations and controlled shutdown. Legacy launchers delegate to the same supervisor. LAYLOW_DATA_DIR selects where records/logs are saved; relative paths resolve against the project. Existing databases are migrated without deleting historical rows or conflating enabled flags with worker health.
+One supervisor owns fifteen children: ten team processes, manager assessments, dashboard, snapshot service, a read-only reconciliation worker, and an isolated research worker. It uses bounded restart delays, independent logs, fresh process observations and controlled shutdown. Legacy launchers delegate to the same supervisor. LAYLOW_DATA_DIR selects where records/logs are saved; relative paths resolve against the project. Existing databases are migrated without deleting historical rows or conflating enabled flags with worker health.
 
 Run python -m unittest discover -s tests -v after installing requirements. CI checks Windows/Linux Python 3.11/3.12, mocked provider/order boundaries, real credential-free startup/shutdown, and Chromium desktop/phone dashboard behavior. Run python package_build.py for dist/Laylow-Agency-improved.zip. Credentials, databases, logs, virtual environments, legacy sample backtests and fake performance generators are excluded from the runtime download.
 
@@ -206,21 +206,9 @@ Open a building to enter its command suite. Camera presets, terminal hotspots,
 speech bubbles, Clear room view and optional Room effects are available in offices
 and the Council. Every room links to the Strategy training lab (`#training`).
 
-The research lab runs a drill for all ten teams every four seconds while this
-page is open and visible. It works even when the separate $50,000 practice
-account is finished or stopped by profit/risk brakes. It rotates synthetic trend,
-chop and shock regimes and chooses among three bounded trend/momentum variants
-using earlier candles. Later held-out candles compare the chosen variant against
-baseline after synthetic costs. Candidates need six rounds, ten trades, repeated
-validation wins, positive net results and controlled drawdown before review.
-Research never changes live orders or the saved practice-account ledger.
-Hypothetical stop budgets: $125 stocks/micros; $1,500 full-size contracts.
+The research lab runs all ten teams every eight seconds when a deep shift is active, otherwise every fifteen seconds. Auto workload tests every recipe for a team outside its estimated exchange session; Deep workload applies it to every team. It continues when the independent $50,000 account is finished or braked. Eight fixed recipes, six regimes, chronological selection and untouched holdouts provide separate recipe evidence. No account rules, risk or orders change. Hypothetical budgets remain $125 stocks/micros and $1,500 full-size contracts.
 
-Research progress is saved separately in browser storage and can be exported.
-Hidden tabs pause to save battery. Closing the browser stops the lab; running
-while closed or across devices requires a hosted worker. No verified market
-calendar or quote feed is connected yet; night school is always available and
-is synthetic research, not verified trading performance or neural-model training.
+Browser research is saved separately and can be exported. Public-site hidden tabs pause and closing the browser stops it. START_WINDOWS with Node.js LTS runs a persistent local research worker while the computer/runner are on; cross-device or computer-off training still needs hosting. Session hours are estimates, not a verified holiday/halts calendar or execution clock. These are synthetic experiments, not verified trading performance or neural-model training. See [CLOSED_MARKET_TRAINING.md](CLOSED_MARKET_TRAINING.md).
 
 ### Shared team offices
 Each district now houses its team manager and all configured specialists in one
@@ -424,7 +412,7 @@ remain in an explicit legacy summary and are excluded from v2 gates. See
 and tests. There is no connected live feed or independent historical-market
 validation yet. These are synthetic OHLC experiments, not backtests of
 screenshots or validated live-market results. Training runs while this page is
-open and visible; a hosted worker is required for unattended training.
+open and visible on GitHub Pages. The local Node worker continues while the computer/runner are on; cross-device or computer-off training needs hosting.
 
 The Vault now also shows average win/loss, profit factor and average closed net
 result. Recorded mode may contain only a partial imported ledger, labeled as
