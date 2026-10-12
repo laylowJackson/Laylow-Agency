@@ -32,7 +32,7 @@ _mode_setting = os.getenv("LAYLOW_MODE", "observe").strip().lower()
 LAYLOW_MODE = _mode_setting if _mode_setting in {"observe", "analyze", "paper"} else "observe"
 WATCHDOG_INTERVAL_SECONDS = 2
 STARTUP_PROCESSES = [
-    "dashboard.py", "runtime_manager.py", "manager_worker.py", "reconciliation_worker.py",
+    "dashboard.py", "runtime_manager.py", "manager_worker.py", "reconciliation_worker.py", "training_worker.py",
     "teams/spy_team.py", "teams/qqq_team.py",
     "teams/aapl_team.py", "teams/tsla_team.py",
     "teams/nq_team.py", "teams/es_team.py", "teams/mgc_team.py", "teams/mnq_team.py", "teams/mes_team.py", "teams/gc_team.py",

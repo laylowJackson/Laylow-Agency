@@ -11,6 +11,7 @@ FILES = [
     "broker_adapter.py", "broker_alpaca.py", "broker_practice.py", "execution_config.py",
     "risk_engine.py", "order_store.py", "execution_service.py", "reconciliation_worker.py", "execution_bot.py",
     "strategy-research.js", "strategy-research.css", "STRATEGY_RESEARCH.md", "tests/test_strategy_research.cjs",
+    "training-policy.js", "training-worker.cjs", "training_worker.py", "CLOSED_MARKET_TRAINING.md", "tests/test_training_shift.cjs",
     "practice-engine.js", "practice-ui.js", "training-engine.js", "training-ui.js", "team-offices.js",
     "wick-knowledge.js", "wick_knowledge.py", "WICK_KNOWLEDGE.md", "tests/test_wick_knowledge.cjs",
     "screenshot-lab.js", "screenshot-lab.css", "screenshot_analysis.py", "screenshot_reviews.py", "training-theater.js",

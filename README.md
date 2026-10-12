@@ -439,3 +439,7 @@ Updated: `index.html`, `dashboard.py`, `requirements.txt`, `.gitignore`,
 `package_build.py`, `training-engine.js`, `training-ui.js`, `world-3d.js`,
 `team-offices.js`, tests and this README. Office/Council graphics now include
 cached soft shadows, panoramic skyline windows and more detailed architecture.
+
+## Automatic closed-market training
+
+The Practice strategy researcher now tests all eight recipes for teams outside their estimated exchange session. Choose Auto or Deep in Training Lab, inspect per-team net/cost-stress results and watch completed trade replays. Every recipe retains its own evidence; no automatic promotion or account-risk changes occur. Install Node.js LTS and run START_WINDOWS for browser-independent local research; keep the computer/runner on. GitHub Pages still needs an open visible page. See [CLOSED_MARKET_TRAINING.md](CLOSED_MARKET_TRAINING.md) for schedule limitations, persistence and controls.

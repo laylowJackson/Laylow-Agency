@@ -87,6 +87,34 @@ def create_app(db_path=None, settings_path=None):
     def training_engine():
         return send_file(Path(ROOT_DIR) / "training-engine.js", mimetype="text/javascript", conditional=False)
 
+    @application.get("/training-policy.js")
+    def training_policy():
+        return send_file(Path(ROOT_DIR) / "training-policy.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/api/training")
+    def training_status():
+        from training_worker import read_status
+        try:
+            return jsonify(read_status(Path(database).parent))
+        except (OSError, ValueError, KeyError):
+            return jsonify({"available": True, "status": "ERROR", "message": "Research state unavailable"}), 503
+
+    @application.post("/api/training/control")
+    def training_control():
+        token = request.headers.get("X-Laylow-CSRF", "")
+        origin = request.headers.get("Origin")
+        if not secrets.compare_digest(token.encode("utf-8"), application.config["CONTROL_CSRF"].encode("utf-8")) or (origin is not None and origin != request.host_url.rstrip("/")):
+            return jsonify({"error": "invalid_control_token_or_origin"}), 403
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict) or set(body) != {"paused", "mode"} or type(body["paused"]) is not bool or body["mode"] not in {"auto", "deep"}:
+            return jsonify({"error": "invalid_research_control"}), 400
+        from training_worker import atomic_json
+        try:
+            atomic_json(Path(database).parent / "training_control.json", body)
+            return jsonify({"saved": True})
+        except OSError:
+            return jsonify({"error": "research_control_write_failed"}), 503
+
     @application.get("/training-ui.js")
     def training_ui():
         return send_file(Path(ROOT_DIR) / "training-ui.js", mimetype="text/javascript", conditional=False)

@@ -10,5 +10,11 @@ logs/
 data/
 *.lock
 dashboard_snapshot.json
+training_state.json
+training_state.json.tmp
+training_control.json
+training_control.json.tmp
+training_worker_status.json
+training_worker_status.json.tmp
 dist/
 screenshot_reviews/
