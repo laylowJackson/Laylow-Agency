@@ -47,25 +47,33 @@ function signal(asset,bars,i,rule){
 }
 function empty(){return {wick_checked:0,wick_rejected:0,blocked:0,trade_records:[],gross_profit_cents:0,gross_loss_cents:0,net_cents:0,drawdown_cents:0,trades:0,wins:0,losses:0,breakeven:0,ambiguous_exits:0,fees_cents:0,expectancy_cents:null,profit_factor:null};}
 function simulate(asset,bars,rule,start,end,options={}){
- const result=empty();end=Math.min(end,bars.length);const begin=Math.max(24,start),slip=asset.tick*(options.slippage_ticks??1),feeFactor=options.fee_multiplier??1,feeBase=options.roundtrip_fee??(asset.margin?4:2),gapLimit=options.max_gap_ms??Infinity,budget=asset.multiplier>=20?1500:125;
+ const result=empty();end=Math.min(end,bars.length);const begin=Math.max(24,start),slip=asset.tick*(options.slippage_ticks??1),feeFactor=options.fee_multiplier??1,feeBase=options.roundtrip_fee??(asset.margin?4:2),gapLimit=options.max_gap_ms??Infinity,defaultBudget=asset.multiplier>=20?1500:125,budget=options.risk_budget??defaultBudget,exitMode=options.exit_mode??null;
+ if(!Number.isFinite(budget)||budget<=0||budget>defaultBudget||!(exitMode===null||['fixed','partial','trailing'].includes(exitMode)))throw Error('Invalid research risk budget or exit method');
  // Validate only the interval and its earlier context. Never inspect later bars.
  if(!Number.isInteger(start)||start<0||!Number.isInteger(end)||end<start||!Number.isFinite(slip)||slip<0||!Number.isFinite(feeFactor)||feeFactor<1||!Number.isFinite(feeBase)||feeBase<0||!(gapLimit>0)||!Number.isFinite(asset.tick)||asset.tick<=0||!Number.isFinite(asset.multiplier)||asset.multiplier<=0||!bars.slice(Math.max(0,begin-24),end).every((b,j,a)=>valid(b)&&(!j||Date.parse(b.timestamp)>Date.parse(a[j-1].timestamp))))throw Error('Research requires ordered, completed standard OHLC bars and valid costs');
  let pos=null,pending=null,net=0,peak=0,dd=0,lastExit=-99;
  const fee=q=>Math.round((asset.margin?q*feeBase:feeBase)*feeFactor*100),mark=equity=>{peak=Math.max(peak,equity);dd=Math.max(dd,peak-equity);};
- function close(i,price,reason,ambiguous=false){const p=pos,exit=Number((price-p.side*slip).toFixed(8)),gross=Math.round((exit-p.entry)*p.side*p.qty*asset.multiplier*100),fees=fee(p.qty),pnl=gross-fees;net+=pnl;mark(net);result.trade_records.push({net_cents:pnl,gross_cents:gross,fees_cents:fees,reason,ambiguous,signal_index:p.signal,entry_index:p.opened,exit_index:i,entry_price:p.entry,exit_price:exit,side:p.side,qty:p.qty,stop_distance:Math.abs(p.entry-p.stop),stop_price:p.stop,target_price:p.target,risk_cents:p.risk_cents,result_r:p.risk_cents?pnl/p.risk_cents:null,setup_reason:p.reason,regime:p.regime,candle_review:p.candle_review});if(ambiguous)result.ambiguous_exits++;pos=null;lastExit=i;}
+ function close(i,price,reason,ambiguous=false){const p=pos,exit=Number((price-p.side*slip).toFixed(8)),gross=Math.round((exit-p.entry)*p.side*p.qty*asset.multiplier*100),fees=fee(p.qty),pnl=gross-fees,totalPnl=pnl+(p.partial_net||0);net+=pnl;mark(net);const record={net_cents:totalPnl,gross_cents:gross+(p.partial_gross||0),fees_cents:fees+(p.partial_fees||0),reason,ambiguous,signal_index:p.signal,entry_index:p.opened,exit_index:i,entry_price:p.entry,exit_price:exit,side:p.side,qty:p.original_qty??p.qty,stop_distance:Math.abs(p.entry-(p.initial_stop??p.stop)),stop_price:p.initial_stop??p.stop,target_price:exitMode==='trailing'?null:p.target,risk_cents:p.risk_cents,result_r:p.risk_cents?totalPnl/p.risk_cents:null,setup_reason:p.reason,regime:p.regime,candle_review:p.candle_review};if(exitMode)Object.assign(record,{exit_mode:exitMode,final_stop_price:p.stop,partial_skipped:exitMode==='partial'&&p.original_qty<2,fills:[...(p.fills||[]),{index:i,qty:p.qty,price:exit,reason,fees_cents:fees}]});result.trade_records.push(record);if(ambiguous)result.ambiguous_exits++;pos=null;lastExit=i;}
  for(let i=begin;i<end;i++){
   const b=bars[i];
   if(pending){const p=pending;pending=null;const entry=Number((b.open+p.side*slip).toFixed(8)),distance=(entry-p.stop)*p.side,reward=(p.target-entry)*p.side;
-   if(distance<=0||reward<=0||(rule.family!=='baseline'&&reward/distance<1.2)){result.blocked++;}else{const available=budget-(asset.margin?0:feeBase*feeFactor),qty=Math.min(asset.margin?3:50,Math.floor(available/(distance*asset.multiplier+slip*asset.multiplier+(asset.margin?feeBase*feeFactor:0))));if(qty<1)result.blocked++;else pos={...p,entry,qty,opened:i,risk_cents:Math.round(distance*qty*asset.multiplier*100)+fee(qty)+Math.round(slip*qty*asset.multiplier*100)};}
+   if(distance<=0||reward<=0||(rule.family!=='baseline'&&reward/distance<1.2)){result.blocked++;}else{const feeReserve=feeBase*feeFactor*(exitMode==='partial'&&!asset.margin?2:1),available=budget-(asset.margin?0:feeReserve),qty=Math.min(asset.margin?3:50,Math.floor(available/(distance*asset.multiplier+slip*asset.multiplier+(asset.margin?feeBase*feeFactor:0))));if(qty<1)result.blocked++;else{pos={...p,entry,qty,opened:i,risk_cents:Math.round(distance*qty*asset.multiplier*100)+Math.round((asset.margin?qty*feeReserve:feeReserve)*100)+Math.round(slip*qty*asset.multiplier*100)};if(exitMode)Object.assign(pos,{original_qty:qty,initial_stop:p.stop,distance,target:entry+p.side*distance*2,partial_level:entry+p.side*distance,fills:[]});}}
   }
-  if(pos){const p=pos,stopHit=p.side===1?b.low<=p.stop:b.high>=p.stop,targetHit=p.side===1?b.high>=p.target:b.low<=p.target;
+  if(pos){const p=pos,stopHit=p.side===1?b.low<=p.stop:b.high>=p.stop,targetHit=exitMode==='trailing'?false:p.side===1?b.high>=p.target:b.low<=p.target,partialHit=exitMode==='partial'&&!p.partial_done&&(p.side===1?b.high>=p.partial_level:b.low<=p.partial_level);
    // A gap through the stop fills at the worse open. A target limit never gets a better-than-limit assumed fill.
    const stopFill=p.side===1?Math.min(b.open,p.stop):Math.max(b.open,p.stop);
    const adverse=p.side===1?Math.max(b.low,Math.min(p.stop,b.open)):Math.min(b.high,Math.max(p.stop,b.open));mark(net+Math.round((adverse-p.entry)*p.side*p.qty*asset.multiplier*100)-fee(p.qty));
-   if(stopHit)close(i,stopFill,targetHit?'Ambiguous bar / stop first':'Stop',targetHit);
-   else if(targetHit)close(i,p.target,'Target');
-   else if(i-p.opened>=rule.hold||i===end-1)close(i,b.close,i===end-1?'Segment close':'Time exit');
-   else mark(net+Math.round((b.close-p.entry)*p.side*p.qty*asset.multiplier*100)-fee(p.qty));
+   if(stopHit)close(i,stopFill,targetHit||partialHit?'Ambiguous bar / stop first':'Stop',targetHit||partialHit);
+   else{
+    if(partialHit&&p.qty>=2){const q=Math.floor(p.original_qty/2),exit=Number((p.partial_level-p.side*slip).toFixed(8)),gross=Math.round((exit-p.entry)*p.side*q*asset.multiplier*100),fees=fee(q);p.partial_done=true;p.partial_gross=gross;p.partial_fees=fees;p.partial_net=gross-fees;p.qty-=q;net+=p.partial_net;p.fills.push({index:i,qty:q,price:exit,reason:'Partial / 1R',fees_cents:fees});mark(net);}
+    if(targetHit)close(i,p.target,'Target');
+    else if(i-p.opened>=rule.hold||i===end-1)close(i,b.close,i===end-1?'Segment close':'Time exit');
+    else{
+     mark(net+Math.round((b.close-p.entry)*p.side*p.qty*asset.multiplier*100)-fee(p.qty));
+     // A completed close arms/tightens the trail for the NEXT candle only.
+     if(exitMode==='trailing'&&(b.close-p.entry)*p.side>=p.distance){const raw=b.close-p.side*p.distance,trail=(p.side===1?Math.floor:Math.ceil)(raw/asset.tick)*asset.tick;p.stop=p.side===1?Math.max(p.stop,trail):Math.min(p.stop,trail);}
+    }
+   }
   }
   // Imported research uses declared timestamp gaps as dataset boundaries, not a verified exchange calendar.
   // Flatten at the preceding close; no OHLC from the next segment is read for this decision.

@@ -4,6 +4,8 @@ Four stock teams (SPY, QQQ, AAPL, TSLA) and six independent futures watch teams 
 
 ## Start on Windows
 
+First-team research: the Training Lab now has a SPY / 5-minute preset and a separate fixed-risk comparison of fixed targets, partial exits and a close-based trailing stop. Real candle data must be uploaded before market research can run. See [EXIT_RESEARCH.md](EXIT_RESEARCH.md) for predefined rules, costs, chronological selection and limitations. This does not change the practice balance or enable LIVE.
+
 1. Install Python 3.11 or newer.
 2. Extract the download. GitHub's artifact ZIP contains a second ZIP; extract that too.
 3. In the Laylow-Agency folder, double-click SETUP_WINDOWS.bat, then START_WINDOWS.bat.
