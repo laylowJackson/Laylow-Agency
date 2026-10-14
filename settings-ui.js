@@ -38,6 +38,7 @@ function apply(){
 function persist(){try{if(!storage)throw Error();storage.setItem(key,JSON.stringify(preferences));$('settings-display-status').textContent='Display preferences saved on this device.';}catch{$('settings-display-status').textContent='Storage unavailable. These preferences apply for this visit.';}}
 function session(){const data=window.LaylowWorld.snapshot()||{};$('settings-session').textContent=data.practice?'Practice · fake dollars':'Viewer workspace';$('settings-market').textContent=data.live_price_practice?'IEX: '+data.market_feed.status:data.market_feed?.live===true?'Market feed: '+(data.market_feed.source||'check provider status'):'Market feed: simulated / not connected';}
 function showLocal(data){
+ if(!document.getElementById('owner-login-link')){const link=document.createElement('a');link.id='owner-login-link';link.className='settings-link';link.href='/auth/login';link.textContent='Owner password / sign out ↗';$('broker-settings-form').before(link);}
  localSetup=data;const c=data.credentials;$('broker-credentials').disabled=false;$('broker-badge').textContent=c.key_saved&&c.secret_saved?'SAVED · UNVERIFIED':'NOT CONFIGURED';
  $('broker-setup-note').textContent='Secure local app detected. Keys are saved only in this project’s private .env.local file; values are never read back. Keep this computer account private.';
  $('settings-execution').textContent=data.configuration.execution_mode;$('settings-shadow').textContent=data.configuration.shadow?'On · no broker submission':'Off · explicit paper authorization still required';

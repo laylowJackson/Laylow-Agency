@@ -311,6 +311,8 @@ def create_app(db_path=None, settings_path=None):
         name=request.path.lstrip("/")
         return send_file(Path(ROOT_DIR)/name,mimetype="text/css" if name.endswith(".css") else "text/javascript")
 
+    from dashboard_auth import install_auth
+    install_auth(application, database)
     return application
 
 
