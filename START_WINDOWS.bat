@@ -20,7 +20,7 @@ echo.
 echo Missing or incomplete Python packages detected.
 echo Running the Laylow Agency setup automatically. Internet required.
 echo.
-call "%~dp0SETUP_WINDOWS.bat"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0SETUP_WINDOWS.ps1"
 if errorlevel 1 (
     echo.
     echo Automatic setup failed. Check the error above and your Python installation.
