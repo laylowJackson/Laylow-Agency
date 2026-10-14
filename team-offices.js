@@ -167,6 +167,19 @@ function build(s,symbol,bridge){
  s.canvas.dataset.theme=t.feature;s.canvas.dataset.team=symbol;s.canvas.dataset.crewCount=String(1+def.bots.length);s.canvas.dataset.camera='wide';
  const coords=[[0,-4.1,0],...t.desks];s.crew=['Team Manager',...def.bots].map((name,i)=>({name,x:coords[i][0],z:coords[i][1],angle:coords[i][2],color:i===0?t.accent:['#75e8cc','#a7b7ff','#ffd18b','#f997bf'][i-1]}));
  flagshipInterior(s,t);for(const p of s.crew)desk(s,p,t);feature(s,t);premiumInterior(s,t);
+ // Architectural depth: floating metal reveals, acoustic slats and inset shelf niches.
+ for(const side of[-1,1]){
+  const x=side*7.35;s.roundedBox(x,.05,1.45,.38,2.85,.85,'#182b40',.07);s.roundedBox(x,2.90,1.45,.42,.08,.90,t.metal,.045);
+  s.box(x-side*.20,.27,1.45,.018,2.4,.40,t.accent,.24);
+  for(let i=0;i<5;i++){const z=-5.8+i*.36;s.box(side*7.28,.12,z,.055,4.9,.095,t.metal);}
+  s.roundedBox(side*5.6,.045,6.02,2.6,.075,.24,'#182e41',.055);
+  s.box(side*5.6,.12,6.01,2.25,.015,.03,t.accent,.4);
+ }
+ for(const p of s.crew)transformed(s,p,()=>{
+  // A slim personal terminal pedestal and individually modeled keyboard keys.
+  s.roundedBox(1.30,.06,-.50,.36,.86,.58,'#263b50',.065);s.box(1.30,.74,-.19,.20,.10,.02,p.color,.22);
+  for(let row=0;row<3;row++)for(let col=0;col<8;col++)s.box(-.28+col*.075,1.08,.10+row*.075,.056,.012,.052,'#8dabbc');
+ });
  if(!['garden','cyber','bullion'].includes(t.feature))for(const x of[-6.6,6.6])plant(s,x,4.5,'#397d79');
  s.officeBase=s.data.slice();s.upload();s.draw();return t;
 }

@@ -3,6 +3,7 @@
 "use strict";
 const byId=id=>document.getElementById(id),bridge=window.LaylowWorld;
 if(!bridge)return;
+let graphicsQuality='balanced';try{const saved=localStorage.getItem('laylow-graphics-quality');if(['eco','balanced','high'].includes(saved))graphicsQuality=saved;}catch{}
 const hex=s=>{const v=parseInt(s.slice(1),16);return[(v>>16)/255,((v>>8)&255)/255,(v&255)/255];};
 const positions={SPY:[-7,-7],QQQ:[7,-7],AAPL:[-12,2],TSLA:[12,2],"NQ1!":[-5,8],"ES1!":[5,8],"MGC1!":[-14,10],"MNQ1!":[14,10],"MES1!":[-9,16],"GC1!":[9,16]};
 const cube=[
@@ -46,7 +47,12 @@ class Scene {
   for(int i=-1;i<=1;i++)for(int j=-1;j<=1;j++)v+=step(p.z-bias,shadowDepth(p.xy+vec2(float(i),float(j))/768.));
   return .38+.62*v/9.;
  }
- void main(){if(reflectionPass>.5&&world.y<.08)discard;vec3 N=normalize(n);float light=.32+.63*max(dot(N,normalize(vec3(-.5,1.,.6))),0.)+.24*max(dot(N,normalize(vec3(.8,.2,-1.))),0.);vec3 V=normalize(eyePosition-world);float rim=pow(1.-max(dot(N,V),0.),3.);float shine=pow(max(dot(reflect(-normalize(vec3(-.5,1.,.6)),N),V),0.),36.);vec3 lit=tint*mix(light,1.2+ambientPulse,glow)+vec3(.1,.24,.32)*rim*(1.-glow)+vec3(.23,.26,.3)*shine*(1.-glow);if(interior>.5){
+ void main(){if(reflectionPass>.5&&world.y<.08)discard;vec3 N=normalize(n);float light=.32+.63*max(dot(N,normalize(vec3(-.5,1.,.6))),0.)+.24*max(dot(N,normalize(vec3(.8,.2,-1.))),0.);vec3 V=normalize(eyePosition-world);float rim=pow(1.-max(dot(N,V),0.),3.);float shine=pow(max(dot(reflect(-normalize(vec3(-.5,1.,.6)),N),V),0.),36.);vec3 lit=tint*mix(light,1.2+ambientPulse,glow)+vec3(.1,.24,.32)*rim*(1.-glow)+vec3(.23,.26,.3)*shine*(1.-glow);if(interior<.5){
+ // View-dependent satin highlights and a low-frequency water normal, no extra draw pass.
+ float fresnel=.04+.30*pow(1.-max(dot(N,V),0.),5.);
+ lit+=vec3(.12,.19,.29)*fresnel*(1.-glow);
+ if(world.y<-.95&&N.y>.9){vec3 waterN=normalize(vec3(sin(world.x*.85+world.z*.27)*.09,1.,cos(world.z*.75-world.x*.21)*.09));float glint=pow(max(dot(reflect(-normalize(vec3(.5,.8,-.6)),waterN),V),0.),90.);lit=tint*.68+vec3(.32,.48,.70)*glint+vec3(.08,.14,.23)*pow(1.-max(dot(waterN,V),0.),4.);}
+ }if(interior>.5){
  vec3 warm=vec3(1.,.83,.66),cool=vec3(.55,.77,1.);
  float key=max(dot(N,normalize(vec3(-.6,1.,.45))),0.);
  float fill=max(dot(N,normalize(vec3(.7,.45,-.4))),0.);
@@ -56,6 +62,8 @@ class Scene {
  float windowLight=exp(-abs(abs(world.x)-7.8)*.58)*max(0.,N.y)*.14;
  material+=tint*cool*windowLight;
  material+=practical(N,V)*.85;
+ float satin=pow(max(dot(N,normalize(normalize(vec3(-.6,1.,.45))+V)),0.),26.);
+ material+=vec3(.13,.17,.22)*satin*direct*(.35+.65*pow(1.-max(dot(N,V),0.),3.));
  // Subtle brushed alloy and stone grain, stable when the camera moves.
  float surfaceDetail=sin(world.x*73.+world.y*57.)*sin(world.z*61.+world.y*13.);
  material*=1.+surfaceDetail*.009;
@@ -98,9 +106,11 @@ class Scene {
   this.displayBuffer=gl.createBuffer();this.displays=new Map();
   const screenVertex=`attribute vec2 point;varying vec2 uv;void main(){uv=point*.5+.5;gl_Position=vec4(point,0.,1.);}`;
   this.blur=program(screenVertex,`precision mediump float;varying vec2 uv;uniform sampler2D source;uniform vec2 direction;uniform float extract;vec3 tap(vec2 p){vec3 c=texture2D(source,p).rgb;return mix(c,c*smoothstep(.48,.95,max(c.r,max(c.g,c.b))),extract);}void main(){vec3 c=tap(uv)*.227027;c+=(tap(uv+direction*1.384615)+tap(uv-direction*1.384615))*.316216;c+=(tap(uv+direction*3.230769)+tap(uv-direction*3.230769))*.070270;gl_FragColor=vec4(c,1.);}`);
-  this.composite=program(screenVertex,`precision mediump float;varying vec2 uv;uniform sampler2D source,halo;uniform float city;float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}void main(){vec4 scene=texture2D(source,uv);vec3 sky=mix(vec3(.065,.072,.17),vec3(.013,.012,.045),smoothstep(.12,1.,uv.y));float cloud=sin(uv.x*7.+uv.y*9.)*sin(uv.x*13.-uv.y*6.);sky+=vec3(.028,.015,.059)*cloud;vec2 cell=floor(uv*vec2(760.,440.));float star=step(.9994,hash(cell))*pow(max(0.,uv.y-.38),1.5);sky+=star*.7*city;vec2 moon=(uv-vec2(.84,.85))*vec2(1.35,1.);float d=length(moon);sky+=vec3(.10,.14,.22)*exp(-d*16.)*city;sky+=vec3(.6,.7,.9)*(1.-smoothstep(.021,.024,d))*city;vec3 c=mix(sky,scene.rgb,scene.a)+texture2D(halo,uv).rgb*mix(.20,1.05,city);
+  this.composite=program(screenVertex,`precision mediump float;varying vec2 uv;uniform sampler2D source,halo;uniform float city;float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}void main(){vec4 scene=texture2D(source,uv);vec3 sky=mix(vec3(.065,.072,.17),vec3(.013,.012,.045),smoothstep(.12,1.,uv.y));float cloud=sin(uv.x*7.+uv.y*9.)*sin(uv.x*13.-uv.y*6.);sky+=vec3(.028,.015,.059)*cloud;vec2 cell=floor(uv*vec2(760.,440.));float star=step(.9994,hash(cell))*pow(max(0.,uv.y-.38),1.5);sky+=star*.7*city;vec2 moon=(uv-vec2(.84,.85))*vec2(1.35,1.);float d=length(moon);sky+=vec3(.10,.14,.22)*exp(-d*16.)*city;sky+=vec3(.6,.7,.9)*(1.-smoothstep(.021,.024,d))*city;vec3 c=mix(sky,scene.rgb,scene.a)+texture2D(halo,uv).rgb*mix(.16,.58,city);
  if(city<.5){c*=1.08;c=mix(c,pow(max(c,vec3(0.)),vec3(.91)),.35);c=mix(vec3(dot(c,vec3(.2126,.7152,.0722))),c,1.08);}
- c*=1.-.16*pow(length((uv-.5)*1.2),2.);gl_FragColor=vec4(c,1.);}`);
+ // Gentle highlight compression keeps luminous signs readable instead of white clipping.
+ c=max(c,vec3(0.));c=c/(vec3(1.)+c*.20);c=pow(c,vec3(.94));
+ c*=1.-.10*pow(length((uv-.5)*1.2),2.);gl_FragColor=vec4(c,1.);}`);
   this.quad=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,this.quad);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);this.targets=[];
   this.yaw=kind==="council"?-.30:.25;this.pitch=kind==="city"?.43:kind==="council"?.55:.28;this.distance=kind==="city"?57:kind==="council"?19.5:9;this.target=kind==="city"?[0,3,3]:[0,1.6,0];this.data=[];this.labels=[];
   this.resize=new ResizeObserver(()=>this.draw());this.resize.observe(canvas);this.installCamera();
@@ -201,7 +211,7 @@ class Scene {
   const gl=this.gl;gl.bindTexture(gl.TEXTURE_2D,item.texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,canvas);
  }
  renderShadows(){
-  if(this.kind==='city'||!this.shadowsAvailable||!this.shadowDirty)return;
+  if(graphicsQuality==='eco'||this.kind==='city'||!this.shadowsAvailable||!this.shadowDirty)return;
   const gl=this.gl;gl.bindFramebuffer(gl.FRAMEBUFFER,this.shadowFbo);gl.viewport(0,0,768,768);gl.enable(gl.DEPTH_TEST);gl.clearColor(1,1,1,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   for(let i=0;i<gl.getParameter(gl.MAX_VERTEX_ATTRIBS);i++)gl.disableVertexAttribArray(i);gl.useProgram(this.shadowProgram);gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
   const p=gl.getAttribLocation(this.shadowProgram,'position');gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,3,gl.FLOAT,false,40,0);gl.uniformMatrix4fv(gl.getUniformLocation(this.shadowProgram,'lightCamera'),false,new Float32Array(this.lightCamera));gl.drawArrays(gl.TRIANGLES,0,this.vertices||0);gl.disableVertexAttribArray(p);this.shadowDirty=false;
@@ -215,8 +225,12 @@ class Scene {
   this.cylinder(x,y+.77*scale,z,.09*scale,.13*scale,'#69819a');
   for(const side of[-1,1]){ball(side*.32,.62,.05,.07,.075,.07,'#253950');ball(side*.43,.37,.22,.07,.055,.07,'#758f9f');b(side*.40,.35,.31,.16,.02,.08,color,.18);}
   b(0,.69,.25,.19,.026,.025,'#d1e5eb');for(let i=0;i<3;i++)b(-.05+i*.05,.70,.28,.012,.018,.008,color,.6);
+  // Layered ceramic armor, inset chest glass and machined joint caps.
+  b(0,.56,.303,.20,.09,.035,'#10243b');b(0,.59,.329,.14,.014,.012,color,.55);
+  for(const side of[-1,1]){b(side*.24,.59,.21,.025,.15,.027,'#a9c5d9');ball(side*.40,.33,.28,.065,.065,.032,'#1c324a');ball(side*.40,.33,.311,.034,.034,.012,color,.35);}
   const head=this.data.length;
   ball(0,1.19,0,.47,.42,.39,'#dce8ec');ball(0,1.18,.31,.365,.27,.12,'#081a2a');ball(-.11,1.36,.393,.15,.025,.014,'#789cab',.08);
+  b(0,1.48,.16,.22,.018,.10,'#b7ccdb');for(const side of[-1,1]){b(side*.275,1.12,.405,.026,.055,.018,'#86b3c9');ball(side*.21,1.32,.41,.085,.018,.006,'#b8e8f4',.12);}
   for(const side of[-1,1]){ball(side*.49,1.20,0,.095,.20,.16,color);ball(side*.53,1.20,.01,.035,.12,.11,'#9ab8c9');ball(side*.14,1.23,.427,.074,.10,.022,color,.75);ball(side*.16,1.26,.443,.018,.025,.008,'#f1fcff',.6);b(side*.145,1.37,.36,.14,.025,.035,color,.35);}
   // A smiling segmented mouth, curved headset band and antenna.
   for(let i=0;i<7;i++){const a=-1.15+i*2.3/6;ball(Math.sin(a)*.105,1.09-Math.cos(a)*.035,.43,.019,.012,.012,color,.6);}
@@ -258,6 +272,9 @@ class Scene {
   this.cylinder(0,-.75,3,24,.72,"#132441",24,0,96);this.cylinder(0,-.03,3,23.5,.15,"#1c2d46",23.5,0,96);
   for(const r of[23.4,19,13.3,6.2]){this.ring(0,.15,3,r,"#10192c",r===23.4?.12:.48,0);this.ring(0,.18,3,r+.48,"#667f9d",.025,.4);}
   this.ring(0,.17,3,23.6,"#668ef2",.045,1);
+  // Sculpted waterfront rails, recessed plaza panels and tall boulevard luminaires.
+  for(let i=0;i<36;i++){const a=i*Math.PI/18,x=Math.cos(a)*23.2,z=3+Math.sin(a)*23.2;this.box(x,.22,z,.045,.65,.045,'#8496ae');this.sphere(x,.9,z,.065,'#bedfff',.45);}
+  for(const x of[-18,18])for(const z of[-12,-6,0,6,12,18]){this.cylinder(x,.18,z,.09,2.1,'#435974',.06);this.roundedBox(x,2.2,z,.65,.10,.30,'#c5d7de',.04);this.box(x,2.17,z,.48,.02,.2,'#d0e8ff',.6);}
   for(let x=-18;x<=18;x+=6){this.box(x,.15,3,.8,.02,36,"#111b2f");this.box(x+.43,.18,3,.025,.015,36,"#586f95",.4);}
   for(let z=-15;z<=18;z+=6){this.box(0,.16,z,37,.02,.8,"#111b2f");this.box(0,.18,z+.43,37,.015,.025,"#586f95",.4);}
   for(let i=0;i<60;i++){const a=i*Math.PI*2/60,x=Math.cos(a)*22.6,z=3+Math.sin(a)*22.6;this.cylinder(x,.15,z,.04,.62,"#71829e",.025);this.sphere(x,.8,z,.055,"#ffdc9b",1);}
@@ -279,6 +296,8 @@ class Scene {
    const [x,z]=positions[district.name]||[0,0],h=district.name.endsWith("!")?5.1+(teamIndex%3)*.65:8+(teamIndex%2)*1.1;
    this.cylinder(x,.18,z,2.3,.15,"#26334d",2.3);this.ring(x,.34,z,2.1,district.color,.035,.75);
    this.building(x,z,h,district.color,2.1);this.building(x,z,h+1,district.color,1.2,false);
+   for(const side of[-1,1]){this.box(x+side*1.13,.5,z,.12,h*.72,.35,'#59718b');this.box(x+side*1.145,.6,z+.19,.028,h*.69,.025,district.color,.35);}
+   this.roundedBox(x,.38,z+1.5,1.75,.09,.8,'#71869a',.12);this.box(x,.48,z+1.78,1.45,.015,.025,district.color,.45);
    this.ring(x,h+1.7,z,1.0,district.color,.035,1);this.robot(x,h+1.5,z,district.color,.65);this.beam(x,h+2.7,z,district.color,4.5);
    const def=bridge.definitions.find(row=>row.name===district.name);
    for(let j=0;j<(def?.bots.length||0);j++)this.robot(x-1.3+j*.8,.36,z+2.1,district.color,.4);
@@ -489,12 +508,12 @@ class Scene {
  project(x,y,z){const p=[x,y,z,1],m=this.matrix;if(!m)return null;const out=[0,0,0,0];for(let row=0;row<4;row++)for(let k=0;k<4;k++)out[row]+=m[k*4+row]*p[k];if(out[3]<=0)return null;return{x:(out[0]/out[3]*.5+.5)*this.canvas.clientWidth,y:(-.5*out[1]/out[3]+.5)*this.canvas.clientHeight};}
  draw(){
   if(this.failed)return;const canvas=this.canvas;if(!canvas.clientWidth||!canvas.clientHeight)return;
-  const gl=this.gl,dpr=Math.min(Math.max(window.devicePixelRatio||1,canvas.clientWidth>600?1.5:1.25),2),w=Math.round(canvas.clientWidth*dpr),h=Math.round(canvas.clientHeight*dpr);
+  const gl=this.gl,dpr=graphicsQuality==='eco'?1:graphicsQuality==='high'?2:Math.min(Math.max(window.devicePixelRatio||1,canvas.clientWidth>600?1.5:1.25),1.5),w=Math.round(canvas.clientWidth*dpr),h=Math.round(canvas.clientHeight*dpr);
   if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}this.targetsFor(w,h);this.renderShadows();
   gl.bindFramebuffer(gl.FRAMEBUFFER,this.bloomAvailable?this.targets[0].fbo:null);gl.viewport(0,0,w,h);gl.enable(gl.DEPTH_TEST);gl.useProgram(this.program);gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
   for(let i=0;i<4;i++){gl.enableVertexAttribArray(this.attributes[i]);gl.vertexAttribPointer(this.attributes[i],i===3?1:3,gl.FLOAT,false,40,i*12);}
   const t=this.target,r=this.distance,eye=[t[0]+r*Math.sin(this.yaw)*Math.cos(this.pitch),t[1]+r*Math.sin(this.pitch),t[2]+r*Math.cos(this.yaw)*Math.cos(this.pitch)];
-  gl.uniformMatrix4fv(gl.getUniformLocation(this.program,'lightCamera'),false,new Float32Array(this.lightCamera));gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,this.shadowTexture||this.targets[1]?.texture);gl.uniform1i(gl.getUniformLocation(this.program,'shadowMap'),2);gl.uniform1f(gl.getUniformLocation(this.program,'shadows'),this.kind!=='city'&&this.shadowsAvailable?1:0);gl.activeTexture(gl.TEXTURE0);canvas.dataset.shadows=String(this.kind!=='city'&&!!this.shadowsAvailable);
+  gl.uniformMatrix4fv(gl.getUniformLocation(this.program,'lightCamera'),false,new Float32Array(this.lightCamera));gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,this.shadowTexture||this.targets[1]?.texture);gl.uniform1i(gl.getUniformLocation(this.program,'shadowMap'),2);gl.uniform1f(gl.getUniformLocation(this.program,'shadows'),graphicsQuality!=='eco'&&this.kind!=='city'&&this.shadowsAvailable?1:0);gl.activeTexture(gl.TEXTURE0);canvas.dataset.shadows=String(graphicsQuality!=='eco'&&this.kind!=='city'&&!!this.shadowsAvailable);
   gl.uniform1f(gl.getUniformLocation(this.program,'interior'),this.kind==='city'?0:1);
   gl.uniform1f(gl.getUniformLocation(this.program,'woodFloor'),this.kind==='council'||['boardroom','exchange','garden','bullion'].includes(this.theme?.feature)?1:0);
   gl.uniform3fv(gl.getUniformLocation(this.program,'roomAccent'),new Float32Array(hex(this.theme?.accent||'#d9b174')));
@@ -507,8 +526,8 @@ class Scene {
   gl.uniform1f(gl.getUniformLocation(this.program,'reflectionPass'),0);gl.uniform1f(gl.getUniformLocation(this.program,'reflectionReady'),0);
   gl.uniformMatrix4fv(gl.getUniformLocation(this.program,'reflectionCamera'),false,new Float32Array(this.matrix));
   gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,this.shadowTexture);gl.uniform1i(gl.getUniformLocation(this.program,'reflectionMap'),3);gl.activeTexture(gl.TEXTURE0);
-  if(this.kind!=='city')this.renderReflection(eye,t);
-  canvas.dataset.reflections=String(this.kind!=='city'&&!!this.reflectionAvailable);canvas.dataset.graphics='premium';
+  if(this.kind!=='city'&&graphicsQuality!=='eco')this.renderReflection(eye,t);
+  canvas.dataset.reflections=String(this.kind!=='city'&&graphicsQuality!=='eco'&&!!this.reflectionAvailable);canvas.dataset.graphics='2026';canvas.dataset.quality=graphicsQuality;
   gl.clearColor(.012,.018,.04,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.drawArrays(gl.TRIANGLES,0,this.vertices||0);this.drawRoomEffects();this.drawDisplays();
   if(this.bloomAvailable){
    gl.disable(gl.DEPTH_TEST);const [scene,a,b]=this.targets;
@@ -598,6 +617,7 @@ function placeLabels(){
  }
 }
 function start(){
+ const qualityLabel=document.createElement('label');qualityLabel.textContent='Graphics ';qualityLabel.className='graphics-quality-label';const qualitySelect=document.createElement('select');qualitySelect.id='graphics-quality';qualitySelect.setAttribute('aria-label','Graphics quality');for(const [value,title]of [['eco','Performance'],['balanced','Balanced'],['high','High detail']]){const option=document.createElement('option');option.value=value;option.textContent=title;qualitySelect.append(option);}qualitySelect.value=graphicsQuality;qualityLabel.append(qualitySelect);byId('city-view').parentElement.append(qualityLabel);qualitySelect.addEventListener('change',()=>{graphicsQuality=qualitySelect.value;try{localStorage.setItem('laylow-graphics-quality',graphicsQuality);}catch{}for(const scene of[city,office,councilScene])scene?.draw();});
  try{
   city=new Scene(byId("city-3d"),"city");
   for(const row of bridge.districts){

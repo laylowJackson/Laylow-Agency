@@ -449,3 +449,7 @@ See [BOT_RESEARCH_EVIDENCE.md](BOT_RESEARCH_EVIDENCE.md) for file format, local 
 
 ### Fixed selective-entry trial
 The training lab now runs a fixed selective recipe against the balanced control for SPY, QQQ, AAPL and TSLA on a separate synthetic seed stream. Trial evidence begins after the upgrade and is not backfilled from older research. The desk shows win/loss sample counts, net results, cost stress, maximum single-drill drawdown, losing regimes and unmet gates. At least 24 rounds, 120 candidate trades and four rounds in every scenario are required, alongside net, cost and drawdown gates. Passing these synthetic checks does not authorize trading or prove market profitability. Existing account and training history are preserved.
+
+
+### Graphics refresh (October 2026)
+The existing WebGL city and shared team rooms now use restrained bloom, compressed highlights, satin lighting, water highlights, layered robot armor, boulevard lights and added workstation details. Graphics in the city toolbar has Performance (1x resolution, no room reflections/shadows), Balanced (up to 1.5x) and High detail (2x) modes. The choice persists on this browser. All modes retain the accessible map fallback and existing trade/source labels. This is a stylized custom WebGL renderer, not a photorealistic engine.
