@@ -4,7 +4,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parent
 FILES = [
-    "dashboard_auth.py", "OWNER_LOGIN.md",
+    "big-manager-bot.js", "dashboard_auth.py", "OWNER_LOGIN.md",
     "RUN_LAYLOW_WINDOWS.bat",
     "live_practice_worker.py", "server-practice.cjs", "server-practice-ui.js", "PAPER_READINESS.md",
     "Dockerfile", ".dockerignore", "compose.yaml", "hosted_start.py", "HOSTED_SERVER.md",

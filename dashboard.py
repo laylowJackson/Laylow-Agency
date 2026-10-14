@@ -49,6 +49,10 @@ def create_app(db_path=None, settings_path=None):
     def index():
         return send_file(Path(ROOT_DIR) / "index.html", conditional=False)
 
+    @application.get("/big-manager-bot.js")
+    def big_manager_bot_asset():
+        return send_file(Path(ROOT_DIR) / "big-manager-bot.js", mimetype="text/javascript", conditional=False)
+
     @application.get("/world-3d.js")
     def world_script():
         return send_file(Path(ROOT_DIR) / "world-3d.js",mimetype="text/javascript",conditional=False)
