@@ -30,7 +30,7 @@ document.body.append(room);let timer=null;
 const text=(v,f)=>typeof v==='string'&&v.trim()?v:f;
 
 const $=id=>document.getElementById(id);
-const localHost=['127.0.0.1','localhost','[::1]'].includes(location.hostname);
+const localHost=['127.0.0.1','localhost','[::1]'].includes(location.hostname)||(location.protocol==='https:'&&location.hostname.endsWith('.ts.net'));
 let atlasBusy=false;
 function atlasTeamChoices(){
  const select=$('atlas-ai-team'),current=select.value;
