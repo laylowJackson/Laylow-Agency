@@ -18,8 +18,10 @@ profit after modeled costs, expectancy, profit factor and drawdown. It explicitl
 keeps strategy_edge_verified=false. No percentage target or minimum trade count
 alone makes a strategy ready for real money. Capture observations across different
 sessions, track strategies separately, freeze candidate rules, and use untouched
-chronological holdout OHLC data through the existing research tools. No verified
-historical dataset or final holdout result has been supplied yet.
+chronological holdout OHLC data through the existing research tools. The existing
+retrospective SPY comparison did not establish an improvement. Provider provenance
+and forward paper results remain unverified; a new data connection is not evidence
+that the prior candidate passed its holdout evaluation.
 
 Once connected, the worker accumulates completed observed IEX minute bars in a
 separate SQLite archive, deduplicated by symbol and timestamp. The four CSV links
