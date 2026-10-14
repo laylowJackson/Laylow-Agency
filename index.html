@@ -195,6 +195,19 @@ dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font
 <link rel="stylesheet" href="./council.css?v=20261011-premium-rooms">
 <link rel="stylesheet" href="./settings.css?v=20261011-premium-rooms">
 <link rel="stylesheet" href="./screenshot-lab.css?v=20261011-chart-marks">
+
+<style id="graphics-2026">
+/* Legible glass HUDs keep source labels visible above the scene. */
+.city-world{border-color:#415472;box-shadow:0 18px 65px #02071155}
+.world-3d-label{background:linear-gradient(145deg,#122139ee,#080f20f5);border-color:#6584aa80;border-radius:11px;box-shadow:0 5px 22px #0008,inset 0 1px #c5e3ff13;backdrop-filter:blur(12px)}
+.world-3d-label strong{letter-spacing:.06em}.world-3d-label:focus-visible{outline:3px solid #9bcfff;outline-offset:3px}
+.office-stage,.council-stage{border-radius:18px;overflow:hidden;background:#0b172b;box-shadow:inset 0 1px #c4e8ff15,0 16px 45px #02071155}
+#office-3d{border-radius:16px;border-color:#617d9d66}
+.office-header,.council-room-header{border-bottom:1px solid #759ab033;padding-bottom:16px}
+.office-options button,[data-room-camera]{border-radius:10px;background:linear-gradient(#21344a,#142238);box-shadow:inset 0 1px #d3ecff14}
+.graphics-quality-label{display:inline-flex;align-items:center;gap:8px;color:#b9cce1;font-size:12px;white-space:nowrap}.graphics-quality-label select{min-height:36px;padding:6px 10px;background:#122139;border:1px solid #597896;border-radius:9px;color:#edf5ff;font:inherit}
+@media(max-width:800px){.graphics-quality-label{font-size:11px}}
+</style>
 </head>
 <body>
 <a class="skip-link" href="#bots-title">Skip to bots</a>
@@ -1006,8 +1019,8 @@ window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select
 initializeCards();initializeCity();refreshStatus();
 </script>
 <script src="./big-manager-bot.js?v=20261014-atlas"></script>
-<script src="./team-offices.js?v=20261012-liveprices-20261011-premium-rooms"></script>
-<script src="./world-3d.js?v=20261011-premium-rooms"></script>
+<script src="./team-offices.js?v=20261014-graphics26"></script>
+<script src="./world-3d.js?v=20261014-graphics26"></script>
 <script src="./council-ui.js?v=20261012-liveprices-20261011-bot-wicks"></script>
 <script src="./wick-knowledge.js?v=20261011-bot-wicks"></script>
 <script src="./practice-engine.js?v=20261014-continuous"></script>
