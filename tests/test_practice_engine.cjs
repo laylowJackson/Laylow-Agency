@@ -24,5 +24,11 @@ assert.equal(f.account.balance_cents,4999800);assert.equal(f.account.reserved_ce
 f.close(1);assert.equal(f.trades[0].exit_price,5000.25);assert.equal(f.trades[0].gross_cents,3750);assert.equal(f.trades[0].fees_cents,400);assert.equal(f.account.realized_cents,3350);assert.equal(f.account.balance_cents,5003350);assert.equal(f.account.reserved_cents,0);assert.equal(f.close(1),false);
 const same1=new PracticeMarket(42),same2=new PracticeMarket(42);for(let i=0;i<50;i++){same1.step();same2.step();}assert.deepEqual(same1.account,same2.account);
 m.reset();assert.equal(m.account.balance_cents,5000000);assert.equal(m.positions.length,0);assert.equal(m.trades.length,0);assert.equal(m.minute,0);
+// The old 3,000-minute cutoff stopped 20x replay after 150 real seconds.
+const continuous=new PracticeMarket();continuous.minute=3000;continuous.evaluate=()=>{};continuous.open=()=>false;
+assert.equal(continuous.step(),true);assert.equal(continuous.minute,3001);
+const afterCutoff=new PracticeMarket();afterCutoff.restore(JSON.parse(JSON.stringify(continuous.export())));assert.equal(afterCutoff.minute,3001);assert.equal(afterCutoff.account.initial_cents,START);
 const brake=new PracticeMarket();brake.positions=[{id:1,team_name:'SPY',direction:'LONG',qty:100,entry_price:1000,entry_fee_cents:100,reserve_cents:1000000,stop_distance:1000,opened_minute:0}];brake.step();assert(brake.riskLocked);assert.equal(brake.positions.length,0);const lockedMinute=brake.minute;assert.equal(brake.step(),false);assert.equal(brake.minute,lockedMinute);
+assert.equal(brake.pauseReason(),'Account loss brake reached');
+const {TrainingLab}=require('../training-engine.js'),research=new TrainingLab(),beforeResearch=research.snapshot().experiments,beforeAccount=JSON.stringify(brake.export());research.step();assert(research.snapshot().experiments>beforeResearch);assert.equal(JSON.stringify(brake.export()),beforeAccount,'research never resets or unlocks the stopped trading account');
 console.log('Practice accounting passed: $50,000 reset, cash/equity reconciliation, position/risk caps, gains/losses, fees, short futures multiplier, restore, determinism, loss brake and duplicate-close protection.');

@@ -112,6 +112,7 @@ class PracticeMarket {
  }
  evaluate(){this.reviews=this.assets.map(asset=>{asset.analysis=this.analyze(asset);return this.council(asset,asset.analysis);});}
  open(asset,review){
+  if(this.trades.length+this.positions.length>=3000)return false; // Reserve space for every open trade's eventual close.
   if(review.action!=="ENTER"||this.positions.some(p=>p.team_name===asset.name))return false;
   // Recheck the shared account after any previous team consumes its budget.
   const fresh=this.council(asset,asset.analysis);if(fresh.action!=="ENTER")return false;
@@ -128,7 +129,7 @@ class PracticeMarket {
   this.positions.splice(index,1);this.cooldowns[asset.name]=this.minute+(gross-fees<0?5:3);this.log(asset.name,"CLOSE",reason+" · net "+((gross-fees)/100).toFixed(2)+" fake USD after fees");this.log(asset.name,"TRADE_REVIEW",this.reviewTrade(this.trades.at(-1)).lesson+" "+this.learningStats(asset.name).summary);return true;
  }
  step(){
-  if(this.minute>=3000||this.riskLocked)return false;
+  if(this.pauseReason())return false;
   this.minute++;this.generateBars(this.minute);
   for(const p of [...this.positions]){const b=this.asset(p.team_name).bars.at(-1),side=sign(p.direction),stop=p.entry_price-side*p.stop_distance,target=p.entry_price+side*p.stop_distance*1.6;
    const stopHit=side===1?b.low<=stop:b.high>=stop,targetHit=side===1?b.high>=target:b.low<=target;
@@ -142,6 +143,7 @@ class PracticeMarket {
   this.evaluate();const equity=this.account.equity_cents;this.peak=Math.max(this.peak,equity);this.maxDrawdown=Math.max(this.maxDrawdown,this.peak-equity);
   return true;
  }
+ pauseReason(){return this.riskLocked?'Account loss brake reached':this.trades.length>=3000&&!this.positions.length?'Saved trade ledger full; export before starting another account':null;}
  snapshot(){
   const now=new Date().toISOString(),account=this.account,workers=this.assets.map(a=>{const trades=this.trades.filter(t=>t.team_name===a.name);return {team_name:a.name,closed_trades:trades.length,wins:trades.filter(t=>t.net_cents>0).length,losses:trades.filter(t=>t.net_cents<0).length,net_cents:sum(trades.map(t=>t.net_cents))};});
   const managers=this.assets.map(a=>({team_name:a.name,candle_review:a.analysis.candle_review,severity:"INFO",generated_at:now,summary:this.positions.some(p=>p.team_name===a.name)?"Monitoring simulated position and exit rules":this.reviews.find(r=>r.team_name===a.name).reason}));
@@ -150,7 +152,7 @@ class PracticeMarket {
  export(){return {version:VERSION,seed:this.seed,minute:this.minute,baseTime:this.baseTime,assets:this.assets.map(a=>({name:a.name,bars:a.bars})),positions:this.positions,trades:this.trades,events:this.events,decisions:this.decisions,history:this.history,cooldowns:this.cooldowns,learning_policy:this.learning_policy,peak:this.peak,maxDrawdown:this.maxDrawdown,riskLocked:this.riskLocked,serial:this.serial};}
  restore(data){
   // Rebuild definitions locally; never import code, strategy rules or broker credentials.
-  if(!data||data.version!==VERSION||!Number.isInteger(data.seed)||data.seed<0||data.seed>4294967295||!Number.isInteger(data.minute)||data.minute<0||data.minute>3000||!Number.isFinite(data.baseTime)||!Array.isArray(data.assets)||data.assets.length!==10||!Array.isArray(data.positions)||data.positions.length>4||!Array.isArray(data.trades)||data.trades.length>3000)throw Error("Invalid practice save");
+  if(!data||data.version!==VERSION||!Number.isInteger(data.seed)||data.seed<0||data.seed>4294967295||!Number.isSafeInteger(data.minute)||data.minute<0||!Number.isFinite(data.baseTime)||!Number.isFinite(new Date(data.baseTime+data.minute*60000).getTime())||!Array.isArray(data.assets)||data.assets.length!==10||!Array.isArray(data.positions)||data.positions.length>4||!Array.isArray(data.trades)||data.trades.length+data.positions.length>3004)throw Error("Invalid practice save"); // Retain up to four outstanding closes from legacy ledgers.
   const price=value=>Number.isFinite(value)&&value>0,integer=value=>Number.isSafeInteger(value)&&value>=0;
   for(const def of MARKETS){const a=data.assets.find(a=>a.name===def.name);if(!a||!Array.isArray(a.bars)||a.bars.length<21||a.bars.length>120||a.bars.some(b=>![b.open,b.high,b.low,b.close].every(price)||!price(b.volume)||!Number.isFinite(Date.parse(b.timestamp))))throw Error("Invalid practice candles");}
   const ids=new Set(),names=new Set();for(const p of data.positions){if(!MARKETS.some(a=>a.name===p.team_name)||!integer(p.id)||ids.has(p.id)||names.has(p.team_name)||!integer(p.qty)||p.qty<1||!["LONG","SHORT"].includes(p.direction)||!price(p.entry_price)||!price(p.stop_distance)||!integer(p.entry_fee_cents)||!integer(p.reserve_cents)||!integer(p.opened_minute)||p.opened_minute>data.minute)throw Error("Invalid saved position");ids.add(p.id);names.add(p.team_name);}

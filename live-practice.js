@@ -31,7 +31,7 @@ class LivePracticeMarket extends base.PracticeMarket{
   }
   this.feed={...payload,live:payload.live===true&&payload.market_open===true&&stocks.every(n=>observations[n]?.fresh),stocks:undefined};if(payload.live&&!this.feed.live){this.feed.status='STALE';this.feed.reason='Observed prices are stale. Trading paused.';}this.observations=observations;
   for(const a of this.assets)if(observations[a.name])a.bars=observations[a.name].bars;
-  this.minute=Math.min(3000,Math.max(0,Math.floor((now-this.sessionStarted)/60000)));this.baseTime=now-this.minute*60000;
+  this.minute=Math.max(0,Math.floor((now-this.sessionStarted)/60000));this.baseTime=now-this.minute*60000;
   this.evaluate();if(!this.feed.live)return false;
   for(const p of [...this.positions]){const o=observations[p.team_name];if(this.quoteSeen[p.team_name]===o.timestamp)continue;const side=sign(p.direction),stop=p.entry_price-side*p.stop_distance,target=p.entry_price+side*p.stop_distance*1.6;
    if(side*(o.price-stop)<=0)this.close(p.id,'Stop crossed at observed IEX price; polling can miss prices',o.price);

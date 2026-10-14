@@ -4,6 +4,8 @@ Four stock teams (SPY, QQQ, AAPL, TSLA) and six independent futures watch teams 
 
 ## Start on Windows
 
+Browser practice no longer stops at 3,000 simulated minutes (formerly about 2.5 real minutes at 20x). Existing balances and histories are retained. Loss and team profit brakes remain; training has independent controls and does not reset or unlock a stopped account. Browser execution pauses while the tab is hidden or closed. The saved trade ledger is bounded: export it before explicitly starting a new account when full. No broker connection or profitability is implied by synthetic practice.
+
 For an always-on Linux server, see [HOSTED_SERVER.md](HOSTED_SERVER.md). The Docker setup preserves existing workers and training with persistent storage and SSH access. The new Background live-price practice panel controls a separate server-owned fake account that continues without the browser while its machine stays on. It starts paused and needs paper market-data keys. See [PAPER_READINESS.md](PAPER_READINESS.md) for validation gaps; LIVE remains locked.
 
 Live-price fake-money practice is now available in the local app. Save Alpaca paper API keys in Settings, then click **Open live-price practice**. It reads IEX prices for SPY, QQQ, AAPL and TSLA into a separate $50,000 fake ledger; it never submits broker orders. No AI key is needed. See [LIVE_PRICE_PRACTICE.md](LIVE_PRICE_PRACTICE.md) for setup, polling/fill limitations and disconnected futures. GitHub Pages remains a public viewer; it cannot host the private market-data proxy.
@@ -442,4 +444,5 @@ The Practice strategy researcher now tests all eight recipes for teams outside t
 The existing Training lab now includes a source-backed bot playbook, win-rate sample uncertainty, net expectancy and next-test priorities. It also accepts user-supplied standard OHLC CSV files for chronological selection/validation/final-test comparisons and adverse-cost runs. Results stay separate from the practice ledger, and neither imported nor generated tests authorize promotion or trading. AI and broker setup remain deferred.
 
 See [BOT_RESEARCH_EVIDENCE.md](BOT_RESEARCH_EVIDENCE.md) for file format, local saving/export, model assumptions and limitations. Automatic nightshift training still uses generated candles; historical-file testing is manual until a verified provider is connected.
+
 
