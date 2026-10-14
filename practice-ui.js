@@ -19,12 +19,14 @@ function publish(){
  const snapshot=model.snapshot();snapshot.practice_running=running;if(!running)for(const team of snapshot.teams)if(team.worker_state==="RUNNING")team.worker_state="PAUSED";window.LaylowWorld.practiceSnapshot(snapshot);
  const a=model.account;for(const [id,value]of[["practice-initial",a.initial_cents],["practice-equity",a.equity_cents],["practice-cash",a.balance_cents],["practice-available",a.available_cents],["practice-realized",a.realized_cents],["practice-unrealized",a.unrealized_cents],["practice-fees",a.fees_cents],["practice-drawdown",a.max_drawdown_cents]])$(id).textContent=cash(value);
  $("practice-clock").textContent="Simulated market time: "+new Date(model.baseTime+model.minute*60000).toLocaleTimeString()+" · "+model.minute+" simulated minutes";
- $("practice-state").textContent=model.riskLocked?"Loss brake reached · reset to restart":model.minute>=3000?"Practice session complete":running?"Practice running":"Practice paused";
+ const halt=model.pauseReason(),research=window.LaylowTraining?.state?.(),researchNote=research?.running?(document.hidden&&!research.remote?'Browser research waits until this tab is visible':'Research remains active'):'Research has separate controls in Training Lab';
+ const profitPaused=!liveMode&&model.assets.every(a=>model.teamNet(a.name)>=30000);
+ $("practice-state").textContent=halt?halt+' · '+researchNote:running&&document.hidden?'Browser practice paused: tab hidden':profitPaused?'Team profit brakes reached · '+researchNote:running?'Practice running · no short session cutoff':'Practice paused by controls';
  $("practice-toggle").textContent=running?"Pause practice":active?"Resume practice":"Start $50,000 practice";
- $("practice-toggle").disabled=model.riskLocked||model.minute>=3000;$("practice-step").disabled=running||model.riskLocked||model.minute>=3000;
+ $("practice-toggle").disabled=Boolean(halt);$("practice-step").disabled=running||Boolean(halt);
  $("practice-save-note").textContent=saveNote;tables();
  if(liveMode){$("practice-clock").textContent="Provider observation: "+(model.feed.received_at?new Date(model.feed.received_at).toLocaleString():"not received")+" · 1-minute bars · 15-second polling";$("practice-state").textContent=model.riskLocked?"Fake-account loss brake reached":running?model.feed.status+" · fake money":"Live-price practice paused";}
- $("practice-feed-status").textContent=liveMode?model.feed.reason:"Generated candles · simulated practice ledger";$("practice-speed").disabled=liveMode;$("practice-step").disabled=liveMode||running||model.riskLocked||model.minute>=3000;
+ $("practice-feed-status").textContent=liveMode?model.feed.reason:"Generated candles · simulated practice ledger. Hidden tabs pause browser execution; returning resumes a running session. Loss/profit brakes stop trading, while research has independent controls.";$("practice-speed").disabled=liveMode;$("practice-step").disabled=liveMode||running||Boolean(halt);
 }
 async function pollLive(){const stamp=generation;if(polling||!liveMode||!running||document.hidden)return;polling=true;
  try{if(!['localhost','127.0.0.1','[::1]'].includes(location.hostname))throw Error('LOCAL_SETUP');const response=await fetch('/api/market-data',{cache:'no-store',credentials:'same-origin',signal:AbortSignal.timeout(25000)});if(!response.ok)throw Error('FEED');const payload=await response.json();if(stamp!==generation||!running)return;model.ingest(payload);save();}
@@ -35,7 +37,7 @@ function schedule(){if(timer!==null){clearTimeout(timer);timer=null;}if(!running
  if(liveMode){pollLive();return;}
  timer=setTimeout(()=>{timer=null;try{if(!model.step())running=false;save();publish();}catch(error){running=false;$("practice-save-note").textContent="Practice paused after an error: "+error.message;}schedule();},1000/speed);
 }
-function start(){active=true;running=!model.riskLocked&&model.minute<3000;$("practice-details").hidden=false;try{storage?.setItem(key+"-enabled","1");}catch{}save();publish();schedule();}
+function start(){active=true;running=!model.pauseReason();$("practice-details").hidden=false;try{storage?.setItem(key+"-enabled","1");}catch{}save();publish();schedule();}
 window.LaylowPractice={active:()=>active,refresh:()=>{if(active)publish();},export:()=>model.export()};
 $("practice-feed").addEventListener("change",()=>{save();generation++;running=false;schedule();liveMode=$("practice-feed").value==='iex';key=liveMode?'laylow-live-price-50000-v1':'laylow-practice-50000-v1';model=liveMode?new window.LaylowLivePractice.LivePracticeMarket():new PracticeMarket();startedFromSave=false;try{const raw=storage?.getItem(key);if(raw){model.restore(JSON.parse(raw));startedFromSave=true;}}catch{saveNote='Saved ledger could not be restored. Export backups before switching devices.';}active=true;$("practice-details").hidden=false;publish();});
 $("practice-feed-connect").addEventListener("click",()=>{if(!liveMode){$("practice-feed").value='iex';$("practice-feed").dispatchEvent(new Event('change'));}start();});
@@ -48,7 +50,7 @@ $("practice-export").addEventListener("click",()=>{const data={description:"Layl
  if(liveMode)data.description='Laylow live-price fake account. Polled Alpaca IEX observations, simulated fills and modeled fees. No broker orders or verified execution performance.';
  const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})),link=node("a","");link.href=url;link.download=liveMode?"laylow-live-price-session.json":"laylow-practice-session.json";document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
-document.addEventListener("visibilitychange",()=>{if(active){schedule();if(!document.hidden)publish();}});
+document.addEventListener("visibilitychange",()=>{if(active){schedule();publish();}});
 const requested=new URLSearchParams(location.search).get("practice")==="1";
 let enabled=true;try{enabled=storage?.getItem(key+"-enabled")!=="0";}catch{}
 if(requested)start();else if(startedFromSave&&enabled){active=true;$("practice-details").hidden=false;publish();}else{$("practice-save-note").textContent=saveNote;if(startedFromSave)$("practice-toggle").textContent="Resume saved practice";}
