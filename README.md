@@ -4,6 +4,8 @@ Four stock teams (SPY, QQQ, AAPL, TSLA) and six independent futures watch teams 
 
 ## Start on Windows
 
+For an always-on Linux server, see [HOSTED_SERVER.md](HOSTED_SERVER.md). The Docker setup preserves existing workers and training with persistent storage and SSH access. The new Background live-price practice panel controls a separate server-owned fake account that continues without the browser while its machine stays on. It starts paused and needs paper market-data keys. See [PAPER_READINESS.md](PAPER_READINESS.md) for validation gaps; LIVE remains locked.
+
 Live-price fake-money practice is now available in the local app. Save Alpaca paper API keys in Settings, then click **Open live-price practice**. It reads IEX prices for SPY, QQQ, AAPL and TSLA into a separate $50,000 fake ledger; it never submits broker orders. No AI key is needed. See [LIVE_PRICE_PRACTICE.md](LIVE_PRICE_PRACTICE.md) for setup, polling/fill limitations and disconnected futures. GitHub Pages remains a public viewer; it cannot host the private market-data proxy.
 
 First-team research: the Training Lab now has a SPY / 5-minute preset and a separate fixed-risk comparison of fixed targets, partial exits and a close-based trailing stop. Real candle data must be uploaded before market research can run. See [EXIT_RESEARCH.md](EXIT_RESEARCH.md) for predefined rules, costs, chronological selection and limitations. This does not change the practice balance or enable LIVE.

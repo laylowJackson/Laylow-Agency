@@ -21,6 +21,9 @@ from council import MEMBERS
 def main():
     with tempfile.TemporaryDirectory() as directory:
         app = create_app(str(Path(directory) / "status.db"), settings_path=Path(directory) / ".env.local")
+        from live_practice_worker import PracticeWorker
+        # Paused server fixture does not request data or submit orders.
+        PracticeWorker(directory, settings=Path(directory) / '.env.local').cycle()
         server = make_server("127.0.0.1", 0, app)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -290,6 +293,16 @@ def main():
                         page.keyboard.press('Escape')
                         page.wait_for_function("location.hash === '#world'")
                         assert not errors, errors
+                        page.locator('#server-start').click()
+                        page.wait_for_function("document.querySelector('#server-status').textContent.includes('next cycle')")
+                        assert json.loads((Path(directory)/'live_practice_control.json').read_text()) == {'running': True}
+                        page.locator('#server-pause').click()
+                        page.wait_for_function("document.querySelector('#server-status').textContent.includes('next cycle')")
+                        page.wait_for_function("fetch('/api/server-practice').then(r=>r.json()).then(s=>s.available)")
+                        page.locator('#server-watch').click()
+                        page.wait_for_function("window.LaylowWorld.snapshot()?.server_practice===true")
+                        assert 'NOT VERIFIED' in page.locator('#server-metrics').inner_text()
+                        assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
                         page.close()
 
                     refresh_fixture_clock()

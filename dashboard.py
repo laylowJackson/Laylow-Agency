@@ -6,7 +6,7 @@ import secrets
 from urllib.parse import urlsplit
 
 from flask import Flask, jsonify, send_file, request
-from config import DB_PATH, DASHBOARD_HOST, DASHBOARD_PORT, ROOT_DIR
+from config import DB_PATH, DASHBOARD_HOST, DASHBOARD_PORT, ROOT_DIR, DATA_DIR
 from dashboard_status import build_dashboard_payload
 from db_utils import database_path, ensure_system_tables
 from entry_controls import update_control
@@ -19,7 +19,7 @@ def create_app(db_path=None, settings_path=None):
     application.config["DATABASE_PATH"] = database
     application.config["CONTROL_CSRF"] = secrets.token_urlsafe(32)
     application.config["MAX_CONTENT_LENGTH"] = 9 * 1024 * 1024
-    application.config["BROKER_SETTINGS_PATH"] = Path(settings_path or Path(ROOT_DIR) / ".env.local")
+    application.config["BROKER_SETTINGS_PATH"] = Path(settings_path or Path(DATA_DIR) / ".env.local")
     from live_market_data import LiveMarketData
     application.config["LIVE_MARKET_DATA"] = LiveMarketData(application.config["BROKER_SETTINGS_PATH"])
     try:
@@ -79,6 +79,48 @@ def create_app(db_path=None, settings_path=None):
         if origin is not None and origin != request.host_url.rstrip("/"):
             return jsonify({"error": "local_origin_required"}), 403
         return jsonify(application.config["LIVE_MARKET_DATA"].snapshot())
+
+    @application.get("/server-practice-ui.js")
+    def server_practice_script():
+        return send_file(Path(ROOT_DIR) / "server-practice-ui.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/api/server-practice")
+    def server_practice_status():
+        from live_practice_worker import read_status
+        try:
+            return jsonify(read_status(Path(database).parent))
+        except (ValueError, OSError, KeyError):
+            return jsonify({"available": False, "status": "ERROR", "live_locked": True}), 503
+
+    @application.get("/api/server-practice/bars/<symbol>.csv")
+    def server_observed_bars(symbol):
+        from live_practice_worker import export_bars
+        try:
+            response = application.response_class(export_bars(Path(database).parent, symbol), mimetype="text/csv")
+            response.headers['Content-Disposition'] = f'attachment; filename="{symbol}-observed-iex-1m.csv"'
+            response.headers['X-Laylow-Data-Source'] = 'Alpaca IEX / observed 1-minute OHLC / not verified execution'
+            return response
+        except ValueError:
+            return jsonify({"error": "unsupported_symbol"}), 400
+        except (OSError, sqlite3.Error):
+            return jsonify({"error": "data_archive_unavailable"}), 503
+
+    @application.post("/api/server-practice/control")
+    def server_practice_control():
+        origin = request.headers.get("Origin")
+        token = request.headers.get("X-Laylow-CSRF", "")
+        if not secrets.compare_digest(token.encode(), application.config["CONTROL_CSRF"].encode()) or (origin is not None and origin != request.host_url.rstrip("/")):
+            return jsonify({"error": "invalid_control_token_or_origin"}), 403
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict) or set(body) != {"running"} or type(body["running"]) is not bool:
+            return jsonify({"error": "invalid_control"}), 400
+        from training_worker import atomic_json
+        try:
+            atomic_json(Path(database).parent / "live_practice_control.json", body)
+        except OSError:
+            return jsonify({"error": "control_write_failed"}), 503
+        return jsonify({"saved": True, "orders_sent": False, "live_locked": True,
+                        "message": "Worker will apply this control on its next cycle; closing the viewer does not pause it."})
 
     @application.get("/team-offices.js")
     def team_offices():

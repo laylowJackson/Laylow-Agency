@@ -1,0 +1,26 @@
+# Linux VPS only. Access through SSH; never expose port 5000 publicly.
+services:
+  agency:
+    build: .
+    network_mode: host
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      LAYLOW_MODE: observe
+      LAYLOW_EXECUTION_MODE: PRACTICE
+      LAYLOW_SHADOW_MODE: "true"
+      LAYLOW_ALLOW_PAPER_ORDERS: "false"
+    volumes:
+      - agency-runtime:/app/runtime
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+volumes:
+  agency-runtime:

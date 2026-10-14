@@ -4,6 +4,8 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parent
 FILES = [
+    "live_practice_worker.py", "server-practice.cjs", "server-practice-ui.js", "PAPER_READINESS.md",
+    "Dockerfile", ".dockerignore", "compose.yaml", "hosted_start.py", "HOSTED_SERVER.md",
     "README.md", "requirements.txt", ".env.example", ".gitignore",
     "SETUP_WINDOWS.bat", "SETUP_WINDOWS.ps1", "START_WINDOWS.bat", "CHECK_SETUP.bat",
     "check_setup.py", "run_all.py", "watchdog.py", "runtime_manager.py",

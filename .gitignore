@@ -18,3 +18,6 @@ training_worker_status.json
 training_worker_status.json.tmp
 dist/
 screenshot_reviews/
+runtime/
+live_practice*.json*
+live_practice.lock
