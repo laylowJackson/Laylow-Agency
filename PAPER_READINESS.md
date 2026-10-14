@@ -32,7 +32,9 @@ this growing single-exchange sample is not a complete historical dataset.
 
 ## 3. Browser-independent fake trading
 
-Run START_WINDOWS.bat, or the prepared Linux container. The supervisor starts
+On Windows install Node.js LTS if `node --version` is unavailable, then run
+SETUP_WINDOWS.bat and START_WINDOWS.bat. The prepared Linux container includes
+Node. The supervisor starts
 live_practice_worker.py and the existing training worker. In the dashboard scroll
 to Background live-price practice and click Start background practice. Select
 View server teams in city to inspect the server ledger. You can close the browser:
