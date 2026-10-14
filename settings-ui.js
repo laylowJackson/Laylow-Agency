@@ -45,7 +45,7 @@ function showLocal(data){
  const p=data.risk_policy;$('settings-local-risk').textContent='Local broker policy: '+(Number(p.max_daily_loss_fraction)*100)+'% daily loss limit, '+p.max_open_positions+' positions, '+p.max_daily_trades+' daily trades ('+p.max_team_daily_trades+' per team), signals expire after '+p.max_signal_age_seconds+' seconds and quotes after '+p.max_quote_age_seconds+' seconds.';
 }
 async function checkLocal(){
- const loopback=['127.0.0.1','localhost','[::1]'].includes(location.hostname);
+ const loopback=['127.0.0.1','localhost','[::1]'].includes(location.hostname)||(location.protocol==='https:'&&location.hostname.endsWith('.ts.net'));
  if(loopback)try{const response=await fetch('/api/settings',{cache:'no-store',credentials:'same-origin',signal:AbortSignal.timeout(5000)});if(!response.ok)throw Error();const data=await response.json();if(data.local_setup!==true||data.live_locked!==true||typeof data.csrf_token!=='string'||!data.credentials||!data.configuration||!data.risk_policy)throw Error();showLocal(data);return;}catch{}
  localSetup=null;$('broker-credentials').disabled=true;$('broker-badge').textContent='LOCAL SETUP REQUIRED';$('broker-setup-note').textContent='This public viewer has no secure broker server. Open the local Windows app to enter broker keys. You can keep using practice and training here.';
 }
