@@ -44,15 +44,16 @@ class TailnetHttpsProxy:
         proto = environ.get("HTTP_X_FORWARDED_PROTO", "")
         if (self.hostname and remote in {"127.0.0.1", "::1"}
                 and (host == self.hostname or forwarded_host == self.hostname)
-                and proto == "https"):
+                and proto == "https"
+                and environ.get("HTTP_TAILSCALE_USER_LOGIN")):
             # Normalize the origin used by existing login / CSRF protections.
             environ["wsgi.url_scheme"] = "https"
             environ["HTTP_HOST"] = self.hostname
         return self.app(environ, start_response)
 
 
-def allowed_request(host, scheme, remote, hostname):
+def allowed_request(host, scheme, remote, hostname, tailscale_user=None):
     if host in LOOPBACK:
         return True
     return bool(hostname and host == hostname and scheme == "https"
-                and remote in {"127.0.0.1", "::1"})
+                and remote in {"127.0.0.1", "::1"} and tailscale_user)
