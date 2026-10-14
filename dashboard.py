@@ -34,7 +34,8 @@ def create_app(db_path=None, settings_path=None):
     @application.before_request
     def local_host_only():
         if not allowed_request(urlsplit(request.host_url).hostname,
-                               request.scheme, request.remote_addr, private_hostname):
+                               request.scheme, request.remote_addr, private_hostname,
+                               request.headers.get("Tailscale-User-Login")):
             return jsonify({"error": "local_or_private_tailnet_required"}), 403
 
     @application.before_request
