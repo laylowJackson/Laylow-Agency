@@ -1,28 +1,10 @@
-import os
-import subprocess
-
-TEAM_FILES = [
-    "teams/spy_team.py",
-    "teams/qqq_team.py",
-    "teams/aapl_team.py",
-    "teams/tsla_team.py",
-]
-
-
-def start_team(path):
-    print(f"[ORCHESTRATOR] Starting {path}")
-    return subprocess.Popen(["python", path])
-
-
-def main():
-    processes = [start_team(path) for path in TEAM_FILES]
-    try:
-        for p in processes:
-            p.wait()
-    except KeyboardInterrupt:
-        for p in processes:
-            p.terminate()
-
+"""Legacy team entry point; use the single project supervisor."""
+import sys
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from watchdog import main
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1,251 +1,335 @@
-from flask import Flask, render_template_string
+"""Observed worker dashboard with token-protected local event controls."""
+from contextlib import closing
+from pathlib import Path
 import sqlite3
-from datetime import datetime, timezone
+import secrets
+from urllib.parse import urlsplit
 
-app = Flask(__name__)
-
-
-def get_db_connection():
-    conn = sqlite3.connect('team_status.db')
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-@app.route('/')
-def index():
-    conn = get_db_connection()
-    teams = conn.execute(
-        """
-        SELECT team_name, status, last_heartbeat, active, notes
-        FROM team_status
-        ORDER BY team_name
-        """
-    ).fetchall()
-
-    scores = conn.execute(
-        """
-        SELECT team_name, score, wins, losses, streak, is_disabled, cool_down_until
-        FROM team_scores
-        ORDER BY team_name
-        """
-    ).fetchall()
-
-    conn.close()
-
-    score_map = {row["team_name"]: row for row in scores}
-    rows = []
-    for team in teams:
-        score_row = score_map.get(team["team_name"])
-        rows.append({
-            "team_name": team["team_name"],
-            "status": team["status"],
-            "last_heartbeat": team["last_heartbeat"],
-            "active": bool(team["active"]),
-            "notes": team["notes"],
-            "score": score_row["score"] if score_row else 0,
-            "wins": score_row["wins"] if score_row else 0,
-            "losses": score_row["losses"] if score_row else 0,
-            "streak": score_row["streak"] if score_row else 0,
-            "is_disabled": bool(score_row["is_disabled"]) if score_row else False,
-            "cool_down_until": score_row["cool_down_until"] if score_row else "N/A",
-        })
-
-    system_status = "OK" if all(row["active"] for row in rows) else "WARNING"
-    if any(row["status"] == "DOWN" for row in rows):
-        system_status = "DOWN"
-
-    html = """
-    <html>
-      <head>
-        <title>Laylow Agency Dashboard</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <style>
-          :root {
-            --bg: #0b1220;
-            --panel: #111827;
-            --panel-alt: #1f2937;
-            --text: #f9fafb;
-            --muted: #9ca3af;
-            --good: #34d399;
-            --warn: #fbbf24;
-            --bad: #f87171;
-            --accent: #60a5fa;
-          }
-          * { box-sizing: border-box; }
-          body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-          }
-          .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 16px;
-          }
-          .header {
-            background: linear-gradient(135deg, #1d4ed8, #111827);
-            border-radius: 12px;
-            padding: 20px 16px;
-            margin-bottom: 18px;
-            box-shadow: 0 10px 24px rgba(0,0,0,0.2);
-          }
-          .title {
-            margin: 0;
-            font-size: clamp(1.4rem, 3vw, 2.4rem);
-          }
-          .status-pill {
-            display: inline-block;
-            margin-top: 8px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-          }
-          .status-ok { background: rgba(52, 211, 153, 0.18); color: var(--good); }
-          .status-warning { background: rgba(251, 191, 36, 0.18); color: var(--warn); }
-          .status-down { background: rgba(248, 113, 113, 0.18); color: var(--bad); }
-          .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 12px;
-          }
-          .card {
-            background: var(--panel);
-            border: 1px solid #374151;
-            border-radius: 12px;
-            padding: 14px;
-            box-shadow: 0 8px 18px rgba(0,0,0,0.08);
-          }
-          .team-name {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            font-weight: bold;
-          }
-          .badge {
-            padding: 5px 8px;
-            border-radius: 999px;
-            font-size: 0.72rem;
-            font-weight: bold;
-            text-transform: uppercase;
-          }
-          .good-badge { background: rgba(52, 211, 153, 0.12); color: var(--good); }
-          .warn-badge { background: rgba(251, 191, 36, 0.12); color: var(--warn); }
-          .bad-badge { background: rgba(248, 113, 113, 0.12); color: var(--bad); }
-          .meta {
-            color: var(--muted);
-            font-size: 0.8rem;
-            margin-top: 8px;
-          }
-          .stats {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(80px, 1fr));
-            gap: 8px;
-            margin-top: 10px;
-          }
-          .stat {
-            background: var(--panel-alt);
-            border-radius: 8px;
-            padding: 8px;
-          }
-          .stat-label { font-size: 0.7rem; color: var(--muted); }
-          .stat-value { font-size: 1rem; font-weight: bold; margin-top: 4px; }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 18px;
-            background: var(--panel);
-            border-radius: 12px;
-            overflow: hidden;
-          }
-          th, td {
-            border-bottom: 1px solid #374151;
-            padding: 10px 12px;
-            text-align: left;
-          }
-          th { background: #1f2937; }
-          @media (max-width: 600px) {
-            .container { padding: 12px; }
-            .status-pill { display: block; width: fit-content; }
-            th, td { padding: 8px 6px; font-size: 0.8rem; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1 class="title">Laylow Agency</h1>
-            <div class="status-pill {% if system_status == 'OK' %}status-ok{% elif system_status == 'WARNING' %}status-warning{% else %}status-down{% endif %}">
-              {{ system_status }}
-            </div>
-          </div>
-
-          <div class="grid">
-            {% for row in rows %}
-            <div class="card">
-              <div class="team-name">
-                <span>{{ row.team_name }}</span>
-                <span class="badge {% if row.status == 'RUNNING' or row.status == 'LIVE_ELIGIBLE' %}good-badge{% elif row.status == 'COOLDOWN' %}warn-badge{% else %}bad-badge{% endif %}">{{ row.status }}</span>
-              </div>
-              <div class="meta">Active: {{ row.active }} | Last heartbeat: {{ row.last_heartbeat }}</div>
-              <div class="stats">
-                <div class="stat">
-                  <div class="stat-label">Score</div>
-                  <div class="stat-value">{{ row.score }}</div>
-                </div>
-                <div class="stat">
-                  <div class="stat-label">Streak</div>
-                  <div class="stat-value">{{ row.streak }}</div>
-                </div>
-                <div class="stat">
-                  <div class="stat-label">Wins</div>
-                  <div class="stat-value">{{ row.wins }}</div>
-                </div>
-                <div class="stat">
-                  <div class="stat-label">Losses</div>
-                  <div class="stat-value">{{ row.losses }}</div>
-                </div>
-              </div>
-              <div class="meta">Cooldown: {{ row.cool_down_until }}</div>
-              <div class="meta">Notes: {{ row.notes }}</div>
-            </div>
-            {% endfor %}
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Team</th>
-                <th>Status</th>
-                <th>Active</th>
-                <th>Score</th>
-                <th>Cooldown</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in rows %}
-              <tr>
-                <td>{{ row.team_name }}</td>
-                <td>{{ row.status }}</td>
-                <td>{{ row.active }}</td>
-                <td>{{ row.score }}</td>
-                <td>{{ row.cool_down_until }}</td>
-                <td>{{ row.notes }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </body>
-    </html>
-    """
-    return render_template_string(html, rows=rows, system_status=system_status)
+from flask import Flask, jsonify, send_file, request
+from config import DB_PATH, DASHBOARD_HOST, DASHBOARD_PORT, ROOT_DIR, DATA_DIR
+from dashboard_status import build_dashboard_payload
+from db_utils import database_path, ensure_system_tables
+from entry_controls import update_control
+from config import STOCK_TEAM_NAMES
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
+def create_app(db_path=None, settings_path=None):
+    application = Flask(__name__, static_folder=None)
+    database = database_path(db_path)
+    application.config["DATABASE_PATH"] = database
+    application.config["CONTROL_CSRF"] = secrets.token_urlsafe(32)
+    application.config["MAX_CONTENT_LENGTH"] = 9 * 1024 * 1024
+    application.config["BROKER_SETTINGS_PATH"] = Path(settings_path or Path(DATA_DIR) / ".env.local")
+    from live_market_data import LiveMarketData
+    application.config["LIVE_MARKET_DATA"] = LiveMarketData(application.config["BROKER_SETTINGS_PATH"])
+    try:
+        ensure_system_tables(db_path=database)
+    except sqlite3.Error:
+        application.logger.exception("Could not initialize the status database")
+
+    @application.before_request
+    def local_host_only():
+        if urlsplit(request.host_url).hostname not in {"127.0.0.1", "localhost", "::1"}:
+            return jsonify({"error": "local_host_required"}), 403
+
+    @application.before_request
+    def bounded_control_requests():
+        if not request.path.startswith("/api/reviews") and request.content_length and request.content_length > 4096:
+            return jsonify({"error":"request_too_large"}),413
+
+    @application.after_request
+    def response_headers(response):
+        response.headers["Cache-Control"] = "no-store, max-age=0"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "same-origin"
+        response.headers["X-Frame-Options"] = "DENY"
+        return response
+
+    @application.get("/")
+    def index():
+        return send_file(Path(ROOT_DIR) / "index.html", conditional=False)
+
+    @application.get("/big-manager-bot.js")
+    def big_manager_bot_asset():
+        return send_file(Path(ROOT_DIR) / "big-manager-bot.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/world-3d.js")
+    def world_script():
+        return send_file(Path(ROOT_DIR) / "world-3d.js",mimetype="text/javascript",conditional=False)
+
+    @application.get("/council-ui.js")
+    def council_script():
+        return send_file(Path(ROOT_DIR)/"council-ui.js",mimetype="text/javascript",conditional=False)
+
+    @application.get("/council.css")
+    def council_styles():
+        return send_file(Path(ROOT_DIR)/"council.css",mimetype="text/css",conditional=False)
+
+    @application.get("/practice-engine.js")
+    def practice_engine():
+        return send_file(Path(ROOT_DIR) / "practice-engine.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/practice-ui.js")
+    def practice_ui():
+        return send_file(Path(ROOT_DIR) / "practice-ui.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/live-practice.js")
+    def live_practice_script():
+        return send_file(Path(ROOT_DIR) / "live-practice.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/api/market-data")
+    def live_market_data():
+        origin = request.headers.get("Origin")
+        if origin is not None and origin != request.host_url.rstrip("/"):
+            return jsonify({"error": "local_origin_required"}), 403
+        return jsonify(application.config["LIVE_MARKET_DATA"].snapshot())
+
+    @application.get("/server-practice-ui.js")
+    def server_practice_script():
+        return send_file(Path(ROOT_DIR) / "server-practice-ui.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/api/server-practice")
+    def server_practice_status():
+        from live_practice_worker import read_status
+        try:
+            return jsonify(read_status(Path(database).parent))
+        except (ValueError, OSError, KeyError):
+            return jsonify({"available": False, "status": "ERROR", "live_locked": True}), 503
+
+    @application.get("/api/server-practice/bars/<symbol>.csv")
+    def server_observed_bars(symbol):
+        from live_practice_worker import export_bars
+        try:
+            response = application.response_class(export_bars(Path(database).parent, symbol), mimetype="text/csv")
+            response.headers['Content-Disposition'] = f'attachment; filename="{symbol}-observed-iex-1m.csv"'
+            response.headers['X-Laylow-Data-Source'] = 'Alpaca IEX / observed 1-minute OHLC / not verified execution'
+            return response
+        except ValueError:
+            return jsonify({"error": "unsupported_symbol"}), 400
+        except (OSError, sqlite3.Error):
+            return jsonify({"error": "data_archive_unavailable"}), 503
+
+    @application.post("/api/server-practice/control")
+    def server_practice_control():
+        origin = request.headers.get("Origin")
+        token = request.headers.get("X-Laylow-CSRF", "")
+        if not secrets.compare_digest(token.encode(), application.config["CONTROL_CSRF"].encode()) or (origin is not None and origin != request.host_url.rstrip("/")):
+            return jsonify({"error": "invalid_control_token_or_origin"}), 403
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict) or set(body) != {"running"} or type(body["running"]) is not bool:
+            return jsonify({"error": "invalid_control"}), 400
+        from training_worker import atomic_json
+        try:
+            atomic_json(Path(database).parent / "live_practice_control.json", body)
+        except OSError:
+            return jsonify({"error": "control_write_failed"}), 503
+        return jsonify({"saved": True, "orders_sent": False, "live_locked": True,
+                        "message": "Worker will apply this control on its next cycle; closing the viewer does not pause it."})
+
+    @application.get("/team-offices.js")
+    def team_offices():
+        return send_file(Path(ROOT_DIR) / "team-offices.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/wick-knowledge.js")
+    def wick_knowledge():
+        return send_file(Path(ROOT_DIR) / "wick-knowledge.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/strategy-research.js")
+    def strategy_research_js():
+        return send_file(Path(ROOT_DIR) / "strategy-research.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/strategy-research.css")
+    def strategy_research_css():
+        return send_file(Path(ROOT_DIR) / "strategy-research.css", mimetype="text/css", conditional=False)
+
+    @application.get("/research-evidence.js")
+    @application.get("/entry-research.js")
+    @application.get("/exit-research.js")
+    @application.get("/historical-research.js")
+    @application.get("/historical-research-worker.js")
+    @application.get("/research-station-ui.js")
+    def research_station_assets():
+        # Only these exact routes are registered; this is not an arbitrary file endpoint.
+        return send_file(Path(ROOT_DIR) / request.path.lstrip("/"), mimetype="text/javascript", conditional=False)
+
+    @application.get("/training-engine.js")
+    def training_engine():
+        return send_file(Path(ROOT_DIR) / "training-engine.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/training-policy.js")
+    def training_policy():
+        return send_file(Path(ROOT_DIR) / "training-policy.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/api/training")
+    def training_status():
+        from training_worker import read_status
+        try:
+            return jsonify(read_status(Path(database).parent))
+        except (OSError, ValueError, KeyError):
+            return jsonify({"available": True, "status": "ERROR", "message": "Research state unavailable"}), 503
+
+    @application.post("/api/training/control")
+    def training_control():
+        token = request.headers.get("X-Laylow-CSRF", "")
+        origin = request.headers.get("Origin")
+        if not secrets.compare_digest(token.encode("utf-8"), application.config["CONTROL_CSRF"].encode("utf-8")) or (origin is not None and origin != request.host_url.rstrip("/")):
+            return jsonify({"error": "invalid_control_token_or_origin"}), 403
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict) or set(body) != {"paused", "mode"} or type(body["paused"]) is not bool or body["mode"] not in {"auto", "deep"}:
+            return jsonify({"error": "invalid_research_control"}), 400
+        from training_worker import atomic_json
+        try:
+            atomic_json(Path(database).parent / "training_control.json", body)
+            return jsonify({"saved": True})
+        except OSError:
+            return jsonify({"error": "research_control_write_failed"}), 503
+
+    @application.get("/training-ui.js")
+    def training_ui():
+        return send_file(Path(ROOT_DIR) / "training-ui.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/settings-ui.js")
+    def settings_ui():
+        return send_file(Path(ROOT_DIR) / "settings-ui.js", mimetype="text/javascript", conditional=False)
+
+    @application.get("/settings.css")
+    def settings_styles():
+        return send_file(Path(ROOT_DIR) / "settings.css", mimetype="text/css", conditional=False)
+
+    @application.get("/api/settings")
+    def read_settings():
+        from app_settings import credential_status
+        from execution_config import load_execution_settings
+        from dataclasses import asdict
+        from risk_engine import RiskPolicy
+        try:
+            configuration = load_execution_settings()
+        except ValueError:
+            configuration = {"execution_mode": "UNAVAILABLE", "shadow": True}
+        try:
+            credentials = credential_status(application.config["BROKER_SETTINGS_PATH"])
+        except (OSError, ValueError):
+            return jsonify({"error": "settings_unavailable"}), 503
+        return jsonify({"local_setup": True, "csrf_token": application.config["CONTROL_CSRF"],
+                        "credentials": credentials, "configuration": configuration,
+                        "live_locked": True, "risk_policy": {k: str(v) for k, v in asdict(RiskPolicy()).items()}})
+
+    @application.post("/api/settings/broker")
+    def broker_settings():
+        token = request.headers.get("X-Laylow-CSRF", "")
+        origin = request.headers.get("Origin")
+        if not secrets.compare_digest(token.encode("utf-8"), application.config["CONTROL_CSRF"].encode("utf-8")) or (
+            origin is not None and origin != request.host_url.rstrip("/")
+        ):
+            return jsonify({"error": "invalid_control_token_or_origin"}), 403
+        from app_settings import save_credentials
+        try:
+            result = save_credentials(application.config["BROKER_SETTINGS_PATH"], request.get_json(silent=True))
+            feed = application.config["LIVE_MARKET_DATA"]
+            with feed.lock:
+                feed.cache = None
+            return jsonify(result)
+        except ValueError:
+            return jsonify({"error": "invalid_broker_settings"}), 400
+        except OSError:
+            return jsonify({"error": "settings_write_failed"}), 503
+
+    @application.post("/api/teams/<team_name>/profit-brake")
+    def profit_brake(team_name):
+        return change_control(team_name,"profit")
+
+    @application.get("/api/status")
+    def status():
+        try:
+            payload = build_dashboard_payload(db_path=application.config["DATABASE_PATH"])
+            payload["csrf_token"] = application.config["CONTROL_CSRF"]
+            return jsonify(payload), (200 if payload["database_available"] else 503)
+        except Exception:
+            application.logger.exception("Could not read dashboard status")
+            return jsonify({"error": "status_unavailable",
+                            "message": "The status database cannot be read. Check the runner log."}), 503
+
+    @application.get("/api/execution")
+    def execution_audit():
+        from order_store import execution_status
+        from execution_config import load_execution_settings
+        try:
+            payload = execution_status(database)
+            payload["configuration"] = load_execution_settings()
+            return jsonify(payload)
+        except (ValueError, sqlite3.Error):
+            return jsonify({"live_locked": True, "error": "execution_configuration_or_database_unavailable"}), 503
+
+    @application.post("/api/teams/<team_name>/headline-lock")
+    def headline_lock(team_name):
+        return change_control(team_name, "headline")
+
+    @application.post("/api/teams/<team_name>/earnings")
+    def earnings(team_name):
+        return change_control(team_name, "earnings")
+
+    def change_control(team_name, kind):
+        if team_name not in STOCK_TEAM_NAMES:
+            return jsonify({"error": "unknown_stock_team"}), 404
+        token = request.headers.get("X-Laylow-CSRF", "")
+        origin = request.headers.get("Origin")
+        if not secrets.compare_digest(token.encode("utf-8"), application.config["CONTROL_CSRF"].encode("utf-8")) or (
+            origin is not None and origin != request.host_url.rstrip("/")
+        ):
+            return jsonify({"error": "invalid_control_token_or_origin"}), 403
+        body = request.get_json(silent=True)
+        field = "locked" if kind == "headline" else "amount" if kind == "profit" else "earnings_at"
+        if not isinstance(body, dict) or set(body) != {field} or (kind == "headline" and type(body.get(field)) is not bool):
+            return jsonify({"error": "invalid_control_body"}), 400
+        try:
+            if kind == "profit":
+                from trading_records import set_profit_brake
+                set_profit_brake(team_name,body[field],database)
+            elif kind == "headline":
+                update_control(team_name, headline_locked=body[field], db_path=database)
+            else:
+                update_control(team_name, earnings_at=body[field], db_path=database)
+        except (ValueError, TypeError, OverflowError):
+            return jsonify({"error": "invalid_control_value"}), 400
+        except sqlite3.Error:
+            return jsonify({"error": "control_database_unavailable"}), 503
+        return jsonify({"saved": True, "team_name": team_name})
+
+    @application.get("/healthz")
+    def health():
+        path = Path(application.config["DATABASE_PATH"]).resolve()
+        try:
+            with closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True, timeout=2)) as connection:
+                connection.execute("SELECT COUNT(*) FROM sqlite_master").fetchone()
+            return jsonify({"status": "ok", "database": "readable"})
+        except (sqlite3.Error, OSError, ValueError):
+            return jsonify({"status": "unavailable", "database": "unreadable"}), 503
+
+    from screenshot_reviews import register_review_routes
+    register_review_routes(application, database, Path(database).parent / "screenshot_reviews")
+
+    @application.get("/screenshot-lab.js")
+    @application.get("/training-theater.js")
+    @application.get("/screenshot-lab.css")
+    def review_static():
+        name=request.path.lstrip("/")
+        return send_file(Path(ROOT_DIR)/name,mimetype="text/css" if name.endswith(".css") else "text/javascript")
+
+    from dashboard_auth import install_auth
+    install_auth(application, database)
+    return application
+
+
+def main():
+    application = create_app()
+    print(f"[DASHBOARD] http://{DASHBOARD_HOST}:{DASHBOARD_PORT}", flush=True)
+    try:
+        from waitress import serve
+    except ImportError:
+        application.run(host=DASHBOARD_HOST, port=DASHBOARD_PORT, debug=False, use_reloader=False)
+    else:
+        serve(application, host=DASHBOARD_HOST, port=DASHBOARD_PORT)
+
+
+if __name__ == "__main__":
+    main()

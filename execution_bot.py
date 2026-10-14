@@ -1,128 +1,42 @@
-"""
-Execution Bot - Makes the actual trade after a strategy has already been selected.
-This is the trade-execution layer.
-"""
-
-import os
-import sqlite3
-import time
+"""Offline walkthrough of the execution gateway. Never starts an external broker."""
+import argparse
+import json
+from dataclasses import asdict
 from datetime import datetime, timezone
-
-from dotenv import load_dotenv
-
-from alpaca.trading.client import TradingClient
-from alpaca.trading.requests import MarketOrderRequest
-from alpaca.trading.enums import OrderSide, TimeInForce
-
-load_dotenv()
-
-ALPACA_API_KEY = os.getenv("ALPACA_API_KEY")
-ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY")
-DB_PATH = "strategy_bot.db"
-
-trading_client = TradingClient(ALPACA_API_KEY, ALPACA_SECRET_KEY, paper=True)
-
-CHECK_INTERVAL_SECONDS = 120
+from broker_adapter import BrokerRouter
+from broker_practice import PracticeAdapter
+from council import record_council
+from db_utils import ensure_system_tables, ensure_team_control, save_analysis
+from execution_service import ExecutionService
 
 
-def get_latest_strategy_decision():
-    if not os.path.exists(DB_PATH):
-        print("[EXECUTOR] strategy_bot.db not found yet. Waiting...")
-        return None
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--db", default="execution_demo.db", help="Separate fake-money demo database")
+    parser.add_argument("--decision-id", default="offline-demo-1", help="Stable ID; retries never duplicate a fill")
+    parser.add_argument("--submit-practice", action="store_true", help="Record one local fake fill instead of shadow only")
+    args = parser.parse_args(argv)
+    now = datetime.now(timezone.utc).isoformat()
+    ensure_system_tables(args.db); ensure_team_control("SPY",args.db)
+    adapter = PracticeAdapter(args.db); adapter.set_quote("SPY",100)
+    service = ExecutionService(BrokerRouter([adapter]),args.db)
+    # Explicit synthetic fixture, not a forecast or live market observation.
+    analysis = dict(team_name="SPY",source="OFFLINE SYNTHETIC DEMO",bar_time=now,
+        direction="LONG",state="READY",agreement=3,required=2,
+        votes=[dict(name=n,direction="LONG") for n in ("Trend","Momentum","VWAP")],
+        indicators=dict(atr=2,vwap=100,stop_distance=2,relative_volume=2,extension_atr=.5))
+    from db_utils import connect_db
+    with connect_db(args.db) as c:
+        prior=c.execute("SELECT proposal_json FROM order_intents WHERE decision_id=? ORDER BY created_at LIMIT 1",(args.decision_id,)).fetchone()
+    if prior:
+        decision=json.loads(prior[0])
+    else:
+        save_analysis("SPY",analysis,args.db)
+        report=record_council("SPY",analysis,dict(enabled=True,entry_locked=False),{},"practice",args.db,proposal_id=args.decision_id)
+        decision=dict(direction="LONG",action=report["action"],reason="Offline synthetic walkthrough",
+                      atr=2,vwap=100,stop_distance=2,analysis_time=now)
+    result=service.execute("SPY",args.decision_id,decision,mode="PRACTICE",shadow=not args.submit_practice)
+    print(json.dumps(dict(market="SYNTHETIC",real_orders_sent=0,**asdict(result)),indent=2))
+    return 0 if result.status in {"SHADOW","FILLED"} else 1
 
-    conn = sqlite3.connect(DB_PATH)
-    row = conn.execute("""
-        SELECT symbol, direction, strategy_used, strategy_confidence, price, timestamp
-        FROM strategy_trades
-        ORDER BY id DESC
-        LIMIT 1
-    """).fetchone()
-    conn.close()
-
-    if row is None:
-        return None
-
-    symbol, direction, strategy_used, confidence, price, timestamp = row
-    return {
-        "symbol": symbol,
-        "direction": direction,
-        "strategy_used": strategy_used,
-        "confidence": float(confidence),
-        "price": float(price),
-        "timestamp": timestamp,
-    }
-
-
-def get_account():
-    account = trading_client.get_account()
-    return {
-        "equity": float(account.equity),
-        "buying_power": float(account.buying_power),
-        "unrealized_pl": float(account.unrealized_pl),
-    }
-
-
-def risk_ok(account):
-    max_daily_loss = account["equity"] * 0.05
-    return account["unrealized_pl"] > -max_daily_loss
-
-
-def get_trade_size(account, price):
-    risk_amount = account["equity"] * 0.01
-    return max(1, int(risk_amount / max(price, 1.0)))
-
-
-def place_order(symbol, direction, price, confidence, strategy_used):
-    account = get_account()
-    if not risk_ok(account):
-        print(f"[EXECUTOR] Risk blocked {symbol} {direction} | confidence={confidence}")
-        return
-
-    qty = get_trade_size(account, price)
-    side = OrderSide.BUY if direction == "LONG" else OrderSide.SELL
-
-    try:
-        order = MarketOrderRequest(
-            symbol=symbol,
-            qty=qty,
-            side=side,
-            time_in_force=TimeInForce.DAY,
-        )
-        response = trading_client.submit_order(order_data=order)
-        print(
-            f"[EXECUTOR] ORDER SUBMITTED | {symbol} {direction} | strategy={strategy_used} | "
-            f"confidence={confidence:.1f}% | qty={qty} | status={response.status}"
-        )
-    except Exception as e:
-        print(f"[EXECUTOR] ORDER ERROR | {symbol} {direction}: {e}")
-
-
-def run_cycle():
-    decision = get_latest_strategy_decision()
-    if decision is None:
-        print("[EXECUTOR] No strategy decision available yet.")
-        return
-
-    # Only execute if confidence is acceptable and a recent decision exists.
-    if decision["confidence"] < 45:
-        print(f"[EXECUTOR] Low confidence. Skipping {decision['symbol']} {decision['direction']}")
-        return
-
-    place_order(
-        decision["symbol"],
-        decision["direction"],
-        decision["price"],
-        decision["confidence"],
-        decision["strategy_used"],
-    )
-
-
-def main():
-    print("[EXECUTOR] Starting execution bot...")
-    while True:
-        run_cycle()
-        time.sleep(CHECK_INTERVAL_SECONDS)
-
-
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__": raise SystemExit(main())

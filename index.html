@@ -1,493 +1,1044 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trading Command Center</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#070d19">
+<meta name="description" content="Laylow Agency: Python worker status, process health, and recorded events.">
+<title>Laylow Agency · City</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1410;--surface:#131f18;--raised:#1c2b21;--border:#304237;--text:#edf5e9;--muted:#aabcae;--lime:#c6ed93;--amber:#ffd187;--red:#ffaba3}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:1180px;margin:auto;padding:28px 24px 40px}
+button{font:inherit;min-height:44px;border:1px solid var(--border);border-radius:10px;padding:10px 16px;background:var(--raised);color:var(--text);cursor:pointer;touch-action:manipulation}
+button:hover{border-color:var(--lime)}button:disabled{opacity:.55;cursor:wait}
+:focus-visible{outline:3px solid var(--lime);outline-offset:4px}a{color:var(--lime)}
+.skip-link{position:absolute;left:16px;top:-100px;padding:12px;background:var(--surface);z-index:5}.skip-link:focus{top:12px}[hidden]{display:none!important}
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;border-bottom:1px solid var(--border);padding-bottom:24px}
+.brand{font-weight:800;font-size:27px;letter-spacing:-1px}.brand span{color:var(--lime)}.brand small{color:var(--muted);font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:500;margin-left:16px}
+.header-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.mode{font-size:13px;color:var(--muted);border:1px solid var(--border);padding:8px 12px;border-radius:999px}
+.intro{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:24px;margin:34px 0 22px}
+.eyebrow{color:var(--lime);font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
+h1{font-size:clamp(30px,5vw,44px);line-height:1.15;letter-spacing:-1.3px;margin:8px 0 10px}h2{font-size:19px;margin:0;font-weight:650}
+.intro p{color:var(--muted);margin:0;max-width:600px;font-size:14px}.connection{text-align:right}.connection strong{display:block;font-size:14px}.connection span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+.dot{width:8px;height:8px;display:inline-block;border-radius:50%;background:currentColor;margin-right:7px}
+.good{color:var(--lime)}.warn{color:var(--amber)}.bad{color:var(--red)}.muted{color:var(--muted)}
+.alert{margin:0 0 20px;border:1px solid var(--amber);background:#2c2518;border-radius:12px;padding:14px 16px;font-size:14px;color:var(--amber)}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:28px;background:var(--surface)}
+.metric{padding:18px 22px;min-width:0}.metric+.metric{border-left:1px solid var(--border)}.metric-label{font-size:12px;color:var(--muted)}.metric-value{font-size:28px;font-weight:650;letter-spacing:-.7px;margin-top:4px;font-variant-numeric:tabular-nums}.metric-detail{font-size:12px;color:var(--muted)}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px}.section-head p{color:var(--muted);font-size:12px;margin:0}
+.specialists{list-style:none;padding:0;margin:14px 0;font-size:13px}.specialists li{border-top:1px solid var(--border);padding:9px 0}.vote-reason{display:block;color:var(--muted);font-size:12px}.analysis-meta,.manager-note,.control-note{font-size:13px;overflow-wrap:anywhere}.controls{border-top:1px solid var(--border);padding-top:14px;display:grid;gap:10px}.controls label{font-size:12px;color:var(--muted)}.controls input{font:inherit;width:100%;min-height:44px;padding:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px}.control-actions{display:flex;flex-wrap:wrap;gap:8px}.controls p{margin:0}.manager-note{color:var(--muted)}
+.controls{grid-template-columns:minmax(0,1fr)}.controls>*{min-width:0}.controls input{min-width:0}.specialists li{overflow-wrap:anywhere}
+.bots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.bot{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;min-width:0}
+.bot-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.symbol{font-weight:750;font-size:23px;letter-spacing:-.5px}.asset{color:var(--muted);font-size:12px}
+.pill{display:inline-flex;align-items:center;min-height:28px;font-size:12px;font-weight:600;border:1px solid var(--border);padding:4px 9px;border-radius:999px;white-space:nowrap}
+.pill.good{background:#26371e;border-color:#3d552a}.pill.warn{background:#302716;border-color:#665030}.pill.bad{background:#34221e;border-color:#65413a}
+.bot-state{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:20px 0 16px;font-size:13px}.state-label{color:var(--muted);font-size:12px}
+dl{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px}dt{font-size:12px;color:var(--muted)}dd{font-size:13px;margin:3px 0 0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.bot-note{border-top:1px solid var(--border);padding-top:14px;margin:18px 0 0;font-size:13px;color:var(--muted);overflow-wrap:anywhere;white-space:pre-wrap}
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:16px;margin-top:28px}.panel{border:1px solid var(--border);border-radius:16px;padding:22px;background:var(--surface);min-width:0}
+.process-list,.event-list{list-style:none;margin:12px 0 0;padding:0}.process{padding:14px 0;border-top:1px solid var(--border)}
+.process-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.process-name{font-size:13px;font-weight:600;overflow-wrap:anywhere}.process-meta,.process-note{color:var(--muted);font-size:12px;margin:6px 0 0;overflow-wrap:anywhere;white-space:pre-wrap}
+.event-list{max-height:390px;overflow:auto;overscroll-behavior:contain}.event{display:grid;grid-template-columns:62px minmax(0,1fr);gap:14px;padding:14px 0;border-top:1px solid var(--border)}
+.event time{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}.event-title{font-size:12px;color:var(--lime)}.event-detail{font-size:13px;margin:4px 0 0;overflow-wrap:anywhere;white-space:pre-wrap}.empty{font-size:13px;color:var(--muted);padding:16px 0}
+[data-stale="true"] .bot,[data-stale="true"] .panel,[data-stale="true"] .metrics{border-color:#665030}
+footer{color:var(--muted);font-size:12px;margin-top:24px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}footer p{margin:0;max-width:760px}.snapshot-tag{font-size:12px;color:var(--amber);margin-top:6px}
+@media(max-width:700px){main{padding:20px 16px 30px}.intro{margin-top:26px}.connection{text-align:left}.bots,.lower{grid-template-columns:1fr}.metric{padding:14px 12px}.metric-value{font-size:23px}.metric-detail,.metric-label{font-size:11px}.bot,.panel{padding:18px}.brand small{margin-left:10px}.event{grid-template-columns:58px minmax(0,1fr);gap:10px}}
 
-  <style>
-    :root {
-      --bg-1: #050612;
-      --bg-2: #0a0d1d;
-      --panel: #11162b;
-      --panel-alt: #0d1224;
-      --panel-border: #29325c;
-      --text: #ffffff;
-      --muted: #9da6c9;
-      --muted-2: #8994b5;
-      --primary: #7357ff;
-      --primary-2: #6f55c7;
-      --success: #31f09d;
-      --danger: #ff5c79;
-      --warning: #ffd966;
-      --danger-bg: #401526;
-      --danger-border: #742944;
-    }
+/* City geometry and robots are local SVG. No external assets or market simulations. */
+:root{--bg:#050912;--surface:#0c1423;--raised:#152039;--border:#263956;--text:#eaf0ff;--muted:#93a5c5;--lime:#42e2ad;--amber:#ffc56a;--red:#ff697d}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{background:radial-gradient(ellipse at 55% 0,#111734 0,transparent 45%),var(--bg)}
+main{max-width:1680px;padding:22px 28px 40px}
+header{padding-bottom:17px}.brand{font-style:italic;letter-spacing:-1.6px;text-transform:uppercase;font-size:26px;position:relative;padding-top:5px}.brand span{color:#ff354f}.brand small{font-style:normal;font-size:10px;letter-spacing:4px}
+.brand-crown{display:inline-block;width:32px;height:23px;margin-right:7px;vertical-align:middle;color:#ff354f}
+.world-navigation{display:flex;gap:4px;align-items:center;padding:4px;border:1px solid #1b2a43;background:#050a14;border-radius:12px}
+.world-navigation a{padding:10px 14px;min-height:44px;display:flex;align-items:center;gap:7px;text-decoration:none;color:#a1b1ce;font-size:11px;font-weight:750;letter-spacing:1px;border-radius:8px}
+.world-navigation a:first-child{color:#ffdbe0;background:#271020;border:1px solid #da324b}
+.world-navigation a:hover{color:#fff;background:#182239}
+.intro{margin:24px 0 16px;align-items:center}.intro h1{font-size:clamp(26px,3vw,36px)}.intro .eyebrow{color:#ad90ff}.intro p{max-width:700px}
+.city-world{border:1px solid #273655;border-radius:18px;overflow:hidden;margin:0 0 24px;background:#070d19;box-shadow:0 22px 70px #0006}
+.world-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 22px;border-bottom:1px solid #24324d;flex-wrap:wrap;background:linear-gradient(90deg,#131627,#0a111d)}
+.world-kicker{font-size:10px;letter-spacing:2px;color:#a898d9;font-weight:650}.world-toolbar h2{font-size:20px;letter-spacing:-.4px;margin-top:5px}
+.world-tools{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.world-hint{font-size:12px;color:var(--muted)}
+#city-motion{padding:8px 12px;font-size:12px;background:#111b2c;border-color:#344361}
+.world-stage{display:grid;grid-template-columns:minmax(0,1fr) 295px;min-width:0;position:relative}
+.city-viewport{position:relative;min-width:0;overflow:hidden;background:radial-gradient(ellipse at 50% 65%,#241d59 0,#08142c 44%,#040a15 80%)}
+.city-pan{width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#5b4c9c #091223;overscroll-behavior:contain}
+#city-map{display:block;min-width:1020px;width:100%;height:auto;overflow:hidden}
+.glass{background:linear-gradient(145deg,#080f1df2,#080e1ae8);border:1px solid #3a4c70;box-shadow:0 10px 24px #0008}
+.city-overview{position:absolute;left:18px;top:20px;width:190px;padding:14px;border-radius:10px;pointer-events:none}
+.glass-heading{font-size:10px;font-weight:750;letter-spacing:1px;display:flex;gap:12px;justify-content:space-between;border-bottom:1px solid #26344c;padding-bottom:10px;margin-bottom:12px}
+.city-overview dl{display:grid;grid-template-columns:1fr;gap:11px}.city-overview dl>div{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.city-overview dt{font-size:11px}.city-overview dd{font-size:12px;color:#9ef5d1;font-weight:650;margin:0}
+.city-overview dd.muted{color:#90a1be}.city-overview p{font-size:10px;margin:13px 0 0;color:var(--muted);line-height:1.4}
+.tiny-orbit{width:9px;height:9px;border:1px solid #a68bff;border-radius:50%;box-shadow:0 0 9px #9363ff}
+.city-inspector{padding:22px 18px;border-width:0 0 0 1px;border-color:#2a3b5b;min-width:0;display:flex;flex-direction:column}
+.inspector-title{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:13px 0 3px}.inspector-title h3{font-size:30px;letter-spacing:-1px;margin:0;color:var(--district-color,#55eabc)}
+#city-team-asset{font-size:12px;margin:4px 0 18px}
+.city-quote{background:linear-gradient(120deg,#18263a,#111525);border:1px solid #324359;border-radius:10px;padding:14px}
+.city-quote>span{display:block;font-size:19px;font-weight:650}.city-quote small{color:var(--muted);font-size:11px;display:block;margin-top:4px}
+.city-team-metrics{padding:16px 0;border-bottom:1px solid #283651;gap:16px}.city-team-metrics dd{font-size:17px}
+.district-label{font-size:9px;font-weight:700;letter-spacing:1.5px;color:#92a0bb;margin:18px 0 8px}
+.city-bot-list{list-style:none;margin:0;padding:0}.city-bot-list li{padding:9px 0;border-bottom:1px solid #22314a;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px}
+.bot-avatar{width:27px;height:27px;border:1px solid currentColor;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#172236;color:var(--district-color);flex-shrink:0}
+.bot-avatar svg{width:21px;height:21px}.city-bot-name{flex:1}.city-vote{font-size:10px;font-weight:750;white-space:nowrap}
+.city-inspector .manager-note{font-size:11px;margin:2px 0 5px;line-height:1.55}
+.city-source{font-size:10px;color:var(--muted);margin:8px 0 0}
+.city-entry-state{font-size:11px;color:#d8c59c;background:#211b16;border:1px solid #493c28;padding:10px;border-radius:8px;margin:14px 0}
+.city-primary{font-size:11px;background:#1c223d;border:1px solid #69578e;min-height:44px;margin-top:auto}
+.city-map-caption{position:absolute;left:20px;bottom:24px;pointer-events:none;font-size:11px;font-weight:750;letter-spacing:3px;color:#ffdfa0;text-shadow:0 2px 12px #000}
+.city-map-caption span{display:block;font-size:10px;font-weight:450;letter-spacing:.4px;margin-top:4px;color:#a5b4d6}
+.city-dock-wrap{display:flex;align-items:center;gap:16px;padding:13px 18px;border-top:1px solid #283853;background:#080e1a;min-width:0}
+.dock-label{font-size:9px;letter-spacing:1.4px;color:#8698b7;white-space:nowrap}
+.city-dock{display:flex;gap:6px;overflow-x:auto;min-width:0;flex:1;padding:3px;scrollbar-width:thin;scrollbar-color:#66549c transparent}
+.city-dock button{min-height:44px;padding:9px 12px;min-width:74px;font-size:11px;font-weight:750;border-radius:8px;flex-shrink:0;border-color:#233956;background:#0e1828}
+.city-dock button[aria-pressed=true]{border-color:var(--district-color);box-shadow:inset 0 0 15px #49319a35}
+.dock-state{width:6px;height:6px;display:inline-block;border-radius:50%;margin-left:7px;background:#69738d}
+.manager-shortcut{font-size:10px;color:#c7abff;text-decoration:none;white-space:nowrap;min-height:44px;display:flex;align-items:center}
+.world-footer{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 20px;border-top:1px solid #1c2a43;font-size:10px;color:#8a9dbd}
+.mobile-pan-hint{display:none}
+.city-tower{cursor:pointer}.city-tower .tower-selection{opacity:0;transition:opacity .2s}
+.city-tower[data-selected=true] .tower-selection,.city-tower:focus-visible .tower-selection{opacity:1}
+.city-tower:focus-visible{outline:none}.city-tower:hover .tower-face{filter:brightness(1.18)}
+.city-tower[data-observed=false] .status-halo{opacity:.23}
+.city-team-symbol{font-family:system-ui,sans-serif;font-weight:800;fill:#eff4ff}
+.city-specialist,.city-team-manager{pointer-events:none}
+.city-wire{transition:opacity .2s}.robot-eye{transition:fill .2s}
+.city-ambient{animation:city-glimmer 5s ease-in-out infinite}
+.city-floating{animation:city-hover 4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.city-world[data-motion=off] .city-ambient,.city-world[data-motion=off] .city-floating{animation:none}
+@keyframes city-glimmer{0%,100%{opacity:.38}50%{opacity:.85}}
+@keyframes city-hover{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.bot.city-selected{border-color:var(--district-color,#9876f8);box-shadow:0 0 0 1px #8562c444}
+.bot{scroll-margin-top:25px}.metrics{margin-top:0}.metric-value{color:#dfe6fb}
+@media(max-width:1160px){main{padding:18px}.world-navigation a{padding:9px 10px}.world-stage{grid-template-columns:minmax(0,1fr) 270px}.city-overview{width:165px;padding:11px}.city-inspector{padding:18px 15px}.dock-label{display:none}.world-hint{display:none}}
+@media(max-width:800px){header{gap:12px}.world-navigation{order:3;width:100%;min-width:0;max-width:100%;overflow-x:auto;justify-content:flex-start}.world-navigation a{font-size:10px;padding:10px 9px;justify-content:center;flex:0 0 auto;white-space:nowrap}.header-actions{margin-left:auto}.brand small{display:block;margin-left:41px;font-size:8px;letter-spacing:3px}
+.intro{margin:18px 0}.intro h1{font-size:28px}.connection{font-size:12px}.world-stage{grid-template-columns:1fr}.world-toolbar{padding:15px;gap:10px}.world-toolbar h2{font-size:17px}.world-tools{gap:8px}
+.city-overview{width:165px;left:12px;top:12px;background:#060e1de8}.city-overview dl{gap:7px}.glass-heading{font-size:9px}
+.city-inspector{border-width:1px 0 0;border-color:#344469;padding:18px}.city-inspector .city-bot-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px}.city-bot-list li{flex-wrap:wrap;gap:7px}.city-bot-name{min-width:65px}
+.city-inspector .city-team-metrics{display:flex;gap:35px}.city-team-metrics>div{min-width:95px}.city-primary{margin-top:5px;width:100%}
+.city-dock-wrap{padding:10px;gap:8px;flex-wrap:wrap}.city-dock{flex-basis:100%}.manager-shortcut{min-height:30px;margin-left:auto}
+.city-map-caption{bottom:25px;font-size:9px;left:13px}.mobile-pan-hint{display:block;position:absolute;right:12px;bottom:13px;font-size:10px;color:#c0b4eb;margin:0;pointer-events:none}
+.world-footer{padding:10px 13px;font-size:9px}.world-footer span:last-child{display:none}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.city-ambient,.city-floating{animation:none!important}.city-tower .tower-selection,.city-wire,.robot-eye{transition:none}}
 
-    * {
-      box-sizing: border-box;
-    }
 
-    body {
-      margin: 0;
-      background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
-      color: var(--text);
-      font-family: Arial, sans-serif;
-    }
+.city-3d-wrap{position:relative;height:650px;min-width:0;background:radial-gradient(ellipse at 50% 20%,#221435,#070a17)}
+#city-3d{display:block;width:100%;height:100%;touch-action:pan-y;cursor:grab}
+#city-3d:active{cursor:grabbing}
+#city-3d-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.world-3d-label{position:absolute;transform:translate(-50%,-100%);min-height:43px;padding:6px 10px;background:#071021ec;border:1px solid var(--district-color,#b99b66);border-radius:8px;color:var(--district-color,#ffe2a3);text-align:left;white-space:nowrap;pointer-events:auto;box-shadow:0 5px 15px #0008;font-size:11px}
+.world-3d-label strong{display:block;font-size:12px}.world-3d-label span{display:block;font-size:8px;color:#b8c5da;margin-top:2px;letter-spacing:.3px}
+.world-3d-label[data-selected=true]{box-shadow:0 0 15px #c094fd70}.city-hq-label{font-size:10px;pointer-events:none}
+.camera-controls{position:absolute;right:13px;bottom:15px;display:flex;gap:6px}.camera-controls button{padding:6px 10px;background:#0b142aeb;font-size:11px}
+.city-world[data-view="3d"] #city-pan{display:none}.city-world[data-view="map"] .city-3d-wrap{display:none}
+.city-render-note{margin:0;padding:9px 19px;color:#9aaacc;font-size:11px;border-top:1px solid #24334d}
+#city-enter-office{background:linear-gradient(100deg,#50387c,#242e53);margin-top:15px;margin-bottom:8px}
+.payroll-panel{margin-bottom:24px}.payroll-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:22px 0}
+.payroll-metrics span{font-size:12px;color:var(--muted)}.payroll-metrics strong{display:block;font-size:27px;letter-spacing:-.5px;margin-top:6px}
+.payroll-layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:25px}
+.table-scroll{overflow-x:auto;min-width:0;max-width:100%}.payroll-layout>*{min-width:0}table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}
+th{font-weight:550;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+td,th{padding:11px 12px;border-bottom:1px solid #243651;white-space:nowrap}
+#payroll-chart,#office-chart{display:block;width:100%;height:auto;min-height:120px}.small-heading{font-size:13px;margin:0 0 10px}
+dialog{background:#090f1e;color:var(--text);border:1px solid #536184;border-radius:17px;width:min(1220px,calc(100% - 28px));max-height:92vh;padding:22px}
+dialog::backdrop{background:#030712db;backdrop-filter:blur(6px)}
+.office-header{display:flex;justify-content:space-between;align-items:center;gap:14px}.office-header h2{font-size:26px;margin-top:5px}
+.office-options{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:16px 0;font-size:12px}
+select{font:inherit;min-height:44px;background:#15213a;color:var(--text);border:1px solid #40516f;border-radius:8px;padding:8px}
+#office-3d{display:block;width:100%;height:310px;border:1px solid #334467;border-radius:12px;cursor:grab;touch-action:pan-y}
+.office-monitors{display:grid;grid-template-columns:minmax(0,1.45fr) repeat(2,minmax(0,1fr));gap:14px}
+.monitor{background:#0e1828;border:1px solid #344562;border-radius:12px;padding:16px;min-width:0}
+.monitor h3{font-size:18px;margin:9px 0 15px}.monitor .specialists{font-size:11px}.monitor .vote-reason{font-size:10px}
+#office-recent-trades p{font-size:11px;padding:8px 0;border-bottom:1px solid #283951;margin:0}
+#office-decisions{font-size:11px}.office-bot-open{cursor:pointer}
+.risk-brake-label{font-size:12px;color:var(--muted);margin-top:7px}
+@media(max-width:800px){.city-3d-wrap{height:560px}.city-overview{top:10px}.world-3d-label{font-size:9px;padding:4px 7px}.world-3d-label strong{font-size:10px}.world-3d-label span{font-size:7px}.city-hq-label{font-size:8px}
+.camera-controls{right:8px;bottom:45px}.payroll-metrics{gap:12px}.payroll-metrics strong{font-size:19px}.payroll-metrics span{font-size:10px}.payroll-layout,.office-monitors{grid-template-columns:minmax(0,1fr)}
+dialog{padding:14px}.office-header{align-items:flex-start}.office-header h2{font-size:21px}.office-header button{font-size:10px;padding:8px}.office-options{gap:9px}#office-3d{height:260px}.city-render-note{font-size:10px;padding:9px 12px}}
 
-    .container {
-      padding: 18px;
-      max-width: 1200px;
-      margin: auto;
-    }
 
-    h1 {
-      margin-bottom: 5px;
-    }
+@media(max-width:800px){
+ .city-world[data-view="3d"] .city-viewport{display:flex;flex-direction:column}
+ .city-world[data-view="3d"] .city-overview{position:relative;order:-1;left:auto;top:auto;width:calc(100% - 24px);margin:12px;padding:12px}
+ .city-world[data-view="3d"] .city-overview dl{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 15px}
+ .city-world[data-view="3d"] .city-overview p{margin-top:9px}
+ .city-world[data-view="3d"] .city-3d-wrap{height:440px;flex-shrink:0}
+ .city-world[data-view="3d"] .world-3d-label[data-team]:not([data-selected="true"]),.city-world[data-view="3d"] .city-hq-label{display:none}
+ .city-world[data-view="3d"] .city-map-caption{position:static;padding:12px 16px}
+ .city-world[data-view="3d"] .mobile-pan-hint{display:none}
+}
 
-    .subtitle {
-      color: var(--muted);
-      margin-bottom: 20px;
-    }
+/* City presentation: compact neon signs leave more of the architecture visible. */
+.city-3d-wrap{background:#070c1b}
+.world-3d-label{min-height:32px;padding:7px 11px;border-radius:7px;background:linear-gradient(135deg,#0b1424f2,#08101ddf);border-color:color-mix(in srgb,var(--district-color,#b99b66) 55%,#26384d);box-shadow:0 6px 18px #0009,0 0 16px color-mix(in srgb,var(--district-color,#b99b66) 13%,transparent);backdrop-filter:blur(10px)}
+.world-3d-label strong{font-size:12px;letter-spacing:.8px}
+.world-3d-label span{display:none}
+.world-3d-label[data-selected=true]{padding:9px 13px;border-color:var(--district-color);box-shadow:0 0 22px color-mix(in srgb,var(--district-color) 24%,transparent)}
+.world-3d-label[data-selected=true] span{display:block;font-size:9px;margin-top:4px}
+.city-hq-label{font-size:10px;letter-spacing:1px;color:#ffdfa6;background:#151321e8;max-width:240px;white-space:normal;text-align:center}
+.city-overview{background:linear-gradient(145deg,#081222e8,#080f1bd9);backdrop-filter:blur(14px);box-shadow:0 12px 35px #0005}
+.camera-controls{background:#0a1225d9;backdrop-filter:blur(12px);border:1px solid #384566;border-radius:10px;padding:5px}
+@media(max-width:800px){.world-3d-label[data-selected=true]{padding:7px 10px}.world-3d-label strong{font-size:11px}}
 
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-bottom: 18px;
-    }
 
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      border-radius: 14px;
-      padding: 15px;
-    }
+.city-council-label{pointer-events:auto;--district-color:#70e2e8}.city-world[data-view="3d"] .city-council-label{display:block}
+.city-hq-building{cursor:pointer}.city-hq-building:focus-visible{outline:2px solid #ffdfa0;outline-offset:5px}
 
-    .label {
-      color: #8e99bb;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
+.practice-panel{margin:0 0 22px;border-color:#578179;background:linear-gradient(125deg,#122b2b,#101727)}
+.practice-head,.practice-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.practice-actions{justify-content:flex-start;margin:14px 0}
+.practice-panel h2{color:#9df2df}.practice-notice{font-size:13px;color:#c4d9dc;max-width:1000px;margin:10px 0}.practice-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0}.practice-grid span{font-size:11px;color:#a3b6c4}.practice-grid strong{display:block;font-size:23px;font-variant-numeric:tabular-nums;color:#dcf4ed}.practice-panel summary{cursor:pointer;min-height:44px;padding:12px 0}.practice-panel td button{font-size:11px;padding:6px 9px}
+#practice-state{color:#9df2df;font-size:12px}#practice-clock,#practice-save-note{font-size:11px;color:#aac4ce}
+@media(max-width:700px){.practice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.practice-grid strong{font-size:20px}.practice-actions button{font-size:12px}}
 
-    .value {
-      font-size: 24px;
-      font-weight: bold;
-      margin-top: 4px;
-    }
+</style>
+<link rel="stylesheet" href="/council.css?v=20261011-premium-rooms">
+<link rel="stylesheet" href="./settings.css?v=20261011-premium-rooms">
+<link rel="stylesheet" href="./screenshot-lab.css?v=20261011-chart-marks">
 
-    .workers {
-      display: grid;
-      gap: 10px;
-      margin-bottom: 18px;
-    }
-
-    .worker {
-      background: var(--panel-alt);
-      border: 1px solid #252d52;
-      border-radius: 12px;
-      padding: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .worker-name {
-      font-weight: bold;
-    }
-
-    .worker-sub {
-      font-size: 12px;
-      color: var(--muted-2);
-      margin-top: 4px;
-    }
-
-    .positive {
-      color: var(--success);
-    }
-
-    .negative {
-      color: var(--danger);
-    }
-
-    button, select, input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      margin-top: 8px;
-      font-size: 16px;
-    }
-
-    select, input {
-      background: #0c1124;
-      color: var(--text);
-      border: 1px solid #29345e;
-    }
-
-    button {
-      background: var(--primary);
-      color: var(--text);
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .secondary {
-      background: #1c2444;
-      border: 1px solid #3c4c8f;
-    }
-
-    .danger {
-      background: var(--danger-bg);
-      border: 1px solid var(--danger-border);
-    }
-
-    .log {
-      background: #080c19;
-      border-radius: 10px;
-      padding: 10px;
-      max-height: 220px;
-      overflow-y: auto;
-      font-family: monospace;
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .vault {
-      text-align: center;
-      background: linear-gradient(135deg, #17112d, #201846);
-      border: 1px solid var(--primary-2);
-      border-radius: 16px;
-      padding: 18px;
-      margin: 18px 0;
-    }
-
-    .vault-value {
-      color: var(--warning);
-      font-size: 30px;
-      font-weight: bold;
-    }
-
-    @media (min-width: 700px) {
-      .stats {
-        grid-template-columns: repeat(4, 1fr);
-      }
-    }
-  </style>
+<style id="graphics-2026">
+/* Legible glass HUDs keep source labels visible above the scene. */
+.city-world{border-color:#415472;box-shadow:0 18px 65px #02071155}
+.world-3d-label{background:linear-gradient(145deg,#122139ee,#080f20f5);border-color:#6584aa80;border-radius:11px;box-shadow:0 5px 22px #0008,inset 0 1px #c5e3ff13;backdrop-filter:blur(12px)}
+.world-3d-label strong{letter-spacing:.06em}.world-3d-label:focus-visible{outline:3px solid #9bcfff;outline-offset:3px}
+.office-stage,.council-stage{border-radius:18px;overflow:hidden;background:#0b172b;box-shadow:inset 0 1px #c4e8ff15,0 16px 45px #02071155}
+#office-3d{border-radius:16px;border-color:#617d9d66}
+.office-header,.council-room-header{border-bottom:1px solid #759ab033;padding-bottom:16px}
+.office-options button,[data-room-camera]{border-radius:10px;background:linear-gradient(#21344a,#142238);box-shadow:inset 0 1px #d3ecff14}
+.graphics-quality-label{display:inline-flex;align-items:center;gap:8px;color:#b9cce1;font-size:12px;white-space:nowrap}.graphics-quality-label select{min-height:36px;padding:6px 10px;background:#122139;border:1px solid #597896;border-radius:9px;color:#edf5ff;font:inherit}
+@media(max-width:800px){.graphics-quality-label{font-size:11px}}
+</style>
 </head>
-
 <body>
+<a class="skip-link" href="#bots-title">Skip to bots</a>
+<main id="workspace" data-stale="false"><p class="alert">LOCAL WORKSPACE · Worker status comes from the Python backend. Browser practice prices are synthetic. Broker execution uses the central risk engine; LIVE is locked.</p>
+<header><div class="brand"><svg class="brand-crown" viewBox="0 0 36 26" aria-hidden="true"><path d="M3 8l8 7 7-12 7 12 8-7-4 15H7Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="3" r="2" fill="currentColor"/></svg>laylow<span>.</span><small>Agency</small></div><nav class="world-navigation" aria-label="Dashboard sections"><a href="#world">◈ WORLD</a><a href="#council">◎ COUNCIL</a><a href="#bots-title">▥ TEAMS</a><a href="#big-title">◉ MANAGERS</a><a href="#event-title">↗ ACTIVITY</a><a href="#settings">⚙ SETTINGS</a></nav><div class="header-actions"><span class="mode" id="mode">Python status dashboard</span><button id="refresh" type="button">Refresh status</button></div></header>
+<section class="intro" aria-labelledby="page-title">
+<div><div class="eyebrow">Your agency · Night shift</div><h1 id="page-title">Welcome to Laylow City.</h1><p>Explore your team districts, specialist bots, and manager hierarchy.</p></div>
+<div class="connection"><strong id="connection" class="muted" role="status"><i class="dot" aria-hidden="true"></i>Connecting to backend</strong><span id="updated">Waiting for the first status snapshot</span><div class="snapshot-tag" id="snapshot-tag" hidden>Last snapshot · connection lost</div></div>
+</section>
+<p id="error" class="alert" role="alert" hidden></p>
 
-<div class="container">
 
-  <h1>Trading Command Center</h1>
-  <div class="subtitle">Private paper-trading dashboard</div>
+<section id="practice" class="panel practice-panel" aria-labelledby="practice-title">
+ <div class="practice-head"><div><span class="world-kicker">SANDBOX / FAKE MONEY</span><h2 id="practice-title">$50,000 practice account</h2></div><span id="practice-state" role="status">Ready to practice</span></div>
+ <p class="practice-notice">Choose generated practice or Alpaca IEX live-price practice. Both use fake money and rule-based bots; no broker orders. Live-price mode has a separate ledger for four stock teams and requires the local app. Futures data is not connected.</p>
+ <div class="practice-actions"><label>Price source <select id="practice-feed"><option value="synthetic">Generated practice</option><option value="iex">Alpaca IEX · real prices / fake money</option></select></label><button id="practice-feed-connect" type="button">Connect live-price practice</button><a href="#settings">Set up Alpaca keys ↗</a></div><p id="practice-feed-status" class="practice-notice" role="status">Generated practice · live prices require local setup.</p>
+ <div class="practice-actions"><button id="practice-toggle" type="button" class="city-primary">Start $50,000 practice</button><button id="practice-step" type="button">Step 1 market minute</button><label>Speed <select id="practice-speed"><option value="1">1 market min / sec</option><option value="5">5 market min / sec</option><option value="20">20 market min / sec</option></select></label><button id="practice-reset" type="button">Reset to $50,000</button><button id="practice-export" type="button">Export session</button><a href="#world">Go to city ↓</a><button id="practice-exit" type="button">Leave practice</button></div>
+ <div id="practice-details" hidden><div class="practice-grid">
+ <div><span>Starting fake dollars</span><strong id="practice-initial">$50,000.00</strong></div><div><span>Account equity</span><strong id="practice-equity">$50,000.00</strong></div><div><span>Cash balance</span><strong id="practice-cash">$50,000.00</strong></div><div><span>Available after collateral</span><strong id="practice-available">$50,000.00</strong></div>
+ <div><span>Closed-trade net P&amp;L</span><strong id="practice-realized">$0.00</strong></div><div><span>Open-position P&amp;L</span><strong id="practice-unrealized">$0.00</strong></div><div><span>Simulated fees paid</span><strong id="practice-fees">$0.00</strong></div><div><span>Largest equity drawdown</span><strong id="practice-drawdown">$0.00</strong></div></div>
+ <p id="practice-clock"></p><details><summary>Practice rules and fill assumptions</summary><p class="practice-notice">Practice limits: 4 open positions, $250 planned risk per entry, $1,000 account loss brake and $300 closed-profit brake per team. Generated mode checks OHLC extremes with stop-first ambiguous fills. Live-price mode uses observed IEX last trades every 15 seconds and can miss intervening prices. Losses can exceed planned risk. Fictional collateral: full stock notional; $5,000 per full-size futures contract or $500 per micro contract. $1 per stock fill, $2 per futures contract per fill, plus one tick slippage each side. These assumptions do not represent a broker's margin or fee schedule.</p></details>
+ <details><summary>Open fake positions</summary><div class="table-scroll"><table><thead><tr><th>Team</th><th>Side</th><th>Qty</th><th>Entry</th><th>Observed / generated price</th><th>Open P&amp;L</th><th>Action</th></tr></thead><tbody id="practice-positions"></tbody></table></div></details>
+ <details><summary>Recent closed fake trades</summary><div class="table-scroll"><table><thead><tr><th>Team</th><th>Side</th><th>Qty</th><th>Entry</th><th>Exit</th><th>Fees</th><th>Net P&amp;L</th><th>Exit rule</th></tr></thead><tbody id="practice-trades"></tbody></table></div></details></div>
+ <p id="practice-save-note" role="status"></p>
+</section>
 
-  <div class="stats">
-
-    <div class="card">
-      <div class="label">Account Equity</div>
-      <div class="value" id="equity">$10,000.00</div>
-    </div>
-
-    <div class="card">
-      <div class="label">Today P&L</div>
-      <div class="value" id="pnl">$0.00</div>
-    </div>
-
-    <div class="card">
-      <div class="label">Win Rate</div>
-      <div class="value" id="winRate">0%</div>
-    </div>
-
-    <div class="card">
-      <div class="label">Trades</div>
-      <div class="value" id="trades">0</div>
-    </div>
-
+<section id="world" class="city-world" aria-labelledby="world-title">
+  <div class="world-toolbar">
+    <div><span class="world-kicker">LAYLOW / WORLD 01</span><h2 id="world-title">The agency never sleeps.</h2></div>
+    <div class="world-tools"><button id="city-view" type="button">Use city map</button><span class="world-hint">Click a building to open its office</span><button id="city-motion" type="button" aria-pressed="false">Ambient motion</button></div>
   </div>
-
-  <div class="vault">
-    <div class="label">THE VAULT</div>
-    <div class="vault-value" id="vault">$0.00</div>
+  <div class="world-stage">
+    <div class="city-viewport">
+      <div class="city-3d-wrap">
+        <canvas id="city-3d" tabindex="0" aria-label="3D city. Click a building to open its office. Drag or use arrow keys to orbit. Press Enter to open the selected team." aria-describedby="city-render-note"></canvas>
+        <div id="city-3d-labels"></div>
+        <div class="camera-controls"><button id="city-zoom-in" type="button" aria-label="Zoom in">+</button><button id="city-zoom-out" type="button" aria-label="Zoom out">−</button><button id="city-camera-reset" type="button">Reset camera</button></div>
+      </div>
+      <div id="city-pan" class="city-pan" tabindex="0" aria-label="City map. Scroll horizontally on small screens to explore all districts.">
+        <svg id="city-map" viewBox="0 0 1600 920" role="group" aria-label="Laylow City. Ten interactive team towers, The Council building, specialist robots and manager headquarters."></svg>
+      </div>
+      <aside class="city-overview glass" aria-label="Agency overview">
+        <div class="glass-heading">AGENCY OVERVIEW <span class="tiny-orbit" aria-hidden="true"></span></div>
+        <dl><div><dt>Fresh workers</dt><dd id="city-fresh">— / 10</dd></div><div><dt>Specialist votes</dt><dd id="city-votes">Not recorded</dd></div><div><dt>Manager reports</dt><dd id="city-managers">— / 10</dd></div><div><dt>Realized P&amp;L</dt><dd id="city-net" class="muted">Not recorded</dd></div></dl>
+        <p id="city-observation">Waiting for backend observations</p>
+      </aside>
+      <div class="city-map-caption">THE VAULT <span>Ten districts. One agency.</span></div>
+      <p class="mobile-pan-hint">Swipe the city to explore ↔</p>
+    </div>
+    <aside id="city-inspector" class="city-inspector glass" aria-labelledby="city-team-title">
+      <div class="world-kicker">DISTRICT INSPECTOR</div>
+      <div class="inspector-title"><h3 id="city-team-title">SPY</h3><span id="city-team-state" class="pill muted">Not observed</span></div>
+      <p id="city-team-asset" class="muted">S&amp;P 500 ETF</p>
+      <div class="city-quote"><span id="city-consensus">Awaiting analysis</span><small id="city-agreement">2 of 3 votes required</small></div>
+      <dl class="city-team-metrics"><div><dt>ATR</dt><dd id="city-atr">—</dd></div><div><dt>Relative volume</dt><dd id="city-rvol">—</dd></div></dl>
+      <div class="district-label">SPECIALIST BOTS</div><ul id="city-bot-list" class="city-bot-list"></ul>
+      <div class="district-label">TEAM MANAGER → BIG MANAGER</div><p id="city-manager-note" class="manager-note">Awaiting assessment</p>
+      <p id="city-analysis-time" class="city-source">No source bars recorded</p>
+      <p id="city-entry-state" class="city-entry-state">Waiting for controls</p>
+      <button id="city-enter-office" class="city-primary" type="button">Enter bot office ↗</button>
+      <button id="city-open-team" class="city-primary" type="button">Open SPY team controls ↗</button>
+    </aside>
   </div>
+  <div class="city-dock-wrap"><div class="dock-label">TEAM DISTRICTS</div><div id="city-dock" class="city-dock" role="group" aria-label="Select a city team"></div><a class="manager-shortcut" href="#big-title">AI MANAGER ↗</a></div>
+  <p id="city-render-note" class="city-render-note">Preparing 3D city</p>
+  <div class="world-footer"><span id="city-world-status">Awaiting backend · city status not observed</span><span>32 specialists · 10 team managers · 1 Big Manager</span></div>
+</section>
 
-  <h2>Workers</h2>
 
-  <div class="workers" id="workers"></div>
+<section class="panel payroll-panel" aria-labelledby="payroll-title">
+ <div class="section-head"><div><div class="world-kicker">RECORDED RESULTS</div><h2 id="payroll-title">Payroll · Today</h2></div><span id="payroll-source" class="muted">No closed-trade export</span></div>
+ <div class="payroll-metrics"><div><span>Today's net</span><strong id="payroll-today">—</strong></div><div><span>Recorded total</span><strong id="payroll-total">—</strong></div><div><span>Closed trades today</span><strong id="payroll-trades">—</strong></div></div>
+ <div class="payroll-layout"><div class="table-scroll"><table><thead><tr><th>Team</th><th>Closed trades</th><th>Wins</th><th>Net after fees</th><th>Entry status</th></tr></thead><tbody id="payroll-rows"></tbody></table></div><div><h3 class="small-heading">Recorded daily results</h3><svg id="payroll-chart" viewBox="0 0 480 220" role="img" aria-label="Recorded daily net results, up to 30 days"></svg><p id="payroll-chart-note" class="city-source">No recorded earnings available.</p></div></div>
+ <p id="payroll-basis" class="city-source"></p>
+</section>
+<dialog id="council-room" aria-labelledby="council-room-title"><div class="council-room-header"><div><span class="world-kicker">LAYLOW HEADQUARTERS / INTERIOR</span><h2 id="council-room-title">Council room</h2></div><button id="council-room-close" type="button">Return to city ×</button></div><div id="council-room-content">
+<section id="council" class="panel council-panel" aria-labelledby="council-title">
+<div class="council-layout"><div><div class="council-stage"><button type="button" class="room-enter-view" data-room="council" data-room-camera="inside">Step inside ↗</button><canvas id="council-3d" tabindex="0" aria-label="Six robot seats around a council table. Drag or arrow keys to orbit."></canvas><div class="council-sign">THE COUNCIL <span>STRATEGY CHAMBER</span></div><div class="room-hud"><span id="council-room-district">AAPL / EVIDENCE REVIEW</span><span id="council-room-tally">Awaiting votes</span></div><div id="council-seat-labels" aria-label="Council seats in the room"></div></div><div class="room-camera-bar" role="group" aria-label="Council room camera"><span>VIEW</span><button type="button" data-room="council" data-room-camera="wide">Whole room</button><button type="button" data-room="council" data-room-camera="inside">Inside room</button><button type="button" data-room="council" data-room-camera="table">Round table</button><button type="button" data-room="council" data-room-camera="wall">Evidence wall</button><button type="button" data-room="council" data-room-camera="closer" aria-label="Zoom into Council room">+</button><button type="button" data-room="council" data-room-camera="further" aria-label="Zoom out of Council room">−</button></div><p id="council-render-note" class="city-source">Preparing chamber</p></div>
+<aside class="council-sidebar"><div class="council-verdict"><span class="world-kicker" id="council-context">CURRENT EVIDENCE REVIEW</span><strong id="council-action" role="status">Waiting for backend</strong><p id="council-reason">No observed opinions.</p><p id="council-evidence" class="city-source"></p><p id="council-authority" class="city-source">Four of six must support proceeding. Hard locks cannot be outvoted.</p><p id="council-last" class="city-source"></p></div>
+<div class="council-seat-inspector"><span class="world-kicker">MEMBER SPOTLIGHT</span><div id="council-seats" aria-label="Choose a council member"></div><h3 id="council-seat-name">Choose a member</h3><p id="council-seat-personality"></p><strong id="council-seat-vote"></strong><p id="council-seat-reason"></p></div></aside></div>
+<div class="section-head"><div><div class="world-kicker">SIX PERSPECTIVES / ONE DECISION</div><h2 id="council-title">The Council</h2></div><a href="#world">Return to city ↑</a></div>
 
-  <div class="card">
+<p class="market-feed-notice" id="council-feed">Live market data not connected · practice uses generated candles.</p>
+<div class="council-options"><label for="council-team">Proposal district</label><select id="council-team"></select><button id="council-reset" type="button">Reset chamber view</button></div>
+<p class="muted">Different personalities, different risk opinions. Explicit rules on the same source bars; the existing AI review may veto or reduce their decision.</p><details class="room-archive"><summary>All six opinions & recorded deliberations</summary><div id="council-members" class="council-members" aria-label="Council opinions"></div><h3 class="small-heading">Recorded deliberations</h3><ol id="council-history" class="council-history"></ol></details>
+</section>
+</div></dialog>
+<dialog id="vault-room" aria-labelledby="vault-title"><div class="office-header"><div><span class="world-kicker">LAYLOW / THE VAULT</span><h2 id="vault-title">Results & team learning</h2></div><button type="button" id="vault-close">Return to city ×</button></div><p id="vault-source"></p><p class="market-feed-notice" id="vault-feed">Live market data is not connected.</p><div class="vault-hero"><div class="vault-emblem"><strong>THE VAULT<small>EVERY OUTCOME COUNTS</small></strong></div><div class="vault-stats"><div class="vault-stat"><span>Win / loss ratio</span><strong id="vault-ratio">—</strong></div><div class="vault-stat"><span>Win rate</span><strong id="vault-win-rate">—</strong></div><div class="vault-stat"><span>Closed-trade net</span><strong id="vault-net">—</strong></div><div class="vault-stat"><span>Winning trades</span><strong id="vault-wins">—</strong></div><div class="vault-stat"><span>Losing trades</span><strong id="vault-losses">—</strong></div><div class="vault-stat"><span>Break-even trades</span><strong id="vault-flat">—</strong></div></div></div><p id="vault-ratio-note"></p><h3>Team learning desk</h3><p class="city-source">Practice teams review both wins and losses. Outcomes create review hypotheses only. Entry requirements and risk stay frozen pending independent historical and forward paper evidence. Restored legacy risk reductions are preserved.</p><div id="vault-teams" class="vault-teams"></div><h3>Why did the trade win or lose?</h3><div id="vault-reviews"></div></dialog>
+<dialog id="office-dialog" aria-labelledby="office-title">
+ <div class="office-header"><div><div class="world-kicker" id="office-context">VIRTUAL WORKSTATION / RECORDED DATA</div><h2 id="office-title">Bot office</h2></div><button id="office-close" type="button" aria-label="Close office">Return to city ×</button></div>
+ <div class="office-stage"><button type="button" class="room-enter-view" data-room="office" data-room-camera="inside">Step inside ↗</button><canvas id="office-3d" tabindex="0" aria-label="Shared 3D team office. All specialist robots and their manager work in this room. Select a teammate or use the roster below."></canvas><div class="room-hud"><span>LAYLOW / SHARED TEAM OFFICE</span><span>3D WORKSTATION</span></div><button id="office-trade-wall-open" type="button" aria-controls="office-trade-wall-panel" aria-expanded="true">Trade wall ↗</button><div id="office-speech" class="office-speech"><strong id="office-speech-name">TEAM MANAGER</strong><span id="office-speech-text">Waiting for source evidence.</span></div><div id="office-crew" aria-label="Teammates in the room"></div><div id="office-screen-labels" aria-label="Interactive desk terminals"><button type="button" data-screen-x="-1.95" data-office-terminal="signal">Signal scanner ↗</button><button type="button" data-screen-x="0" data-office-terminal="market">Market terminal ↗</button><button type="button" data-screen-x="1.95" data-office-terminal="performance">Performance ↗</button></div></div>
+ <div id="office-roster" class="office-roster" role="group" aria-label="Select a teammate"></div>
+ <div class="room-camera-bar" role="group" aria-label="Bot office camera"><span>VIEW</span><button type="button" data-room="office" data-room-camera="wide">Whole room</button><button type="button" data-room="office" data-room-camera="inside">Inside room</button><button type="button" data-room="office" data-room-camera="wall">Trade wall</button><button type="button" data-room="office" data-room-camera="desk">Robot desk</button><button type="button" data-room="office" data-room-camera="screens">Monitors</button><button type="button" data-room="office" data-room-camera="closer" aria-label="Zoom into bot office">+</button><button type="button" data-room="office" data-room-camera="further" aria-label="Zoom out of bot office">−</button></div><p id="office-render-note" class="city-source"></p>
 
-    <h2>Paper Trade</h2>
+ <p id="office-feed" class="market-feed-notice">Market feed: simulated in practice. Live broker/data feed not connected.</p>
+ <div class="office-options"><label for="office-worker">Inspect teammate</label><select id="office-worker"></select><span id="office-health" class="pill muted">Not observed</span><span id="office-data-time" class="city-source"></span></div>
+ <div class="office-room-identity"><div><span class="world-kicker">DISTRICT INTERIOR</span><h3 id="office-theme-name">Shared team office</h3><p id="office-layout-note">Every specialist has a desk in this room.</p></div><span class="team-room-badge">ONE TEAM / ONE OFFICE</span></div>
 
-    <label>Symbol</label>
-
-    <select id="symbol">
-      <option>SPY</option>
-      <option>QQQ</option>
-    </select>
-
-    <label>Direction</label>
-
-    <select id="direction">
-      <option>CALL</option>
-      <option>PUT</option>
-    </select>
-
-    <label>Risk Amount</label>
-
-    <input id="risk" type="number" value="50" min="1" />
-
-    <label>Daily Loss Limit</label>
-
-    <input id="lossLimit" type="number" value="250" min="1" />
-
-    <button onclick="paperTrade()">Run Paper Trade</button>
-
-    <button class="secondary" onclick="resetAccount()">
-      Reset Account
-    </button>
-
-    <button class="danger" onclick="toggleKill()">
-      Kill Switch
-    </button>
-
-  </div>
-
-  <h2>Activity</h2>
-
-  <div class="log" id="log">
-    Waiting for trade...
-  </div>
-
+ <section id="office-trade-wall-panel" tabindex="-1" aria-labelledby="office-trade-wall-title">
+  <div class="trade-wall-heading"><div><span class="world-kicker">TEAM COMMAND DISPLAY</span><h3 id="office-trade-wall-title">Trade wall</h3><p id="office-trade-wall-source" class="city-source"></p></div><strong id="office-trade-wall-net"></strong></div>
+  <canvas id="office-trade-wall-canvas" width="1920" height="640" role="img" aria-label="Team candlestick chart with entry and exit markers. Exact trade details appear in the table below."></canvas>
+  <p class="city-source">E = entry fill · X = exit fill. Markers appear only when their recorded time and price are inside the chart window. Missing fill details stay blank. Open positions are excluded from realized net results.</p>
+  <div class="table-scroll" tabindex="0" role="region" aria-label="Scroll team trade details"><table><thead><tr><th scope="col">State</th><th scope="col">Side</th><th scope="col">Quantity</th><th scope="col">Entry</th><th scope="col">Exit</th><th scope="col">Net after fees</th><th scope="col">Time</th><th scope="col">Exit reason / source</th></tr></thead><tbody id="office-trade-wall-rows"></tbody></table></div>
+  <details><summary>Order intents — separate from completed trades</summary><div id="office-trade-wall-orders"></div></details>
+ </section>
+ <div class="office-terminal-nav" role="group" aria-label="Inspect office terminals"><button type="button" data-office-terminal="market">01 / Market & chart</button><button type="button" data-office-terminal="signal">02 / Signal scanner</button><button type="button" data-office-terminal="performance">03 / Performance</button></div>
+ <div class="office-monitors">
+  <section class="monitor" id="office-market-panel" tabindex="-1"><div class="world-kicker">MARKET TERMINAL</div><h3 id="office-quote">No recorded price</h3><svg id="office-chart" viewBox="0 0 540 240" role="img" aria-label="Recorded close prices and indicator lines"></svg><p id="office-chart-note" class="city-source"></p></section>
+  <section class="monitor" id="office-signal-panel" tabindex="-1"><div class="world-kicker">SIGNAL SCANNER</div><h3 id="office-signal">Awaiting analysis</h3><ul id="office-votes" class="specialists"></ul><p id="office-rule" class="city-entry-state"></p></section>
+  <section class="monitor" id="office-performance-panel" tabindex="-1"><div class="world-kicker">PERFORMANCE TERMINAL</div><h3 id="office-earned">Not recorded</h3><p id="office-performance-note" class="city-source"></p><div id="office-recent-trades"></div><p id="office-manager" class="manager-note"></p></section>
+ </div>
+ <section class="monitor" style="margin-top:14px"><h3>Recent decisions and order intents</h3><ul id="office-decisions" class="process-list"></ul><p class="city-source">An order submission is an intent, not a closed trade or realized profit.</p></section>
+ <button id="office-controls" type="button" class="city-primary">Open team controls</button>
+</dialog>
+<section class="metrics" aria-label="Runtime overview">
+<div class="metric"><div class="metric-label">Recent heartbeats</div><div class="metric-value" id="fresh">—</div><div class="metric-detail">Fresh observations / ten teams</div></div>
+<div class="metric"><div class="metric-label">Configured teams</div><div class="metric-value" id="enabled">—</div><div class="metric-detail">Enabled configuration</div></div>
+<div class="metric"><div class="metric-label">Supervised processes</div><div class="metric-value" id="running">—</div><div class="metric-detail">Fresh process observations</div></div>
+</section>
+<section aria-labelledby="bots-title"><div class="section-head"><h2 id="bots-title" tabindex="-1">Ten specialist teams</h2><p>Configuration and observed health are shown separately.</p></div><div id="bots" class="bots" aria-busy="true"></div></section>
+<section class="panel" style="margin-top:24px" aria-labelledby="big-title"><div class="section-head"><h2 id="big-title">Big Manager</h2><span id="big-severity" class="pill muted">Awaiting report</span></div><p id="big-summary" class="muted">Ten team managers report here. Assessments await the backend.</p><p id="ai-summary" class="muted">Optional AI summary is disabled.</p><ul id="manager-hierarchy" class="process-list"></ul></section>
+<div class="lower">
+<section class="panel" aria-labelledby="process-title"><div class="section-head"><h2 id="process-title">Processes</h2><p id="process-count">Waiting for supervisor</p></div><ul class="process-list" id="processes"></ul></section>
+<section class="panel" aria-labelledby="event-title"><div class="section-head"><h2 id="event-title">Recent activity</h2><p id="event-count">Waiting for events</p></div><ul class="event-list" id="events" tabindex="0" aria-label="Recorded system events"></ul></section>
 </div>
-
+<footer><p>This page observes the backend. A heartbeat records worker activity. Filled orders and financial performance require separate broker records. Legacy scores are unverified.</p><span>Refreshes every 5 seconds</span></footer>
+<noscript><p class="alert">Enable JavaScript to view worker status, or open /api/status for JSON.</p></noscript>
+</main>
 <script>
-const STORAGE_KEY = "laylow-agency-trading-state-v1";
-
-const defaultState = {
-  startingBalance: 10000,
-  balance: 10000,
-  pnl: 0,
-  trades: 0,
-  wins: 0,
-  killed: false
-};
-
-const defaultWorkers = [
-  {
-    name: "QQQ Momentum",
-    sub: "Trend / breakout strategy",
-    pnl: 0
-  },
-  {
-    name: "SPY VWAP",
-    sub: "Mean-reversion strategy",
-    pnl: 0
-  },
-  {
-    name: "QQQ Trend",
-    sub: "Trend-following strategy",
-    pnl: 0
-  },
-  {
-    name: "Signal Scanner",
-    sub: "Scans market setups",
-    pnl: 0
-  }
+"use strict";
+const TEAM_DEFINITIONS=[
+{name:"SPY",asset:"S&P 500 ETF",bots:["Trend","VWAP","Momentum"],required:2},
+{name:"QQQ",asset:"Nasdaq 100 ETF",bots:["Trend","VWAP","Momentum"],required:2},
+{name:"AAPL",asset:"Apple",bots:["Trend","VWAP","Momentum","Volume Confirmation"],required:2},
+{name:"TSLA",asset:"Tesla",bots:["Breakout","Momentum","Volume-Volatility","Trend"],required:3},
+{name:"NQ1!",asset:"Nasdaq futures · WATCH ONLY",bots:["Trend","Momentum","Breakout"],required:2},
+{name:"ES1!",asset:"S&P futures · WATCH ONLY",bots:["Trend","VWAP","Momentum"],required:2},
+{name:"MGC1!",asset:"Micro gold futures · WATCH ONLY",bots:["Trend","Breakout","Mean Reversion"],required:2},
+{name:"MNQ1!",asset:"Micro Nasdaq futures · WATCH ONLY",bots:["Trend","Momentum","Breakout"],required:2},
+{name:"MES1!",asset:"Micro S&P futures · WATCH ONLY",bots:["Trend","VWAP","Momentum"],required:2},
+{name:"GC1!",asset:"Gold futures · WATCH ONLY",bots:["Trend","Breakout","Mean Reversion"],required:2}
 ];
-
-let state = loadState();
-let workers = loadWorkers();
-
-function money(value) {
-  const sign = value < 0 ? "-$" : "$";
-  return sign + Math.abs(value).toFixed(2);
+const HEALTH_LABELS={fresh:{label:"Recent heartbeat",tone:"good"},stale:{label:"Stale heartbeat",tone:"warn"},missing:{label:"No heartbeat",tone:"muted"},invalid:{label:"Invalid heartbeat",tone:"warn"}};
+const $=id=>document.getElementById(id);
+const localTime=new Intl.DateTimeFormat(undefined,{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+const shortTime=new Intl.DateTimeFormat(undefined,{hour:"2-digit",minute:"2-digit"});
+const fullTime=new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"medium"});
+let inFlight=false,pollTimer=null,lastReceivedAt=null,lastEventsSignature=null,receivedSnapshot=false;
+const cards=new Map();
+let csrfToken="", connected=false, controlBusy=false;
+function element(tag,className,content){
+  const node=document.createElement(tag);
+  if(className)node.className=className;
+  if(content!==undefined)node.textContent=String(content);
+  return node;
 }
-
-function saveState() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, workers }));
-  } catch (error) {
-    console.warn("Failed to save dashboard state:", error);
+function text(value,fallback="—"){return value===null||value===undefined||value===""?fallback:String(value);}
+function formatTime(value,formatter=localTime){
+  const parsed=Date.parse(value);return Number.isFinite(parsed)?formatter.format(new Date(parsed)):"Unknown time";
+}
+function age(value){
+  if(typeof value!=="number"||!Number.isFinite(value)||value<0)return "Unknown age";
+  if(value<60)return Math.floor(value)+" seconds ago";
+  if(value<3600)return Math.floor(value/60)+" minutes ago";
+  return Math.floor(value/3600)+" hours ago";
+}
+function number(value){return typeof value==="number"&&Number.isFinite(value)?String(value):"—";}
+function processTone(value){
+  const status=text(value,"unknown").toUpperCase();
+  if(["RUNNING","ALIVE"].includes(status))return "good";
+  if(["FAILED","ERROR","DOWN","EXITED","SHUTDOWN_FAILED"].includes(status))return "bad";
+  if(["STARTING","RESTARTING","STOPPING","STALE","BACKOFF"].includes(status))return "warn";
+  return "muted";
+}
+function metadata(label){
+  const cell=element("div"),value=element("dd","","Waiting");cell.append(element("dt","",label),value);return {cell,value};
+}
+function initializeCards(){
+  for(const def of TEAM_DEFINITIONS){
+    const card=element("article","bot");card.tabIndex=-1;card.setAttribute("aria-label",def.name+" Python worker");
+    const top=element("div","bot-top"),title=element("div"),health=element("span","pill muted","Waiting for status");
+    title.append(element("div","symbol",def.name),element("div","asset",def.asset));top.append(title,health);
+    const state=element("div","bot-state"),enabled=element("span","pill muted","Configuration unknown"),stateValue=element("span","","Not observed");
+    state.append(enabled,element("span","state-label","Worker:"),stateValue);
+    const data=element("dl"),heartbeat=metadata("Last heartbeat"),heartbeatAge=metadata("Heartbeat age"),pid=metadata("Process ID"),score=metadata("Legacy score · unverified");
+    data.append(heartbeat.cell,heartbeatAge.cell,pid.cell,score.cell);
+    const note=element("p","bot-note","Waiting for a status snapshot from the Python backend.");
+    const consensus=element("p","analysis-meta","Specialists await source bars"),
+          votes=element("ul","specialists"),
+          manager=element("p","manager-note","Team Manager: awaiting assessment");
+    let controls=null;
+    if(!def.name.endsWith("!")){
+      const wrapper=element("div","controls"), label=element("label","","Next earnings · ISO timestamp with timezone");
+      const input=element("input");input.type="text";input.placeholder="2026-11-01T21:00:00Z";input.id="earnings-"+def.name;
+      label.htmlFor=input.id;
+      const actions=element("div","control-actions"),save=element("button","","Save earnings"),
+            headline=element("button","","Enable headline lock"),
+            note=element("p","control-note","Earnings unknown · paper entries blocked");
+      save.type="button";headline.type="button";save.disabled=true;headline.disabled=true;
+      save.dataset.control="earnings";headline.dataset.control="headline";
+      actions.append(save,headline);wrapper.append(label,input,actions,note);
+      if(!["AAPL","TSLA"].includes(def.name)){label.hidden=true;input.hidden=true;save.hidden=true;}
+      const riskLabel=element("label","risk-brake-label","Paper profit brake · USD net per session (blank disables)");
+      const riskInput=element("input");riskInput.type="text";riskInput.inputMode="decimal";riskInput.id="profit-amount-"+def.name;riskInput.placeholder="Disabled";riskLabel.htmlFor=riskInput.id;
+      const riskSave=element("button","","Save profit brake");riskSave.type="button";riskSave.disabled=true;riskSave.dataset.control="profit-brake";
+      wrapper.append(riskLabel,riskInput,riskSave);
+      controls={wrapper,input,save,headline,note,riskInput,riskSave,riskDirty:false,locked:false,dirty:false,initialized:false};
+      riskInput.addEventListener("input",()=>{controls.riskDirty=true;});
+      riskSave.addEventListener("click",()=>mutateControl(def.name,"profit-brake",{amount:riskInput.value.trim()||null},controls));
+      input.addEventListener("input",()=>{controls.dirty=true;});
+      save.addEventListener("click",()=>mutateControl(def.name,"earnings",{earnings_at:input.value.trim()},controls));
+      headline.addEventListener("click",()=>mutateControl(def.name,"headline-lock",{locked:!controls.locked},controls));
+    }
+    card.append(top,state,data,consensus,votes,manager,note);if(controls)card.append(controls.wrapper);$("bots").append(card);
+    cards.set(def.name,{card,health,enabled,stateValue,heartbeat:heartbeat.value,heartbeatAge:heartbeatAge.value,pid:pid.value,score:score.value,note,consensus,votes,manager,controls});
+  }
+  $("processes").append(element("li","empty","Waiting for process observations."));
+  $("events").append(element("li","empty","Waiting for recorded events."));
+}
+function renderTeams(teams){
+  const byName=new Map(teams.filter(t=>t&&typeof t.name==="string").map(t=>[t.name,t]));
+  for(const def of TEAM_DEFINITIONS){
+    const row=cards.get(def.name),team=byName.get(def.name)||{};
+    const health=Object.prototype.hasOwnProperty.call(HEALTH_LABELS,team.health)?HEALTH_LABELS[team.health]:HEALTH_LABELS.missing;
+    row.health.className="pill "+health.tone;row.health.textContent=health.label;
+    row.enabled.className="pill "+(team.enabled===true?"good":"muted");
+    row.enabled.textContent=team.enabled===true?"Enabled":team.enabled===false?"Disabled":"Configuration unknown";
+    row.stateValue.textContent=text(team.worker_state,"Not observed");row.stateValue.className=processTone(team.worker_state);
+    row.heartbeat.textContent=team.heartbeat?formatTime(team.heartbeat):"No recorded heartbeat";
+    row.heartbeat.title=team.heartbeat?formatTime(team.heartbeat,fullTime):"";
+    row.heartbeatAge.textContent=team.heartbeat?age(team.heartbeat_age_seconds):"—";
+    row.pid.textContent=Number.isInteger(team.pid)&&team.pid>0?String(team.pid):"—";
+    row.score.textContent=typeof team.score==="number"&&Number.isFinite(team.score)?team.score.toFixed(2):"Not recorded";
+    row.note.textContent=text(team.notes,"No additional worker notes.");
+    const analysis=team.analysis||{}, metrics=analysis.indicators||{};
+    row.consensus.textContent=analysis.direction?
+      "Consensus "+text(analysis.direction)+" · "+text(analysis.agreement,"0")+"/"+def.bots.length+" · requires "+def.required+
+      " · ATR "+number(metrics.atr)+" · RVOL "+number(metrics.relative_volume)+" · "+text(analysis.reason,""):
+      "Requires "+def.required+"/"+def.bots.length+" directional votes · awaiting source bars";
+    row.votes.replaceChildren();
+    for(const name of def.bots){
+      const vote=(Array.isArray(analysis.votes)?analysis.votes:[]).find(item=>item.name===name)||{};
+      const item=element("li","",""+name+" · "+text(vote.direction,"Waiting"));
+      item.append(element("span","vote-reason",text(vote.reason,"No recorded analysis")));row.votes.append(item);
+    }
+    if(row.controls){
+      const control=team.controls||{}, fields=row.controls;
+      fields.locked=control.headline_locked===true;
+      fields.headline.textContent=fields.locked?"Release headline lock":"Enable headline lock";
+      fields.headline.setAttribute("aria-pressed",String(fields.locked));
+      if(!fields.dirty){fields.input.value=text(control.earnings_at,"");fields.initialized=true;}
+      fields.note.textContent=text(control.lock_reason,"No entry lock")+" · earnings "+text(control.earnings_status,"UNKNOWN");
+      if(!fields.riskDirty)fields.riskInput.value=control.profit_brake?.limit_cents==null?"":String(control.profit_brake.limit_cents/100);
+      fields.save.disabled=fields.headline.disabled=fields.riskSave.disabled=!csrfToken||controlBusy;
+    }
+  }
+  $("bots").setAttribute("aria-busy","false");
+}
+function renderProcesses(processes){
+  const list=$("processes");list.replaceChildren();$("process-count").textContent=processes.length+" observed";
+  if(!processes.length){list.append(element("li","empty","No supervised processes have been recorded."));return;}
+  for(const process of processes){
+    if(!process||typeof process!=="object")continue;
+    const item=element("li","process"),top=element("div","process-top");
+    let label=text(process.status,"Unknown"),tone=processTone(label);
+    if(["RUNNING","STARTING"].includes(label.toUpperCase())&&process.health!=="fresh"){
+      label+=" · "+text(process.health,"unknown")+" observation";tone="warn";
+    }
+    top.append(element("span","process-name",text(process.name,"Unnamed process")),element("span","pill "+tone,label));
+    const pid=Number.isInteger(process.pid)&&process.pid>0?String(process.pid):"—";
+    item.append(top,element("p","process-meta","PID "+pid+" · restarts "+number(process.restarts)+" · exit "+text(process.exit_code)));
+    if(process.notes)item.append(element("p","process-note",text(process.notes)));list.append(item);
   }
 }
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...defaultState };
-
-    const parsed = JSON.parse(raw);
-    return {
-      ...defaultState,
-      ...parsed.state,
-      startingBalance: parsed.state?.startingBalance ?? defaultState.startingBalance,
-      balance: parsed.state?.balance ?? defaultState.balance,
-      pnl: parsed.state?.pnl ?? defaultState.pnl,
-      trades: parsed.state?.trades ?? defaultState.trades,
-      wins: parsed.state?.wins ?? defaultState.wins,
-      killed: Boolean(parsed.state?.killed)
-    };
-  } catch (error) {
-    console.warn("Failed to load dashboard state:", error);
-    return { ...defaultState };
+function renderEvents(events){
+  const bounded=events.slice(0,30),signature=JSON.stringify(bounded);
+  if(signature===lastEventsSignature)return;lastEventsSignature=signature;
+  const list=$("events"),previousTop=list.scrollTop;list.replaceChildren();$("event-count").textContent=bounded.length+" recent";
+  if(!bounded.length){list.append(element("li","empty","No system events have been recorded yet."));return;}
+  for(const event of bounded){
+    if(!event||typeof event!=="object")continue;
+    const item=element("li","event"),time=element("time","",formatTime(event.created_at,shortTime)),content=element("div");
+    if(Number.isFinite(Date.parse(event.created_at))){time.dateTime=event.created_at;time.title=formatTime(event.created_at,fullTime);}
+    content.append(element("div","event-title",text(event.team_name,"System")+" · "+text(event.event_type,"Event")),element("p","event-detail",text(event.details,"No details recorded.")));
+    item.append(time,content);list.append(item);
+  }
+  list.scrollTop=previousTop<3?0:previousTop;
+}
+function validatePayload(payload){
+  if(!payload||typeof payload!=="object"||!Array.isArray(payload.teams)||!Array.isArray(payload.processes)||!Array.isArray(payload.events)||!payload.summary||typeof payload.summary!=="object"||!Number.isFinite(Date.parse(payload.generated_at))||(payload.database_available===false&&!payload.public_viewer))
+    throw new Error("Invalid or unavailable status snapshot.");
+  return payload;
+}
+function renderSnapshot(payload){
+  csrfToken=!payload.practice&&typeof payload.csrf_token==="string"?payload.csrf_token:"";connected=!payload.public_viewer||payload.practice===true;
+  for(const row of cards.values())if(row.controls)row.controls.wrapper.hidden=payload.practice===true;
+  renderTeams(payload.teams);renderProcesses(payload.processes);renderEvents(payload.events);renderCity(payload);window.LaylowVault?.update(payload);
+  $("fresh").textContent=number(payload.summary.fresh_workers)+" / "+TEAM_DEFINITIONS.length;$("enabled").textContent=number(payload.summary.enabled_teams)+" / "+TEAM_DEFINITIONS.length;
+  const reports=Array.isArray(payload.managers)?payload.managers:[], big=payload.big_manager||{};
+  $("big-severity").textContent=text(big.severity,"Awaiting report");
+  $("big-severity").className="pill "+severityTone(big.severity);
+  $("big-summary").textContent=text(big.summary,"Big Manager awaits ten team reports")+" · "+reportAge(big.generated_at);
+  $("ai-summary").textContent=big.ai_status==="ready"?text(big.ai_summary,"AI summary unavailable"):
+    "Optional AI summary: "+text(big.ai_status,"disabled")+" · rule assessments remain authoritative";
+  $("manager-hierarchy").replaceChildren();
+  for(const def of TEAM_DEFINITIONS){
+    const report=reports.find(row=>row.team_name===def.name)||{};
+    const label=def.name+" Team Manager · "+text(report.severity,"Waiting")+" · "+text(report.summary,"Awaiting assessment")+" · "+reportAge(report.generated_at);
+    cards.get(def.name).manager.textContent=label;
+    $("manager-hierarchy").append(element("li","process "+severityTone(report.severity),label));
+  }
+  $("running").textContent=number(payload.summary.running_processes);$("mode").textContent=text(payload.mode,"Python status")+" · futures watch-only";
+  $("updated").textContent="Snapshot "+formatTime(payload.generated_at)+" · received "+localTime.format(new Date(lastReceivedAt));
+  $("workspace").dataset.stale="false";$("snapshot-tag").hidden=true;$("error").hidden=true;
+  $("connection").className="good";$("connection").replaceChildren(element("i","dot"),document.createTextNode(payload.public_viewer?"Public viewer · backend not connected":"Backend connected"));
+  if(payload.public_viewer&&!payload.practice){$("connection").className="warn";$("mode").textContent="PUBLIC VIEWER · NO ORDER EXECUTION";$("updated").textContent="City and council preview · no worker service connected";$("city-world-status").textContent="PUBLIC VIEWER · Backend not connected";$("city-observation").textContent="Worker health and results unavailable.";}
+  if(payload.practice){
+   $("connection").className="warn";$("connection").replaceChildren(element("i","dot"),document.createTextNode("PRACTICE SIMULATION · FAKE MONEY"));
+   $("mode").textContent="PRACTICE · SYNTHETIC MARKET";$("updated").textContent="Generated quotes · no broker or real orders";
+   $("city-world-status").textContent="PRACTICE · $50,000 FAKE STARTING CASH";$("city-observation").textContent="Browser simulation · generated market prices";
+   $("city-render-note").textContent="Synthetic price chart · simulated bots · click a building to enter";
+   if(payload.live_price_practice){$("mode").textContent="PRACTICE · REAL IEX PRICES / FAKE FILLS";$("connection").className=payload.market_feed.live?"good":"warn";$("connection").replaceChildren(element("i","dot"),document.createTextNode("IEX "+payload.market_feed.status+" · FAKE MONEY"));$("updated").textContent=payload.market_feed.reason;$("city-observation").textContent=payload.market_feed.source;$("city-render-note").textContent="Observed stock bars · futures disconnected · simulated fills";}
+   $("ai-summary").textContent="Six rule-based council personalities; no external AI service is used in practice.";
+   for(const row of cards.values())if(row.controls)row.controls.wrapper.hidden=true;
+  }
+  $("connection").firstChild.setAttribute("aria-hidden","true");receivedSnapshot=true;
+}
+function reportFailure(){
+  connected=false;cityConnectionLost();
+  for(const row of cards.values()){if(row.controls){row.controls.save.disabled=true;row.controls.headline.disabled=true;row.controls.riskSave.disabled=true;}}
+  $("workspace").dataset.stale="true";$("connection").className="warn";
+  $("connection").replaceChildren(element("i","dot"),document.createTextNode(receivedSnapshot?"Connection lost":"Backend unavailable"));
+  $("connection").firstChild.setAttribute("aria-hidden","true");$("snapshot-tag").hidden=!receivedSnapshot;$("error").hidden=false;
+  $("error").textContent=receivedSnapshot?"Connection lost. Cards show the last snapshot received at "+localTime.format(new Date(lastReceivedAt))+"; their observations may now be stale. Retrying automatically.":"Could not load worker status. Start the Python runner and open this page from its dashboard address. Retrying automatically.";
+  if(!receivedSnapshot){$("updated").textContent="No status snapshot received";$("bots").setAttribute("aria-busy","false");}
+}
+function schedule(){
+  if(pollTimer!==null)clearTimeout(pollTimer);pollTimer=null;
+  if(!document.hidden)pollTimer=setTimeout(()=>{pollTimer=null;refreshStatus();},5000);
+}
+async function refreshStatus(){
+  if(window.LaylowServerPractice?.active()){window.LaylowServerPractice.refresh();return;}
+  if(window.LaylowPractice?.active()){window.LaylowPractice.refresh();return;}
+  if(inFlight)return;if(pollTimer!==null)clearTimeout(pollTimer);pollTimer=null;inFlight=true;
+  $("refresh").disabled=true;$("refresh").setAttribute("aria-busy","true");
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
+  try{
+    const response=await fetch("/api/status",{cache:"no-store",credentials:"same-origin",signal:controller.signal});
+    if(!response.ok)throw new Error("Status request failed.");
+    const payload=validatePayload(await response.json());if(!window.LaylowPractice?.active()&&!window.LaylowServerPractice?.active()){lastReceivedAt=Date.now();renderSnapshot(payload);}
+  }catch(error){if(!window.LaylowPractice?.active()&&!window.LaylowServerPractice?.active())reportFailure();}
+  finally{clearTimeout(timeout);inFlight=false;$("refresh").disabled=false;$("refresh").removeAttribute("aria-busy");schedule();}
+}
+function reportAge(value){
+  const stamp=Date.parse(value),seconds=(Date.now()-stamp)/1000;
+  if(!Number.isFinite(seconds)||seconds<0)return "Report timestamp unavailable";
+  return (seconds>90?"Stale manager report · ":"Report ")+age(seconds);
+}
+function severityTone(value){return value==="CRITICAL"?"bad":value==="CAUTION"?"warn":value==="INFO"?"good":"muted";}
+async function mutateControl(symbol,action,body,fields){
+  if(controlBusy||!connected||!csrfToken)return;
+  controlBusy=true;
+  for(const row of cards.values()){if(row.controls){row.controls.save.disabled=true;row.controls.headline.disabled=true;}}
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
+  try{
+    const response=await fetch("/api/teams/"+encodeURIComponent(symbol)+"/"+action,{
+      method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","X-Laylow-CSRF":csrfToken},
+      body:JSON.stringify(body),signal:controller.signal});
+    if(!response.ok)throw new Error("Save rejected. Check the saved value and refresh to retry.");
+    if(action==="earnings")fields.dirty=false;if(action==="profit-brake")fields.riskDirty=false;
+    fields.note.textContent="Saved. Refreshing backend controls.";
+  }catch(error){fields.note.textContent="Could not confirm save. Refresh to check controls; use a timezone-aware earnings timestamp or a positive profit amount.";}
+  finally{
+    clearTimeout(timeout);controlBusy=false;
+    await refreshStatus();
+    for(const row of cards.values()){if(row.controls){row.controls.save.disabled=row.controls.headline.disabled=row.controls.riskSave.disabled=!connected||!csrfToken;}}
   }
 }
+$("refresh").addEventListener("click",refreshStatus);
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){if(pollTimer!==null)clearTimeout(pollTimer);pollTimer=null;}
+  else if(!inFlight)refreshStatus();
+});
 
-function loadWorkers() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultWorkers.map(worker => ({ ...worker }));
-
-    const parsed = JSON.parse(raw);
-    const savedWorkers = Array.isArray(parsed.workers) ? parsed.workers : defaultWorkers;
-
-    return defaultWorkers.map((template, index) => ({
-      ...template,
-      ...(savedWorkers[index] || {})
-    }));
-  } catch (error) {
-    console.warn("Failed to load worker state:", error);
-    return defaultWorkers.map(worker => ({ ...worker }));
-  }
+/* The city is a view of the same Python snapshot used by the team cards. */
+const CITY_DISTRICTS=[
+ {name:"SPY",x:580,y:505,h:210,color:"#44edac"},
+ {name:"QQQ",x:1000,y:505,h:210,color:"#4acaff"},
+ {name:"AAPL",x:405,y:630,h:180,color:"#ff657e"},
+ {name:"TSLA",x:1175,y:630,h:180,color:"#ff455c"},
+ {name:"NQ1!",x:590,y:765,h:145,color:"#ac7bff"},
+ {name:"ES1!",x:990,y:765,h:145,color:"#49e5dc"},
+ {name:"MGC1!",x:330,y:795,h:110,color:"#ffd278"},
+ {name:"MNQ1!",x:1250,y:795,h:110,color:"#d889ff"},
+ {name:"MES1!",x:470,y:855,h:105,color:"#7be7c6"},
+ {name:"GC1!",x:1110,y:855,h:105,color:"#ffb14f"}
+];
+const cityNodes=new Map(),cityDock=new Map();
+let citySelected="SPY",citySnapshot=null;
+const cityMotionQuery=window.matchMedia("(prefers-reduced-motion: reduce)");
+function citySVG(tag,attrs={},content){
+ const result=document.createElementNS("http://www.w3.org/2000/svg",tag);
+ for(const [key,value] of Object.entries(attrs))result.setAttribute(key,String(value));
+ if(content!==undefined)result.textContent=content;
+ return result;
 }
-
-function renderWorkers() {
-  const container = document.getElementById("workers");
-  container.innerHTML = "";
-
-  workers.forEach(worker => {
-    const div = document.createElement("div");
-    div.className = "worker";
-
-    div.innerHTML = `
-      <div>
-        <div class="worker-name">${worker.name}</div>
-        <div class="worker-sub">${worker.sub}</div>
-      </div>
-
-      <div class="${worker.pnl >= 0 ? "positive" : "negative"}">
-        ${money(worker.pnl)}
-      </div>
-    `;
-
-    container.appendChild(div);
+function cityAdd(parent,tag,attrs={},content){const child=citySVG(tag,attrs,content);parent.append(child);return child;}
+function cityText(parent,x,y,content,size=14,color="#acbddb",extra={}){
+ return cityAdd(parent,"text",{x,y,fill:color,"font-size":size,"font-family":"system-ui,sans-serif",...extra},content);
+}
+function cityBlock(parent,x,y,width,depth,height,color,windows=true){
+ const a=[x,y],b=[x-width*.86,y-width*.5],c=[x+(depth-width)*.86,y-(depth+width)*.5],d=[x+depth*.86,y-depth*.5];
+ const up=p=>[p[0],p[1]-height],points=ps=>ps.map(p=>p.join(",")).join(" ");
+ cityAdd(parent,"polygon",{points:points([a,b,up(b),up(a)]),fill:"#11182b",stroke:color,"stroke-opacity":.5,"stroke-width":1,class:"tower-face"});
+ cityAdd(parent,"polygon",{points:points([a,d,up(d),up(a)]),fill:"#1b2340",stroke:color,"stroke-opacity":.55,"stroke-width":1,class:"tower-face"});
+ cityAdd(parent,"polygon",{points:points([up(a),up(b),up(c),up(d)]),fill:"#2b3157",stroke:color,"stroke-opacity":.75});
+ if(windows){
+  for(let row=12;row<height-7;row+=13){
+   for(let col=8;col<width-4;col+=10){
+    const lit=(Math.floor(row/13)+Math.floor(col/10)*3+Math.floor(x))%7!==0;
+    if(lit)cityAdd(parent,"path",{d:"M "+(x-col*.86)+" "+(y-col*.5-row)+" l -3 -1.75 l 0 -5 l 3 1.75 z",fill:color,opacity:((row+col)%5===0)?.9:.37});
+   }
+   for(let col=8;col<depth-4;col+=10){
+    const lit=(Math.floor(row/13)*3+Math.floor(col/10)+Math.floor(y))%6!==0;
+    if(lit)cityAdd(parent,"path",{d:"M "+(x+col*.86)+" "+(y-col*.5-row)+" l 3 -1.75 l 0 -5 l -3 1.75 z",fill:"#fff1ce",opacity:((row+col)%4===0)?.85:.4});
+   }
+  }
+ }
+ return {roof:y-height-(width+depth)*.25};
+}
+function cityRobot(parent,x,y,color,scale=1,className=""){
+ const robot=cityAdd(parent,"g",{transform:"translate("+x+" "+y+") scale("+scale+")",class:className});
+ cityAdd(robot,"ellipse",{cx:0,cy:19,rx:13,ry:5,fill:"#000",opacity:.6});
+ cityAdd(robot,"path",{d:"M -5 10 v 7 M 5 10 v 7 M -9 0 l -6 7 M 9 0 l 6 7",stroke:color,"stroke-width":4,"stroke-linecap":"round"});
+ cityAdd(robot,"rect",{x:-8,y:-1,width:16,height:13,rx:4,fill:"#141e38",stroke:color,"stroke-width":1.5});
+ cityAdd(robot,"path",{d:"M 0 -16 v -6",stroke:color,"stroke-width":1.5});
+ cityAdd(robot,"circle",{cx:0,cy:-23,r:2.5,fill:color});
+ cityAdd(robot,"rect",{x:-12,y:-16,width:24,height:18,rx:5,fill:"#101a31",stroke:color,"stroke-width":1.5});
+ cityAdd(robot,"rect",{x:-8,y:-12,width:16,height:9,rx:3,fill:"#050c16"});
+ const eyes=[cityAdd(robot,"circle",{cx:-4,cy:-7,r:2,fill:"#75839e",class:"robot-eye"}),cityAdd(robot,"circle",{cx:4,cy:-7,r:2,fill:"#75839e",class:"robot-eye"})];
+ cityAdd(robot,"path",{d:"M -3 7 h 6",stroke:color,"stroke-width":1});
+ return {robot,eyes};
+}
+function cityPanel(parent,x,y,width,heading,color){
+ const panel=cityAdd(parent,"g",{transform:"translate("+x+" "+y+")"});
+ cityAdd(panel,"rect",{width,height:69,rx:9,fill:"#050d1c","fill-opacity":.94,stroke:color,"stroke-opacity":.6});
+ cityText(panel,12,22,heading,17,color,{"font-weight":800});
+ const state=cityText(panel,12,42,"NOT OBSERVED",9,"#8494b1",{"letter-spacing":1});
+ const detail=cityText(panel,12,57,"Awaiting source bars",9,"#9baccc");
+ return {state,detail};
+}
+function initializeCity(){
+ const svg=$("city-map"),defs=cityAdd(svg,"defs");
+ for(const [id,color] of [["city-gold","#ffd278"],["city-purple","#ab6cff"],["city-water","#173159"]]){
+  const gradient=cityAdd(defs,"linearGradient",{id,x1:0,y1:0,x2:0,y2:1});
+  cityAdd(gradient,"stop",{offset:"0%","stop-color":color,"stop-opacity":id==="city-water"?.5:.8});
+  cityAdd(gradient,"stop",{offset:"100%","stop-color":color,"stop-opacity":0});
+ }
+ const glow=cityAdd(defs,"filter",{id:"city-glow",x:"-80%",y:"-80%",width:"260%",height:"260%"});
+ cityAdd(glow,"feGaussianBlur",{stdDeviation:3,result:"blur"});
+ const merge=cityAdd(glow,"feMerge");cityAdd(merge,"feMergeNode",{in:"blur"});cityAdd(merge,"feMergeNode",{in:"SourceGraphic"});
+ const sky=cityAdd(svg,"g",{"aria-hidden":true});
+ for(let i=0;i<96;i++){
+  const x=(i*157+31)%1600,y=(i*97+13)%320;
+  cityAdd(sky,"circle",{cx:x,cy:y,r:i%11===0?1.8:.8,fill:"#bed9ff",opacity:i%4===0?.7:.25});
+ }
+ cityAdd(sky,"ellipse",{cx:790,cy:550,rx:650,ry:300,fill:"url(#city-water)"});
+ // A quiet skyline sits behind the eight working districts.
+ for(let i=0;i<42;i++){
+  const x=70+i*36,y=375+(i%5)*14,h=24+(i*29)%115;
+  cityBlock(sky,x,y,18+(i%3)*7,18,h,"#48537b",true);
+ }
+ for(let i=0;i<13;i++)cityAdd(sky,"path",{d:"M "+(40+i*9)+" "+(700+i*11)+" Q 780 "+(850+i*8)+" "+(1560-i*9)+" "+(700+i*11),fill:"none",stroke:"#5c86c8","stroke-opacity":.06,"stroke-width":2});
+ const ground=cityAdd(svg,"g",{"aria-hidden":true});
+ cityAdd(ground,"path",{d:"M 200 610 L 790 300 L 1380 610 L 790 910 Z",fill:"#0d1730",stroke:"#344671","stroke-width":2});
+ cityAdd(ground,"path",{d:"M 200 610 L 790 910 L 1380 610 L 1380 626 L 790 926 L 200 626 Z",fill:"#18233e",stroke:"#5e54ad","stroke-width":1.5});
+ for(let i=1;i<12;i++){
+  const shift=i*49;
+  cityAdd(ground,"path",{d:"M "+(200+shift)+" "+(610-shift*.525)+" L "+(790+shift)+" "+(910-shift*.525),stroke:"#29416a","stroke-opacity":.37,fill:"none"});
+  cityAdd(ground,"path",{d:"M "+(200+shift)+" "+(610+shift*.509)+" L "+(790+shift)+" "+(300+shift*.525),stroke:"#29416a","stroke-opacity":.37,fill:"none"});
+ }
+ cityAdd(ground,"ellipse",{cx:790,cy:612,rx:395,ry:184,fill:"none",stroke:"#070c16","stroke-width":27});
+ cityAdd(ground,"ellipse",{cx:790,cy:612,rx:395,ry:184,fill:"none",stroke:"#665492","stroke-width":1.3});
+ cityAdd(ground,"ellipse",{cx:790,cy:612,rx:395,ry:184,fill:"none",stroke:"#dfc193","stroke-opacity":.62,"stroke-width":1.5,"stroke-dasharray":"4 19"});
+ cityAdd(ground,"ellipse",{cx:790,cy:573,rx:127,ry:53,fill:"#151726",stroke:"#dfaa54","stroke-width":2});
+ cityAdd(ground,"ellipse",{cx:790,cy:573,rx:102,ry:41,fill:"#113654",stroke:"#4cb5de","stroke-width":2});
+ cityAdd(ground,"ellipse",{cx:790,cy:573,rx:81,ry:31,fill:"#22627a","fill-opacity":.35,stroke:"#83e7ff","stroke-width":1,"stroke-dasharray":"3 12"});
+ for(let i=0;i<56;i++){
+  const theta=i*Math.PI*2/56,x=790+Math.cos(theta)*460,y=612+Math.sin(theta)*221;
+  cityAdd(ground,"ellipse",{cx:x,cy:y+5,rx:5,ry:2,fill:"#000",opacity:.55});
+  cityAdd(ground,"path",{d:"M "+x+" "+(y-13)+" l -5 15 h 10 z",fill:i%3===0?"#398b84":"#274e63"});
+  if(i%2===0)cityAdd(ground,"circle",{cx:x,cy:y+6,r:2,fill:"#e1ba7a",filter:"url(#city-glow)"});
+ }
+ // Connection paths only brighten when a recent manager report exists.
+ const wires=cityAdd(svg,"g",{"aria-hidden":true});
+ for(const district of CITY_DISTRICTS){
+  district.wire=cityAdd(wires,"path",{d:"M "+district.x+" "+district.y+" Q "+district.x+" 820 790 830",fill:"none",stroke:district.color,"stroke-width":1.5,"stroke-dasharray":"5 9",opacity:.16,class:"city-wire"});
+ }
+ const architecture=cityAdd(svg,"g");
+ // The Vault shows recorded counts, never invented trading earnings.
+ const vault=cityAdd(architecture,"g",{class:"city-hq-building",role:"button",tabindex:0,"aria-label":"Open The Vault payroll"});
+ bindCityBuilding(vault,"THE VAULT");
+ cityAdd(vault,"path",{d:"M 769 0 H 811 L 799 276 H 781 Z",fill:"url(#city-gold)",class:"city-ambient"});
+ cityAdd(vault,"path",{d:"M 790 0 V 276",stroke:"#ffe9aa","stroke-width":4,filter:"url(#city-glow)",opacity:.85});
+ cityBlock(vault,790,574,110,110,20,"#ffd278",false);
+ cityBlock(vault,790,555,78,78,265,"#e5b454");
+ cityBlock(vault,790,290,55,55,55,"#ffd278");
+ cityBlock(vault,790,235,28,28,30,"#ffd278",false);
+ cityAdd(vault,"ellipse",{cx:790,cy:204,rx:41,ry:14,fill:"none",stroke:"#ffdc8f","stroke-width":2,filter:"url(#city-glow)"});
+ cityAdd(vault,"path",{d:"M 764 315 l 4 18 h 43 l 4 -18 l -14 9 l -12 -18 l -11 18 z",fill:"none",stroke:"#ffd278","stroke-width":2.5});
+ cityText(vault,790,363,"THE VAULT",25,"#ffe5a5",{"text-anchor":"middle","font-weight":800,"letter-spacing":2});
+ cityText(vault,790,389,"RECORDED ACTIVITY",9,"#b1a78d",{"text-anchor":"middle","letter-spacing":2});
+ const vaultCount=cityText(vault,790,420,"— / 10",30,"#ffda81",{"text-anchor":"middle","font-weight":750,id:"city-vault-count"});
+ cityText(vault,790,441,"RECORDED ACTIVITY",8,"#d2bf94",{"text-anchor":"middle","letter-spacing":1});
+ cityText(vault,790,462,"P&L VIA TRADE EXPORT",10,"#b1a78d",{"text-anchor":"middle"});
+ for(const district of CITY_DISTRICTS){
+  const def=TEAM_DEFINITIONS.find(row=>row.name===district.name);
+  const group=cityAdd(architecture,"g",{class:"city-tower",role:"button",tabindex:0,"data-team":district.name,"data-observed":false,"data-selected":false,"aria-pressed":false,"aria-label":district.name+" district, not observed"});
+  cityAdd(group,"title",{},district.name+" team. Click or press Enter to open its bot office.");
+  cityAdd(group,"ellipse",{cx:district.x,cy:district.y-21,rx:99,ry:40,fill:district.color,"fill-opacity":.09,stroke:district.color,"stroke-width":2,filter:"url(#city-glow)",class:"tower-selection"});
+  cityBlock(group,district.x,district.y,78,78,13,district.color,false);
+  cityBlock(group,district.x,district.y-13,51,51,district.h,district.color);
+  const roof=district.y-13-district.h-25.5;
+  const halo=cityAdd(group,"ellipse",{cx:district.x,cy:roof+7,rx:39,ry:13,fill:"none",stroke:district.color,"stroke-width":2,filter:"url(#city-glow)",class:"status-halo"});
+  const roofBot=cityRobot(group,district.x,roof-19,district.color,1.6,"city-floating");
+  cityText(group,district.x,roof+74,district.name,22,"#fff",{"text-anchor":"middle",class:"city-team-symbol"});
+  cityText(group,district.x,roof+94,district.name.endsWith("!")?"WATCH ONLY":"STOCK TEAM",7,district.color,{"text-anchor":"middle","letter-spacing":1});
+  cityAdd(group,"path",{d:"M "+district.x+" "+(roof+7)+" V "+(roof-86),stroke:district.color,"stroke-width":2,"stroke-opacity":.2});
+  const labelX=district.x<790?district.x-171:district.x+59;
+  const panel=cityPanel(group,labelX,roof-22,140,district.name,district.color);
+  const specialists=[];
+  for(let index=0;index<def.bots.length;index++){
+   const robot=cityRobot(group,district.x-48+index*31,district.y+8+index*6,district.color,.75,"city-specialist");
+   cityAdd(robot.robot,"title",{},def.bots[index]+" specialist, awaiting analysis");
+   specialists.push({...robot,name:def.bots[index]});
+  }
+  const manager=cityRobot(group,district.x+69,district.y-30,district.color,.9,"city-team-manager");
+  cityAdd(manager.robot,"title",{},district.name+" Team Manager, awaiting report");
+  cityText(group,district.x+69,district.y-1,"TM",7,district.color,{"text-anchor":"middle"});
+  cityNodes.set(district.name,{group,halo,roofBot,specialists,manager,panel,district,def});
+  group.addEventListener("click",()=>openCityBuilding(district.name));
+  group.addEventListener("keydown",event=>{
+   if(event.key==="Enter"||event.key===" "){event.preventDefault();openCityBuilding(district.name);}
   });
+  const button=element("button","",""+district.name),state=element("span","dock-state");
+  button.type="button";button.dataset.team=district.name;button.style.setProperty("--district-color",district.color);button.setAttribute("aria-pressed","false");
+  state.setAttribute("aria-hidden","true");button.append(state);$("city-dock").append(button);
+  button.addEventListener("click",()=>selectCityDistrict(district.name,true));
+  cityDock.set(district.name,{button,state});
+ }
+ const big=cityAdd(architecture,"g",{class:"city-big-manager city-hq-building",role:"button",tabindex:0,"aria-label":"Open Big Manager reports"});
+ bindCityBuilding(big,"BIG MANAGER");
+ cityBlock(big,790,835,98,98,16,"#ab6cff",false);
+ cityBlock(big,790,819,65,65,173,"#ab6cff");
+ cityAdd(big,"ellipse",{cx:790,cy:610,rx:50,ry:17,fill:"none",stroke:"#c998ff","stroke-width":2,filter:"url(#city-glow)"});
+ const bigBot=cityRobot(big,790,587,"#bd85ff",1.8,"city-floating");
+ cityText(big,790,715,"BIG MANAGER",14,"#d7beff",{"font-weight":750,"text-anchor":"middle","letter-spacing":1});
+ cityText(big,790,734,"10 TEAM MANAGERS",8,"#c5b4e5",{"text-anchor":"middle","letter-spacing":1});
+ cityAdd(big,"rect",{x:767,y:753,width:46,height:33,rx:6,fill:"#8b40e0","fill-opacity":.25,stroke:"#ba8bff"});
+ cityText(big,790,776,"AI",22,"#eddbff",{"font-weight":750,"text-anchor":"middle"});
+ cityNodes.set("BIG",{group:big,roofBot:bigBot});
+ // Council headquarters has its own entrance, separate from the ten trading teams.
+ const council=cityAdd(architecture,"g",{class:"city-council-building city-hq-building",role:"button",tabindex:0,"aria-label":"Open The Council chamber"});
+ bindCityBuilding(council,"THE COUNCIL");
+ cityAdd(council,"title",{},"The Council. Click or press Enter to enter the six-member council chamber.");
+ cityBlock(council,790,905,132,28,10,"#70e2e8",false);
+ cityBlock(council,790,895,110,28,56,"#70e2e8");
+ cityAdd(council,"ellipse",{cx:790,cy:812,rx:61,ry:14,fill:"#152b43",stroke:"#ffe0a2","stroke-width":2,filter:"url(#city-glow)"});
+ const councilColors=["#70e2e8","#ac7bff","#ffd278","#ff657e","#44edac","#4acaff"];
+ councilColors.forEach((color,index)=>cityRobot(council,745+index*18,807+Math.abs(2.5-index)*2,color,.58));
+ cityText(council,790,864,"THE COUNCIL",13,"#cefcff",{"font-weight":800,"text-anchor":"middle","letter-spacing":1});
+ cityText(council,790,882,"6 VOICES · ENTER",8,"#ffe0a2",{"text-anchor":"middle","letter-spacing":1});
+
+ $("city-motion").addEventListener("click",()=>setCityMotion($("world").dataset.motion!=="on"));
+ const motionChanged=()=>{if(cityMotionQuery.matches)setCityMotion(false);};
+ if(cityMotionQuery.addEventListener)cityMotionQuery.addEventListener("change",motionChanged);
+ setCityMotion(false);selectCityDistrict(citySelected,false);
+ $("city-open-team").addEventListener("click",()=>{
+  const card=cards.get(citySelected).card;card.scrollIntoView({behavior:cityMotionQuery.matches?"auto":"smooth",block:"start"});
+  const focus=card.querySelector("button:not([hidden])")||card;focus.focus({preventScroll:true});
+ });
+ requestAnimationFrame(()=>{const pan=$("city-pan");if(pan.scrollWidth>pan.clientWidth)pan.scrollLeft=790*svg.getBoundingClientRect().width/1600-pan.clientWidth/2;});
+}
+function setCityMotion(enabled){
+ const on=enabled&&!cityMotionQuery.matches;
+ $("world").dataset.motion=on?"on":"off";$("city-motion").setAttribute("aria-pressed",String(on));
+ $("city-motion").textContent=cityMotionQuery.matches?"Motion reduced":on?"Ambient motion on":"Ambient motion off";
+ $("city-motion").disabled=cityMotionQuery.matches;
+}
+function cityRecentReport(report){
+ if(!report||!report.generated_at)return false;
+ const elapsed=Date.now()-Date.parse(report.generated_at);return Number.isFinite(elapsed)&&elapsed>=-30000&&elapsed<=90000;
+}
+function cityAnalysisRecent(analysis){
+ if(!analysis)return false;
+ const elapsed=Date.now()-Date.parse(analysis.updated_at||analysis.observed_at||"");
+ return Number.isFinite(elapsed)&&elapsed>=-30000&&elapsed<=90000&&analysis.state==="READY";
+}
+function cityEyes(robot,color){for(const eye of robot.eyes)eye.setAttribute("fill",color);}
+function bindCityBuilding(node,name){
+ node.addEventListener("click",()=>openCityBuilding(name));
+ node.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();openCityBuilding(name);}});
+}
+function openCityBuilding(name){
+ if(name==="BIG MANAGER"&&window.LaylowBigManager){window.LaylowBigManager.enter();return;}
+ if(name==="THE VAULT"&&window.LaylowVault){window.LaylowVault.enter();return;}
+ if(name==="THE COUNCIL"&&window.LaylowCouncil?.enter){window.LaylowCouncil.enter();return;}
+ const destination=name==="THE COUNCIL"?"council-title":name==="THE VAULT"?"payroll-title":name==="BIG MANAGER"?"big-title":null;
+ if(destination){const section=$(destination);section.tabIndex=-1;section.scrollIntoView({behavior:cityMotionQuery.matches?"auto":"smooth",block:"start"});section.focus({preventScroll:true});return;}
+ if(!TEAM_DEFINITIONS.some(team=>team.name===name))return;
+ selectCityDistrict(name,false);enterOffice(name);
+}
+function selectCityDistrict(symbol,panTo=false){
+ citySelected=symbol;
+ for(const [name,row] of cityNodes){
+  if(name==="BIG")continue;
+  const selected=name===symbol;row.group.dataset.selected=String(selected);row.group.setAttribute("aria-pressed",String(selected));
+  cityDock.get(name).button.setAttribute("aria-pressed",String(selected));
+  const card=cards.get(name).card;card.classList.toggle("city-selected",selected);card.style.setProperty("--district-color",row.district.color);
+ }
+ renderCityInspector();window.Laylow3D?.select();
+ if(panTo){
+  const pan=$("city-pan");if(pan.scrollWidth>pan.clientWidth){
+   pan.scrollTo({left:cityNodes.get(symbol).district.x*$("city-map").getBoundingClientRect().width/1600-pan.clientWidth/2,behavior:cityMotionQuery.matches?"auto":"smooth"});
+  }
+ }
+}
+function renderCityInspector(){
+ const row=cityNodes.get(citySelected);if(!row)return;
+ const team=(citySnapshot?.teams||[]).find(item=>item.name===citySelected)||{};
+ const analysis=team.analysis||{},fresh=connected&&team.health==="fresh",current=connected&&cityAnalysisRecent(analysis);
+ const votes=Array.isArray(analysis.votes)?analysis.votes:[],report=(citySnapshot?.managers||[]).find(item=>item.team_name===citySelected)||{};
+ $("city-inspector").style.setProperty("--district-color",row.district.color);
+ $("city-team-title").textContent=citySelected;$("city-team-asset").textContent=row.def.asset;
+ const state=$("city-team-state");state.textContent=!connected&&citySnapshot?"Last snapshot":fresh?text(team.worker_state,"Observed"):team.health==="stale"?"Heartbeat stale":"Not observed";
+ state.className="pill "+(fresh?processTone(team.worker_state):"muted");
+ $("city-consensus").textContent=analysis.direction?(current?"Consensus ":"Last recorded ")+text(analysis.direction):"Awaiting analysis";
+ $("city-agreement").textContent=(analysis.direction?text(analysis.agreement,"0")+"/"+row.def.bots.length+" recorded votes · ":"")+row.def.required+"/"+row.def.bots.length+" required"+(citySelected.endsWith("!")?" · WATCH ONLY":"");
+ $("city-atr").textContent=number(analysis.indicators?.atr);$("city-rvol").textContent=number(analysis.indicators?.relative_volume);
+ $("city-bot-list").replaceChildren();
+ for(const name of row.def.bots){
+  const vote=votes.find(item=>item.name===name)||{},item=element("li"),avatar=element("span","bot-avatar");
+  avatar.setAttribute("aria-hidden","true");
+  const icon=citySVG("svg",{viewBox:"0 0 24 24"});cityAdd(icon,"rect",{x:4,y:6,width:16,height:13,rx:3,fill:"none",stroke:"currentColor"});
+  cityAdd(icon,"path",{d:"M 12 3 v 3 M 8 12 h 2 M 14 12 h 2 M 9 16 h 6",stroke:"currentColor","stroke-width":1.5});avatar.append(icon);
+  const direction=element("span","city-vote",text(vote.direction,"Waiting"));direction.classList.add(current&&vote.direction==="LONG"?"good":current&&vote.direction==="SHORT"?"bad":"muted");
+  item.append(avatar,element("span","city-bot-name",name),direction);item.title=text(vote.reason,"No recorded analysis");item.classList.add("office-bot-open");item.tabIndex=0;item.setAttribute("role","button");item.setAttribute("aria-label","Enter "+name+" bot office");item.addEventListener("click",()=>enterOffice(citySelected,name));item.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();enterOffice(citySelected,name);}});$("city-bot-list").append(item);
+ }
+ $("city-manager-note").textContent=report.summary?"Team Manager · "+text(report.severity)+" · "+text(report.summary)+" · "+reportAge(report.generated_at):"Team Manager awaits a recorded assessment.";
+ $("city-analysis-time").textContent=analysis.direction?"Recorded source "+text(analysis.source,"unavailable")+" · bar "+formatTime(analysis.bar_time)+" · "+text(analysis.state,"state unavailable")+(current?"":" · freshness unconfirmed"):"No source bars recorded.";
+ const control=team.controls||{};
+ $("city-entry-state").textContent=citySelected.endsWith("!")?"Watch only · this futures district cannot send orders.":!connected?"Connection unavailable · controls disabled.":citySnapshot?.mode==="observe"?"Observe mode · analysis only. "+text(control.lock_reason,""):control.entry_locked===true?"Entry locked · "+text(control.lock_reason):"Entry controls · "+text(control.lock_reason,"see team details");
+ if(citySnapshot?.practice){$("city-team-asset").textContent=row.def.asset.replace(" · WATCH ONLY","")+" · PRACTICE";$("city-agreement").textContent=analysis.agreement+"/"+row.def.bots.length+" simulated votes · "+row.def.required+" required";$("city-entry-state").textContent="Sandbox only · "+(team.worker_state==="PROFIT_BRAKE_HIT"?"$300 team profit brake reached":"simulated entries require council approval");}
+ $("city-open-team").textContent="Open "+citySelected+" team "+(citySelected.endsWith("!")?"details":"controls")+" ↗";
+}
+function renderCity(snapshot){
+ citySnapshot=snapshot;
+ let observed=0,recordedVotes=0,managers=0;
+ for(const district of CITY_DISTRICTS){
+  const row=cityNodes.get(district.name),team=(snapshot.teams||[]).find(item=>item.name===district.name)||{};
+  const fresh=connected&&team.health==="fresh",analysis=team.analysis||{},current=connected&&cityAnalysisRecent(analysis);
+  const votes=Array.isArray(analysis.votes)?analysis.votes:[],report=(snapshot.managers||[]).find(item=>item.team_name===district.name)||{};
+  const reportCurrent=connected&&cityRecentReport(report);
+  if(fresh)observed++;recordedVotes+=row.def.bots.filter(name=>votes.some(vote=>vote.name===name)).length;if(reportCurrent)managers++;
+  row.group.dataset.observed=String(fresh);
+  const state=!connected?"LAST SNAPSHOT":fresh?text(team.worker_state,"OBSERVED"):team.health==="stale"?"HEARTBEAT STALE":"NOT OBSERVED";
+  row.group.setAttribute("aria-label",district.name+" office, "+state+". Click or press Enter to open.");
+  row.panel.state.textContent=state;row.panel.state.setAttribute("fill",fresh&&["RUNNING","ALIVE","READY"].includes(team.worker_state)?"#42e2ad":"#9eacc9");
+  row.panel.detail.textContent=analysis.direction?(current?"Consensus ":"Recorded ")+text(analysis.direction)+" · "+text(analysis.agreement,"0")+"/"+row.def.bots.length:"Awaiting source bars";
+  cityEyes(row.roofBot,fresh?district.color:"#75839e");
+  for(const bot of row.specialists){
+   const vote=votes.find(item=>item.name===bot.name)||{};
+   cityEyes(bot,current?(vote.direction==="LONG"?"#42e2ad":vote.direction==="SHORT"?"#ff697d":"#ffc56a"):"#75839e");
+   bot.robot.querySelector("title").textContent=bot.name+" · "+text(vote.direction,"Waiting")+" · "+text(vote.reason,"No recorded analysis")+(current?"":" · last recorded or unconfirmed");
+  }
+  cityEyes(row.manager,reportCurrent?(report.severity==="CRITICAL"?"#ff697d":report.severity==="CAUTION"?"#ffc56a":district.color):"#75839e");
+  district.wire.setAttribute("opacity",reportCurrent?.5:.12);
+  const dock=cityDock.get(district.name);dock.state.style.background=fresh&&["RUNNING","ALIVE","READY"].includes(team.worker_state)?"#42e2ad":fresh?"#ffc56a":"#69738d";dock.button.setAttribute("aria-label",district.name+" · "+state);
+ }
+ const big=snapshot.big_manager||{};cityEyes(cityNodes.get("BIG").roofBot,connected&&cityRecentReport(big)?"#c998ff":"#75839e");
+ $("city-fresh").textContent=observed+" / "+TEAM_DEFINITIONS.length;$("city-vault-count").textContent=observed+" / "+TEAM_DEFINITIONS.length;$("city-votes").textContent=recordedVotes?recordedVotes+" / 32":"Not recorded";$("city-managers").textContent=managers+" / "+TEAM_DEFINITIONS.length;
+ $("city-observation").textContent=connected?"Recorded Python status · "+formatTime(snapshot.generated_at):"Connection lost · city shows the last snapshot.";
+ $("city-world-status").textContent=connected?"BACKEND CONNECTED · "+text(snapshot.mode,"unknown").toUpperCase()+" MODE":"CONNECTION LOST · OBSERVATIONS UNCONFIRMED";
+ renderCityInspector();renderExtended(snapshot);window.Laylow3D?.update(snapshot,connected);
+}
+function cityConnectionLost(){
+ if(citySnapshot)renderCity(citySnapshot);
+ else {$("city-world-status").textContent="BACKEND UNAVAILABLE · WAITING FOR PYTHON";$("city-observation").textContent="No worker observations available.";renderCityInspector();}
 }
 
-function updateDashboard() {
-  document.getElementById("equity").innerText = money(state.balance);
-  document.getElementById("pnl").innerText = money(state.pnl);
-  document.getElementById("vault").innerText = money(state.pnl);
-  document.getElementById("trades").innerText = state.trades;
 
-  const winRate = state.trades
-    ? Math.round((state.wins / state.trades) * 100)
-    : 0;
-
-  document.getElementById("winRate").innerText = winRate + "%";
-
-  const pnlClass = state.pnl >= 0 ? "value positive" : "value negative";
-  document.getElementById("pnl").className = pnlClass;
-
-  document.getElementById("vault").className =
-    "vault-value " + (state.pnl >= 0 ? "positive" : "negative");
-
-  renderWorkers();
+let officeTeam=null,officeDesk=null,officeOpener=null;
+const money=cents=>typeof cents==="number"&&Number.isFinite(cents)?new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",signDisplay:"exceptZero"}).format(cents/100):"Not recorded";
+function chartEmpty(svg,message){svg.replaceChildren();cityText(svg,20,100,message,14,"#93a5c5");}
+function renderBarChart(payroll){
+ const svg=$("payroll-chart");svg.replaceChildren();
+ if(!payroll?.available||!payroll.daily?.length){chartEmpty(svg,"No recorded daily results");return;}
+ const rows=payroll.daily.slice(-30),max=Math.max(1,...rows.map(row=>Math.abs(row.net_cents))),zero=112;
+ cityAdd(svg,"line",{x1:15,x2:465,y1:zero,y2:zero,stroke:"#485778"});
+ const width=440/rows.length;
+ for(let index=0;index<rows.length;index++){
+  const row=rows[index],height=Math.abs(row.net_cents)*85/max,x=20+index*width;
+  const rect=cityAdd(svg,"rect",{x,y:row.net_cents>=0?zero-height:zero,width:Math.max(2,width-4),height:Math.max(.8,height),fill:row.net_cents>=0?"#42e2ad":"#ff697d",rx:2});
+  cityAdd(rect,"title",{},row.day+" · "+money(row.net_cents));
+ }
+ cityText(svg,15,213,rows[0].day,10);cityText(svg,465,213,rows[rows.length-1].day,10,"#93a5c5",{"text-anchor":"end"});
 }
-
-function addLog(text) {
-  const log = document.getElementById("log");
-  const time = new Date().toLocaleTimeString();
-  log.innerHTML = time + " - " + text + "<br>" + log.innerHTML;
+function renderExtended(snapshot){
+ window.LaylowCouncil?.update(snapshot,connected);
+ const payroll=snapshot.payroll||{},workers=Array.isArray(payroll.workers)?payroll.workers:[],reports=snapshot.teams||[];
+ $("city-net").textContent=money(payroll.total_net_cents);$("city-net").className=payroll.total_net_cents>0?"good":payroll.total_net_cents<0?"bad":"muted";
+ $("payroll-today").textContent=money(payroll.total_net_cents);$("payroll-total").textContent=money(payroll.all_time_net_cents);
+ $("payroll-trades").textContent=payroll.available?String(workers.reduce((sum,row)=>sum+(row.closed_trades||0),0)):"—";
+ for(const [id,value]of[["payroll-today",payroll.total_net_cents],["payroll-total",payroll.all_time_net_cents]])$(id).className=value>0?"good":value<0?"bad":"muted";
+ const sources=Array.isArray(payroll.sources)?payroll.sources:[];
+ $("payroll-source").textContent=payroll.available?(connected?"PAPER EXPORT · ":"LAST SNAPSHOT · ")+text(payroll.day)+" · "+(payroll.fresh&&connected?"Recent export":"Export not current"):"No closed-trade export";
+ $("payroll-basis").textContent=payroll.available?text(payroll.basis)+" · Session day: "+text(payroll.timezone)+" · "+sources.map(row=>text(row.source)+" as of "+formatTime(row.as_of,fullTime)).join("; "):"Closed trades, wins and earnings await a complete paper-trade export. Order intents do not count as earnings.";
+ $("payroll-rows").replaceChildren();
+ for(const def of TEAM_DEFINITIONS){
+  const worker=workers.find(row=>row.team_name===def.name)||{},team=reports.find(row=>row.name===def.name)||{},tr=element("tr");
+  const status=def.name.endsWith("!")?"WATCH ONLY":team.controls?.profit_brake?.status==="PROFIT_BRAKE_HIT"?"PROFIT BRAKE HIT":text(team.worker_state,"Not observed");
+  for(const value of[def.name,payroll.available?number(worker.closed_trades):"—",payroll.available?number(worker.wins):"—",money(worker.net_cents),!connected&&citySnapshot?"Last snapshot":status])tr.append(element("td","",value));
+  tr.children[3].className=worker.net_cents>0?"good":worker.net_cents<0?"bad":"muted";$("payroll-rows").append(tr);
+ }
+ if(snapshot.practice){$("payroll-source").textContent="SIMULATED SESSION · FAKE MONEY";for(const tr of $("payroll-rows").children){const team=reports.find(row=>row.name===tr.children[0].textContent);tr.lastChild.textContent="SIM · "+text(team?.worker_state);}}
+ renderBarChart(payroll);
+ const best=(payroll.daily||[]).reduce((winner,row)=>!winner||row.net_cents>winner.net_cents?row:winner,null);
+ $("payroll-chart-note").textContent=best?"Best recorded day: "+best.day+" · "+money(best.net_cents)+" · net of stated fees.":"No recorded earnings available.";
+ const vaultLabel=$("city-vault-count");if(vaultLabel&&payroll.available)vaultLabel.textContent=money(payroll.total_net_cents);
+ if(snapshot.practice&&vaultLabel)vaultLabel.textContent=money(snapshot.account.equity_cents);
+ if($("office-dialog").open)renderOffice();
 }
-
-function resetAccount() {
-  state = { ...defaultState };
-  workers = defaultWorkers.map(worker => ({ ...worker }));
-  saveState();
-  addLog("Account reset. Starting balance restored.");
-  updateDashboard();
+function enterOffice(symbol,desk="Team Manager"){
+ officeOpener=document.activeElement;officeTeam=symbol;officeDesk=desk;
+ const def=TEAM_DEFINITIONS.find(row=>row.name===symbol);if(!def)return;
+ $("office-worker").replaceChildren();
+ for(const name of["Team Manager",...def.bots]){const option=element("option","",name);option.value=name;$("office-worker").append(option);}
+ $("office-worker").value=desk;
+ if(!$("office-dialog").open)$("office-dialog").showModal();
+ renderOffice();window.Laylow3D?.enter(symbol);if(desk!=="Team Manager")window.Laylow3D?.focusOfficeWorker(desk);$("office-close").focus();
 }
-
-function paperTrade() {
-  if (state.killed) {
-    addLog("Trade blocked. Kill switch is ON.");
-    return;
-  }
-
-  const symbol = document.getElementById("symbol").value;
-  const direction = document.getElementById("direction").value;
-  const risk = Number(document.getElementById("risk").value);
-  const lossLimit = Number(document.getElementById("lossLimit").value);
-
-  if (!Number.isFinite(risk) || risk <= 0) {
-    addLog("Risk amount must be a positive number.");
-    return;
-  }
-
-  if (!Number.isFinite(lossLimit) || lossLimit <= 0) {
-    addLog("Daily loss limit must be a positive number.");
-    return;
-  }
-
-  if (state.pnl <= -lossLimit) {
-    state.killed = true;
-    saveState();
-    addLog("Daily loss limit reached.");
-    updateDashboard();
-    return;
-  }
-
-  const workerIndex = Math.floor(Math.random() * workers.length);
-  const win = Math.random() < 0.47;
-
-  let result;
-
-  if (win) {
-    result = risk * (0.5 + Math.random() * 1.5);
-  } else {
-    result = -risk * (0.5 + Math.random() * 0.5);
-  }
-
-  result = Math.round(result * 100) / 100;
-
-  state.balance += result;
-  state.pnl += result;
-  state.trades++;
-  workers[workerIndex].pnl += result;
-
-  if (win) {
-    state.wins++;
-  }
-
-  addLog(
-    workers[workerIndex].name +
-    " | " +
-    symbol +
-    " " +
-    direction +
-    " | " +
-    money(result)
-  );
-
-  saveState();
-  updateDashboard();
+function officeChart(analysis){
+ const svg=$("office-chart"),bars=(Array.isArray(analysis.bars)?analysis.bars:[]).filter(row=>typeof row.close==="number"&&Number.isFinite(row.close)&&row.close>0);
+ if(bars.length<2){chartEmpty(svg,"No recorded chart bars");$("office-chart-note").textContent="Charts appear after the configured worker records valid OHLCV bars.";return;}
+ svg.replaceChildren();const values=bars.map(row=>row.close),ema9=[],ema21=[];
+ let fast=values[0],slow=values[0];for(const value of values){fast+=(value-fast)*.2;slow+=(value-slow)*2/22;ema9.push(fast);ema21.push(slow);}
+ const vwap=Number(analysis.indicators?.vwap),include=Number.isFinite(vwap)&&vwap>0;
+ const lo=Math.min(...values,...(include?[vwap]:[])),hi=Math.max(...values,...(include?[vwap]:[])),range=Math.max(hi-lo,.01);
+ const x=i=>32+i*480/(bars.length-1),y=p=>200-(p-lo)*160/range;
+ for(let i=0;i<4;i++){const yy=40+i*53;cityAdd(svg,"line",{x1:32,x2:512,y1:yy,y2:yy,stroke:"#2a3a55"});}
+ for(const [series,color]of[[values,"#42e2ad"],[ema9,"#6caaff"],[ema21,"#ce90ff"]])cityAdd(svg,"polyline",{points:series.map((value,i)=>x(i)+","+y(value)).join(" "),fill:"none",stroke:color,"stroke-width":2});
+ if(include){cityAdd(svg,"line",{x1:32,x2:512,y1:y(vwap),y2:y(vwap),stroke:"#ffd278","stroke-dasharray":"5 4"});cityText(svg,34,18,"Latest recorded VWAP "+number(vwap),10,"#ffd278");}
+ cityText(svg,32,226,formatTime(bars[0].timestamp,shortTime),10);cityText(svg,512,226,formatTime(bars[bars.length-1].timestamp,shortTime),10,"#93a5c5",{"text-anchor":"end"});
+ $("office-chart-note").textContent=bars.length+" recorded bars · close (green), EMA9 (blue), EMA21 (purple), latest VWAP (gold). EMA lines use the displayed window. "+text(analysis.source,"Source unavailable")+(connected&&cityAnalysisRecent(analysis)?"":" · freshness unconfirmed.");
 }
+function renderOffice(){
+ if($("office-context"))$("office-context").textContent="VIRTUAL WORKSTATION / RECORDED DATA";
+ const snapshot=citySnapshot||{},def=TEAM_DEFINITIONS.find(row=>row.name===officeTeam);if(!def)return;
+ const team=(snapshot.teams||[]).find(row=>row.name===officeTeam)||{},analysis=team.analysis||{},votes=Array.isArray(analysis.votes)?analysis.votes:[],payroll=snapshot.payroll||{};
+ $("office-title").textContent=officeTeam+" · Team office";
+ const roomTheme=window.LaylowTeamOffices?.themes[officeTeam];if(roomTheme){$("office-theme-name").textContent=roomTheme.name;$("office-layout-note").textContent=(def.bots.length+1)+" teammates in one room · individual desks, shared research and team ledger";$("office-dialog").style.setProperty("--office-accent",roomTheme.accent);}
+ $("office-feed").textContent=snapshot.practice?"MARKET FEED: SIMULATED · Generated candles. Live broker/data feed not connected.":"Recorded worker snapshot · live quote connection is not verified. Check the source and timestamp below.";
+ $("office-speech-name").textContent=officeTeam+" / "+officeDesk;
+ const speechVote=votes.find(v=>v.name===officeDesk),speechManager=(snapshot.managers||[]).find(m=>m.team_name===officeTeam);
+ $("office-speech-text").textContent=officeDesk==="Team Manager"?(speechManager?.summary||"I am waiting for recorded team evidence."):(speechVote?(speechVote.direction+" — "+speechVote.reason):"I need source evidence before taking a position.");
+ // Preserve roster nodes and keyboard focus while snapshot opinions refresh.
+ const rosterNames=["Team Manager",...def.bots];
+ for(const id of ["office-roster","office-crew"]){const host=$(id);if(host.dataset.team!==officeTeam){host.dataset.team=officeTeam;host.replaceChildren();for(const name of rosterNames){const button=element("button",id==="office-crew"?"crew-bubble":"roster-member");button.type="button";button.dataset.officeWorker=name;button.append(element("strong","",name),element("span","crew-status"),element("span","crew-reason"));button.addEventListener("click",()=>selectOfficeWorker(name));host.append(button);}}
+  for(const button of host.children){const name=button.dataset.officeWorker,vote=votes.find(v=>v.name===name),picked=name===officeDesk;button.setAttribute("aria-pressed",String(picked));button.setAttribute("aria-label","Inspect "+name+" in "+officeTeam+" team office");button.querySelector(".crew-status").textContent=name==="Team Manager"?(team.worker_state||"Waiting"):(vote?.direction||"Waiting");button.querySelector(".crew-reason").textContent=name==="Team Manager"?(speechManager?.summary||"Awaiting team evidence"):(vote?.reason||"Awaiting source evidence");button.title=button.querySelector(".crew-reason").textContent;}
+ }
+ window.LaylowTradeWall?.render(officeTeam,snapshot);
+ window.Laylow3D?.officeSelection?.();
 
-function toggleKill() {
-  state.killed = !state.killed;
-  saveState();
-  addLog(state.killed ? "Kill switch ON." : "Trading resumed.");
-  updateDashboard();
+ $("office-health").textContent=!connected?"Last snapshot":text(team.worker_state,"Not observed");
+ $("office-data-time").textContent="Recorded bar: "+formatTime(analysis.bar_time);
+ const bars=Array.isArray(analysis.bars)?analysis.bars:[];
+ $("office-quote").textContent=bars.length?Number(bars[bars.length-1].close).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+(officeTeam.endsWith("!")?" points":" USD"):"No recorded price";
+ officeChart(analysis);
+ const selected=votes.find(row=>row.name===officeDesk);
+ $("office-signal").textContent=selected?(connected&&cityAnalysisRecent(analysis)?"":"Recorded ")+officeDesk+" · "+text(selected.direction):analysis.direction?(connected&&cityAnalysisRecent(analysis)?"Consensus ":"Recorded ")+text(analysis.direction):"Awaiting analysis";
+ $("office-votes").replaceChildren();
+ for(const name of def.bots){const vote=votes.find(row=>row.name===name)||{},li=element("li","",name+" · "+text(vote.direction,"Waiting"));li.append(element("span","vote-reason",text(vote.reason,"No recorded analysis")));$("office-votes").append(li);}
+ const brake=team.controls?.profit_brake;
+ $("office-rule").textContent=officeTeam.endsWith("!")?"Watch only · no order execution.":(brake?.status&&brake.status!=="DISABLED"?"Profit brake: "+brake.status+" · target "+money(brake.limit_cents)+". ":"")+text(team.controls?.lock_reason,"No recorded entry lock")+" · "+text(snapshot.mode,"unknown")+" mode";
+ const worker=(payroll.workers||[]).find(row=>row.team_name===officeTeam)||{};
+ $("office-earned").textContent=money(worker.net_cents)+" today";
+ $("office-performance-note").textContent=payroll.available?number(worker.closed_trades)+" closed trades · "+number(worker.wins)+" wins · "+number(worker.losses)+" losses. Team-level imported net results; specialist earnings are not separately attributed. "+(!connected?"Last snapshot. ":payroll.fresh?"Recent export. ":"Export not current. ")+(payroll.sources||[]).map(row=>text(row.source)+" as of "+formatTime(row.as_of,fullTime)).join("; "):"Closed-trade performance is unavailable until records are imported.";
+ $("office-recent-trades").replaceChildren();
+ const recent=(payroll.recent||[]).filter(row=>row.team_name===officeTeam);
+ for(const row of recent.slice(0,5))$("office-recent-trades").append(element("p",row.net_cents>=0?"good":"bad",formatTime(row.closed_at)+" · "+money(row.net_cents)+" · "+text(row.source)));
+ if(!recent.length)$("office-recent-trades").append(element("p","muted","No recorded closed trades."));
+ const manager=(snapshot.managers||[]).find(row=>row.team_name===officeTeam)||{};
+ $("office-manager").textContent="Team Manager: "+text(manager.summary,"Awaiting assessment")+" · "+reportAge(manager.generated_at);
+ $("office-decisions").replaceChildren();
+ const decisions=(snapshot.recent_decisions||[]).filter(row=>row.team_name===officeTeam),orders=(snapshot.recent_orders||[]).filter(row=>row.team_name===officeTeam);
+ for(const row of decisions.slice(0,8))$("office-decisions").append(element("li","process",formatTime(row.created_at)+" · "+text(row.direction)+" · "+text(row.action)+" · "+text(row.reason)));
+ for(const row of orders.slice(0,8))$("office-decisions").append(element("li","process",formatTime(row.created_at)+" · ORDER INTENT · "+text(row.direction)+" · "+text(row.status)+" · quantity "+number(row.qty)));
+ if(snapshot.practice){if($("office-context"))$("office-context").textContent="VIRTUAL WORKSTATION / FAKE-MONEY PRACTICE";$("office-health").textContent="PRACTICE · "+text(team.worker_state);$("office-data-time").textContent="Generated candle: "+formatTime(bars.at(-1)?.timestamp);$("office-rule").textContent="FAKE MONEY ONLY · simulated council and account limits · no real order execution";$("office-performance-note").textContent=number(worker.closed_trades)+" fake closed trades · "+number(worker.wins)+" wins · "+number(worker.losses)+" losses · simulated net after fees";$("office-chart-note").textContent=bars.length+" generated candles · simulated clock · close, EMA9, EMA21 and VWAP";}
+ if(!decisions.length&&!orders.length)$("office-decisions").append(element("li","muted","No recorded decisions or order intents."));
 }
+$("city-enter-office").addEventListener("click",()=>enterOffice(citySelected));
+$("office-close").addEventListener("click",()=>$("office-dialog").close());
+$("office-dialog").addEventListener("close",()=>{if(officeOpener?.isConnected&&(document.activeElement===document.body||$("office-dialog").contains(document.activeElement)))officeOpener.focus({preventScroll:true});});
+function selectOfficeWorker(name){officeDesk=name;$("office-worker").value=name;renderOffice();window.Laylow3D?.focusOfficeWorker(name);}
+$("office-worker").addEventListener("change",()=>selectOfficeWorker($("office-worker").value));
+$("office-controls").addEventListener("click",()=>{const name=officeTeam;$("office-dialog").close();selectCityDistrict(name,false);cards.get(name).card.scrollIntoView({behavior:cityMotionQuery.matches?"auto":"smooth",block:"start"});});
+window.LaylowWorld={definitions:TEAM_DEFINITIONS,districts:CITY_DISTRICTS,select:selectCityDistrict,enter:enterOffice,open:openCityBuilding,selected:()=>citySelected,snapshot:()=>citySnapshot,connected:()=>connected,resumeBackend:()=>{refreshStatus();},practiceSnapshot:payload=>{lastReceivedAt=Date.now();renderSnapshot(validatePayload(payload));}};
 
-updateDashboard();
+initializeCards();initializeCity();refreshStatus();
 </script>
-
+<script src="/big-manager-bot.js?v=20261014-atlas"></script>
+<script src="/team-offices.js?v=20261014-graphics26"></script>
+<script src="/world-3d.js?v=20261014-graphics26"></script>
+<script src="/council-ui.js?v=20261012-liveprices-20261011-bot-wicks"></script>
+<script src="./wick-knowledge.js?v=20261011-bot-wicks"></script>
+<script src="/practice-engine.js?v=20261014-continuous"></script>
+<script src="/live-practice.js?v=20261014-continuous"></script>
+<script src="/practice-ui.js?v=20261014-continuous"></script>
+<script src="/server-practice-ui.js?v=20261014-continuous"></script>
+<link rel="stylesheet" href="./strategy-research.css?v=20261012-entries">
+<script src="./strategy-research.js?v=20261012-entries"></script>
+<script src="./training-policy.js?v=20261011-nightshift2"></script>
+<script src="/training-engine.js?v=20261014-selective-trial"></script>
+<script src="/training-ui.js?v=20261014-selective-trial"></script>
+<script src="./settings-ui.js?v=20261012-liveprices"></script>
+<script src="./screenshot-lab.js?v=20261011-bot-wicks"></script>
+<script src="./training-theater.js?v=20261011-nightshift2"></script>
+<script src="./research-evidence.js?v=20261012-entries"></script>
+<script src="./exit-research.js?v=20261012-entries"></script>
+<script src="./entry-research.js?v=20261012-entries"></script>
+<script src="./historical-research.js?v=20261012-entries"></script>
+<script src="./research-station-ui.js?v=20261012-entries"></script>
 </body>
 </html>
