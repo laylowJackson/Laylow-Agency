@@ -10,7 +10,7 @@ from config import DB_PATH, DASHBOARD_HOST, DASHBOARD_PORT, ROOT_DIR, DATA_DIR
 from dashboard_status import build_dashboard_payload
 from db_utils import database_path, ensure_system_tables
 from entry_controls import update_control
-from config import STOCK_TEAM_NAMES
+from config import STOCK_TEAM_NAMES, TEAM_NAMES
 
 
 def create_app(db_path=None, settings_path=None):
@@ -314,6 +314,71 @@ def create_app(db_path=None, settings_path=None):
     def review_static():
         name=request.path.lstrip("/")
         return send_file(Path(ROOT_DIR)/name,mimetype="text/css" if name.endswith(".css") else "text/javascript")
+
+
+    # Advisory-only GPT access. The existing owner-login guard protects /api/*
+    # after a password is configured; first-time setup is required here.
+    from manager_chat import answer_question, build_context, connection_status, ManagerChatError
+    import threading
+    import time
+    from collections import deque
+
+    atlas_recent = deque()
+    atlas_rate_lock = threading.Lock()
+
+    def atlas_owner_ready():
+        try:
+            with closing(sqlite3.connect(database, timeout=4)) as connection:
+                row = connection.execute(
+                    "SELECT password_hash FROM owner_login WHERE id=1"
+                ).fetchone()
+            return bool(row and row[0])
+        except sqlite3.Error:
+            return False
+
+    @application.get("/api/atlas/status")
+    def atlas_ai_status():
+        if not atlas_owner_ready():
+            return jsonify({"error": "owner_password_setup_required", "configured": False}), 403
+        return jsonify(connection_status())
+
+    @application.post("/api/atlas/chat")
+    def atlas_ai_chat():
+        if not atlas_owner_ready():
+            return jsonify({"error": "owner_password_setup_required"}), 403
+        origin = request.headers.get("Origin")
+        if origin is not None and origin != request.host_url.rstrip("/"):
+            return jsonify({"error": "invalid_origin"}), 403
+        token = request.headers.get("X-Laylow-CSRF", "")
+        if not secrets.compare_digest(
+            token.encode("utf-8"), application.config["CONTROL_CSRF"].encode("utf-8")
+        ):
+            return jsonify({"error": "invalid_control_token"}), 403
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict) or set(body) != {"question", "team_name"}:
+            return jsonify({"error": "invalid_question_body"}), 400
+        question, team_name = body["question"], body["team_name"]
+        if not isinstance(question, str) or not 3 <= len(question.strip()) <= 500:
+            return jsonify({"error": "question_must_be_3_to_500_characters"}), 400
+        if not isinstance(team_name, str) or team_name not in set(TEAM_NAMES) | {"ALL"}:
+            return jsonify({"error": "unknown_team"}), 400
+        with atlas_rate_lock:
+            now = time.monotonic()
+            while atlas_recent and now - atlas_recent[0] >= 60:
+                atlas_recent.popleft()
+            if len(atlas_recent) >= 5:
+                return jsonify({"error": "ai_rate_limit", "retry_after_seconds": 60}), 429
+            atlas_recent.append(now)
+        try:
+            snapshot = build_dashboard_payload(db_path=database)
+            if not snapshot.get("database_available"):
+                return jsonify({"error": "status_unavailable"}), 503
+            return jsonify(answer_question(question, team_name, snapshot))
+        except ManagerChatError as error:
+            return jsonify({"error": error.code}), error.status
+        except Exception:
+            application.logger.exception("ATLAS advisory service unavailable")
+            return jsonify({"error": "ai_service_unavailable"}), 503
 
     from dashboard_auth import install_auth
     install_auth(application, database)
