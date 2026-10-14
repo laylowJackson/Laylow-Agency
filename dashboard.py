@@ -11,10 +11,14 @@ from dashboard_status import build_dashboard_payload
 from db_utils import database_path, ensure_system_tables
 from entry_controls import update_control
 from config import STOCK_TEAM_NAMES, TEAM_NAMES
+from private_access import configured_hostname, TailnetHttpsProxy, allowed_request
 
 
 def create_app(db_path=None, settings_path=None):
     application = Flask(__name__, static_folder=None)
+    private_hostname = configured_hostname()
+    application.wsgi_app = TailnetHttpsProxy(application.wsgi_app, private_hostname)
+    application.config["LAYLOW_TAILSCALE_HOSTNAME"] = private_hostname
     database = database_path(db_path)
     application.config["DATABASE_PATH"] = database
     application.config["CONTROL_CSRF"] = secrets.token_urlsafe(32)
@@ -29,8 +33,9 @@ def create_app(db_path=None, settings_path=None):
 
     @application.before_request
     def local_host_only():
-        if urlsplit(request.host_url).hostname not in {"127.0.0.1", "localhost", "::1"}:
-            return jsonify({"error": "local_host_required"}), 403
+        if not allowed_request(urlsplit(request.host_url).hostname,
+                               request.scheme, request.remote_addr, private_hostname):
+            return jsonify({"error": "local_or_private_tailnet_required"}), 403
 
     @application.before_request
     def bounded_control_requests():
