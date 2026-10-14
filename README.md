@@ -446,3 +446,6 @@ The existing Training lab now includes a source-backed bot playbook, win-rate sa
 See [BOT_RESEARCH_EVIDENCE.md](BOT_RESEARCH_EVIDENCE.md) for file format, local saving/export, model assumptions and limitations. Automatic nightshift training still uses generated candles; historical-file testing is manual until a verified provider is connected.
 
 
+
+### Fixed selective-entry trial
+The training lab now runs a fixed selective recipe against the balanced control for SPY, QQQ, AAPL and TSLA on a separate synthetic seed stream. Trial evidence begins after the upgrade and is not backfilled from older research. The desk shows win/loss sample counts, net results, cost stress, maximum single-drill drawdown, losing regimes and unmet gates. At least 24 rounds, 120 candidate trades and four rounds in every scenario are required, alongside net, cost and drawdown gates. Passing these synthetic checks does not authorize trading or prove market profitability. Existing account and training history are preserved.

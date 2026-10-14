@@ -10,4 +10,12 @@ const asset=account.assets[0],bars=asset.bars.map((v,i)=>({...v,open:100+i*.2,cl
 const baseline=test(asset,bars,variants[0],21,55),future=bars.map((v,i)=>i>=55?{...v,close:99999}:v);
 assert.deepEqual(test(asset,future,variants[0],21,55),baseline,'Future candles cannot affect earlier selection');
 assert(a.teams.every(t=>Object.values(t.research_scoreboard).every(s=>s.auto_promoted===false&&s.gates.independent_market_data===false)));
+assert.equal(a.teams.filter(t=>t.selective_audit).length,4);
+assert(a.teams.filter(t=>t.selective_audit).every(t=>t.selective_audit.rounds===13&&t.selective_audit.rule_id==='selective'&&!t.selective_audit.gates.sample_size&&!t.selective_audit.market_validation_passed&&!t.selective_audit.auto_promoted));
+const auditSpy=a.teams[0].selective_audit;
+assert.notDeepEqual(auditSpy.candidate,a.teams[0].scorecard.candidate,'Frozen selective trial uses a separate price stream from selected-policy drills');
+const legacy=JSON.parse(JSON.stringify(a.export()));legacy.teams.forEach(t=>delete t.selective_audit);
+const migrated=new TrainingLab();migrated.restore(legacy);migrated.step();assert.equal(migrated.teams[0].selective_audit.rounds,1,'Old research starts fresh trial without retroactively counting old experiments');
+assert.equal(migrated.teams[0].experiments,legacy.teams[0].experiments+1,'Existing research remains intact');
+const corrupt=JSON.parse(JSON.stringify(a.export()));corrupt.teams[0].selective_audit.candidate.trades='invalid';assert.throws(()=>new TrainingLab().restore(corrupt),/Invalid selective trial/);
 console.log('Training engine passed: all ten teams, separate ledger, deterministic resume, held-out boundaries and promotion gate.');
